@@ -27,4 +27,17 @@ pub mod degenwild {
     pub fn cancel_battle(ctx: Context<CancelBattle>) -> Result<()> {
         crate::instructions::cancel_battle::handle_cancel_battle(ctx)
     }
+    
+    pub fn initialize_platform_config(
+        ctx: Context<InitializePlatformConfig>,
+    ) -> Result<()> {
+        crate::instructions::platform_config::handle_initialize_platform_config(ctx)
+    }
+
+    pub fn update_treasury(
+        ctx: Context<UpdateTreasury>,
+    ) -> Result<()> {
+        crate::instructions::platform_config::handle_update_treasury(ctx)
+    }
+
 }

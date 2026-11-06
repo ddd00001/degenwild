@@ -294,3 +294,45 @@ fn joined_battle_cannot_be_cancelled() {
     // The joined battle must remain open in storage.
     assert!(svm.get_account(&battle).is_some());
 }
+
+#[test]
+fn unauthorized_wallet_cannot_initialize_platform_config() {
+    let (mut svm, _creator) = setup();
+    let attacker = Keypair::new();
+
+    svm.airdrop(&attacker.pubkey(), 1_000_000_000).unwrap();
+
+    let (platform_config, _) = Pubkey::find_program_address(
+        &[degenwild::constants::PLATFORM_CONFIG_SEED],
+        &degenwild::id(),
+    );
+
+    let ix = Instruction::new_with_bytes(
+        degenwild::id(),
+        &degenwild::instruction::InitializePlatformConfig {}.data(),
+        degenwild::accounts::InitializePlatformConfig {
+            admin: attacker.pubkey(),
+            platform_config,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    );
+
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(
+        &[ix],
+        Some(&attacker.pubkey()),
+        &blockhash,
+    );
+
+    let tx = VersionedTransaction::try_new(
+        VersionedMessage::Legacy(msg),
+        &[&attacker],
+    )
+    .unwrap();
+
+    assert!(svm.send_transaction(tx).is_err());
+
+    // Unauthorized initialization must not create the config account.
+    assert!(svm.get_account(&platform_config).is_none());
+}
