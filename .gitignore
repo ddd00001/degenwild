@@ -1,0 +1,23 @@
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+.surfpool
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Solana wallet keypairs
+id.json
+**/id.json
+*-keypair.json
+**/*-keypair.json
+
+# Private keys
+*.pem
+*.key
