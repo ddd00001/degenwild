@@ -1,5 +1,7 @@
+pub mod cancel_battle;
 pub mod create_battle;
 pub mod join_battle;
 
+pub use cancel_battle::*;
 pub use create_battle::*;
 pub use join_battle::*;

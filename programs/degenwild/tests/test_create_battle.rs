@@ -195,3 +195,102 @@ fn join_battle_rejects_second_opponent() {
 
     assert!(svm.send_transaction(second_join).is_err());
 }
+
+// Builds a cancellation transaction.
+// signer is the wallet attempting cancellation.
+// battle_creator identifies the original owner of the battle.
+fn cancel_battle_tx(
+    svm: &LiteSVM,
+    signer: &Keypair,
+    battle_creator: &Pubkey,
+    battle_id: u64,
+) -> VersionedTransaction {
+    let battle = battle_pda(battle_creator, battle_id);
+
+    let ix = Instruction::new_with_bytes(
+        degenwild::id(),
+        &degenwild::instruction::CancelBattle {}.data(),
+        degenwild::accounts::CancelBattle {
+            creator: signer.pubkey(),
+            battle,
+        }
+        .to_account_metas(None),
+    );
+
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[ix], Some(&signer.pubkey()), &blockhash);
+
+    VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[signer]).unwrap()
+}
+
+#[test]
+fn creator_can_cancel_open_battle_and_receive_refund() {
+    let (mut svm, creator) = setup();
+    let amount = 100_000_000;
+
+    let create_tx = create_battle_tx(&svm, &creator, 5, amount);
+    assert!(svm.send_transaction(create_tx).is_ok());
+
+    let battle = battle_pda(&creator.pubkey(), 5);
+    let escrow_balance = svm.get_account(&battle).unwrap().lamports;
+    let creator_balance_before = svm.get_balance(&creator.pubkey()).unwrap();
+
+    assert!(escrow_balance > amount);
+
+    let cancel_tx = cancel_battle_tx(&svm, &creator, &creator.pubkey(), 5);
+
+    assert!(svm.send_transaction(cancel_tx).is_ok());
+
+    // The battle account must be closed.
+    assert!(svm.get_account(&battle).is_none());
+
+    // The creator receives the escrow refund, less the transaction fee.
+    let creator_balance_after = svm.get_balance(&creator.pubkey()).unwrap();
+    assert!(creator_balance_after > creator_balance_before);
+}
+
+#[test]
+fn another_wallet_cannot_cancel_battle() {
+    let (mut svm, creator) = setup();
+    let attacker = Keypair::new();
+    let amount = 100_000_000;
+
+    svm.airdrop(&attacker.pubkey(), 1_000_000_000).unwrap();
+
+    let create_tx = create_battle_tx(&svm, &creator, 6, amount);
+    assert!(svm.send_transaction(create_tx).is_ok());
+
+    let battle = battle_pda(&creator.pubkey(), 6);
+
+    let cancel_tx = cancel_battle_tx(&svm, &attacker, &creator.pubkey(), 6);
+
+    assert!(svm.send_transaction(cancel_tx).is_err());
+
+    // The original battle must remain untouched.
+    assert!(svm.get_account(&battle).is_some());
+}
+
+#[test]
+fn joined_battle_cannot_be_cancelled() {
+    let (mut svm, creator) = setup();
+    let opponent = Keypair::new();
+    let amount = 100_000_000;
+
+    svm.airdrop(&opponent.pubkey(), 1_000_000_000).unwrap();
+
+    let create_tx = create_battle_tx(&svm, &creator, 7, amount);
+    assert!(svm.send_transaction(create_tx).is_ok());
+
+    let join_tx = join_battle_tx(&svm, &opponent, &creator.pubkey(), 7, amount);
+
+    assert!(svm.send_transaction(join_tx).is_ok());
+
+    let battle = battle_pda(&creator.pubkey(), 7);
+
+    let cancel_tx = cancel_battle_tx(&svm, &creator, &creator.pubkey(), 7);
+
+    assert!(svm.send_transaction(cancel_tx).is_err());
+
+    // The joined battle must remain open in storage.
+    assert!(svm.get_account(&battle).is_some());
+}

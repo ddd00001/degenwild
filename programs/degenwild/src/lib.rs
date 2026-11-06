@@ -22,4 +22,8 @@ pub mod degenwild {
     pub fn join_battle(ctx: Context<JoinBattle>, amount: u64) -> Result<()> {
         crate::instructions::join_battle::handle_join_battle(ctx, amount)
     }
+
+    pub fn cancel_battle(ctx: Context<CancelBattle>) -> Result<()> {
+        crate::instructions::cancel_battle::handle_cancel_battle(ctx)
+    }
 }
