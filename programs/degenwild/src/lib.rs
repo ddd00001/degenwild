@@ -1,6 +1,6 @@
 pub mod constants;
-pub mod fee;
 pub mod error;
+pub mod fee;
 pub mod instructions;
 pub mod state;
 
@@ -27,17 +27,16 @@ pub mod degenwild {
     pub fn cancel_battle(ctx: Context<CancelBattle>) -> Result<()> {
         crate::instructions::cancel_battle::handle_cancel_battle(ctx)
     }
-    
-    pub fn initialize_platform_config(
-        ctx: Context<InitializePlatformConfig>,
-    ) -> Result<()> {
+
+    pub fn settle_battle(ctx: Context<SettleBattle>) -> Result<()> {
+        crate::instructions::settle_battle::handle_settle_battle(ctx)
+    }
+
+    pub fn initialize_platform_config(ctx: Context<InitializePlatformConfig>) -> Result<()> {
         crate::instructions::platform_config::handle_initialize_platform_config(ctx)
     }
 
-    pub fn update_treasury(
-        ctx: Context<UpdateTreasury>,
-    ) -> Result<()> {
+    pub fn update_treasury(ctx: Context<UpdateTreasury>) -> Result<()> {
         crate::instructions::platform_config::handle_update_treasury(ctx)
     }
-
 }

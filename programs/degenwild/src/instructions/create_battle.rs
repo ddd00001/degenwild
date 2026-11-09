@@ -30,6 +30,9 @@ pub fn handle_create_battle(ctx: Context<CreateBattle>, battle_id: u64, amount: 
     ctx.accounts.battle.amount = amount;
     ctx.accounts.battle.battle_id = battle_id;
     ctx.accounts.battle.status = BattleStatus::Open;
+    ctx.accounts.battle.randomness_seed = [0; 32];
+    ctx.accounts.battle.randomness_account = Pubkey::default();
+    ctx.accounts.battle.winner = None;
     ctx.accounts.battle.bump = ctx.bumps.battle;
 
     // Move the creator's stake into the battle account (escrow).

@@ -7,3 +7,6 @@ pub use create_battle::*;
 pub use join_battle::*;
 pub mod platform_config;
 pub use platform_config::*;
+
+pub mod settle_battle;
+pub use settle_battle::*;

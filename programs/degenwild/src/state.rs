@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 pub enum BattleStatus {
     Open,
     Joined,
+    RandomnessPending,
+    Settled,
 }
 
 #[account]
@@ -14,6 +16,9 @@ pub struct Battle {
     pub amount: u64,
     pub battle_id: u64,
     pub status: BattleStatus,
+    pub randomness_seed: [u8; 32],
+    pub randomness_account: Pubkey,
+    pub winner: Option<Pubkey>,
     pub bump: u8,
 }
 

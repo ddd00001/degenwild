@@ -25,9 +25,7 @@ pub struct InitializePlatformConfig<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handle_initialize_platform_config(
-    ctx: Context<InitializePlatformConfig>,
-) -> Result<()> {
+pub fn handle_initialize_platform_config(ctx: Context<InitializePlatformConfig>) -> Result<()> {
     let config = &mut ctx.accounts.platform_config;
 
     config.admin = ctx.accounts.admin.key();

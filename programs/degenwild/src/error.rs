@@ -16,4 +16,22 @@ pub enum ErrorCode {
 
     #[msg("Opponent stake must exactly match the creator's stake")]
     IncorrectStake,
+
+    #[msg("ORAO randomness has not been fulfilled yet")]
+    RandomnessNotFulfilled,
+
+    #[msg("ORAO randomness request does not match this battle")]
+    RandomnessRequestMismatch,
+
+    #[msg("Battle is not ready for settlement")]
+    BattleNotReady,
+
+    #[msg("Platform fee configuration is invalid")]
+    InvalidPlatformFee,
+
+    #[msg("Battle escrow does not contain the expected pot")]
+    InsufficientEscrow,
+
+    #[msg("Arithmetic overflow")]
+    ArithmeticOverflow,
 }

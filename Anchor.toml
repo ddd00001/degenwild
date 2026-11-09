@@ -9,8 +9,11 @@ skip-lint = false
 [programs.localnet]
 degenwild = "6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV"
 
+[programs.devnet]
+degenwild = "6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV"
+
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

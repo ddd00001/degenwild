@@ -23,7 +23,7 @@ mod tests {
 
         let (fee, payout) = calculate_coinflip_fee(pot).unwrap();
 
-        assert_eq!(fee, 50_000_000);       // 0.05 SOL
+        assert_eq!(fee, 50_000_000); // 0.05 SOL
         assert_eq!(payout, 1_950_000_000); // 1.95 SOL
     }
 
