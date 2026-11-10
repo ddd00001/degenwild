@@ -1285,6 +1285,7 @@ dependencies = [
  "anchor-lang",
  "litesvm",
  "orao-solana-vrf",
+ "solana-account",
  "solana-keypair",
  "solana-message",
  "solana-signer",
