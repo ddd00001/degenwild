@@ -3,6 +3,7 @@ import type { Address } from '@solana/kit';
 import { type BattleView, type Randomness, opponentOf, payoutFor } from './chain';
 import { explorerTx } from './config';
 import { Coin } from './components/Coin';
+import { Embers } from './components/Embers';
 import { Amount } from './components/Amount';
 
 type Phase = 'open' | 'waiting' | 'countdown' | 'flip' | 'result';
@@ -100,6 +101,7 @@ export function MatchScreen(props: {
 
   return (
     <dialog ref={dialog} className="match-dialog" onClose={props.onClose}>
+      <Embers />
       <button className="match-close" onClick={props.onClose} aria-label="Close">
         ×
       </button>

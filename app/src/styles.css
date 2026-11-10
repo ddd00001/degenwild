@@ -484,3 +484,9 @@ details.history .battle-row{opacity:.85}
 @keyframes burst{from{transform:rotate(var(--a)) translateY(0) scale(.4);opacity:1}to{transform:rotate(var(--a)) translateY(-92px) scale(1);opacity:0}}
 @media(max-width:500px){.reel-row{grid-template-columns:26px 1fr auto 78px;height:42px;gap:7px}.reel-stage{width:92px;height:92px}.reel-flip{width:86px;height:86px}.reel-count{font-size:68px}}
 @media (prefers-reduced-motion: reduce){.embers,.burst{display:none}.welcome-logo,.welcome-next,.welcome-dialog h2 em,.feature-grid li>span{animation:none}.welcome-dialog h2 em{color:var(--red);background:none}}
+
+/* sparks in every pop-up: clipped to the window's rounded shape, behind the content */
+dialog{position:fixed}
+.embers{border-radius:inherit;z-index:0}
+dialog>*:not(.embers){position:relative;z-index:1}
+.match-dialog>.match-close,.welcome-dialog>.match-close{position:absolute;z-index:2}

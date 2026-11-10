@@ -1,3 +1,4 @@
+import { Embers } from './Embers';
 import { useEffect, useRef } from 'react';
 import { MAX_STAKE_LAMPORTS, MIN_STAKE_LAMPORTS } from '../config';
 import { fmtSol } from '../format';
@@ -35,6 +36,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   }, []);
   return (
     <dialog ref={ref} onClose={onClose} onClick={(e) => e.target === ref.current && onClose()}>
+      <Embers count={10} />
       <div className="dialog-head">
         <h2>{title}</h2>
         <button onClick={onClose} aria-label="Close">

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Coin } from './Coin';
+import { Embers } from './Embers';
 
 const SEEN_KEY = 'dw-welcome-seen';
 const SLIDES = 3;
@@ -54,11 +55,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
 
   return (
     <dialog ref={dialog} className="welcome-dialog" onClose={close} aria-label="Welcome to DegenWild">
-      <div className="embers" aria-hidden="true">
-        {Array.from({ length: 14 }, (_, i) => (
-          <i key={i} style={{ left: `${(i * 37 + 11) % 100}%`, animationDelay: `${(i * 0.53) % 5}s`, animationDuration: `${4 + (i % 5)}s` }} />
-        ))}
-      </div>
+      <Embers />
       <button className="match-close" onClick={close} aria-label="Skip intro">
         ×
       </button>
