@@ -7,9 +7,9 @@ pub const BATTLE_SEED: &[u8] = b"battle";
 #[constant]
 pub const MIN_STAKE_LAMPORTS: u64 = 10_000_000;
 
-/// Coinflip platform fee: 2.5% (250 basis points)
+/// Coinflip platform fee: 3.5% (350 basis points)
 #[constant]
-pub const COINFLIP_FEE_BPS: u64 = 250;
+pub const COINFLIP_FEE_BPS: u64 = 350;
 
 /// Public wallet authorized to initialize DEGEN WILD platform settings.
 pub const PLATFORM_ADMIN: Pubkey = pubkey!("4VUJ1pCqT1TWQhKFSyDC7EP9HkEAUSGrcaBpYhCEfx7b");

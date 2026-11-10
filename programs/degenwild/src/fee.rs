@@ -18,13 +18,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn calculates_2_5_percent_fee_from_entire_pot() {
+    fn calculates_3_5_percent_fee_from_entire_pot() {
         let pot = 2_000_000_000; // 2 SOL
 
         let (fee, payout) = calculate_coinflip_fee(pot).unwrap();
 
-        assert_eq!(fee, 50_000_000); // 0.05 SOL
-        assert_eq!(payout, 1_950_000_000); // 1.95 SOL
+        assert_eq!(fee, 70_000_000); // 0.07 SOL
+        assert_eq!(payout, 1_930_000_000); // 1.93 SOL
     }
 
     #[test]
