@@ -105,7 +105,7 @@ export function ProfileDialog(props: {
       </form>
       <p className="dialog-muted">
         Stored on-chain. Costs ~0.0025 SOL rent, fully refunded if you delete it. Offensive or impersonating names can be
-        removed by DEGEN WILD.
+        removed by DegenWild.
       </p>
       <div className="dialog-actions">
         {props.first ? (
@@ -151,7 +151,7 @@ export function WalletDialog({ onClose }: { onClose: () => void }) {
       )}
       {error != null && <p className="dialog-error">{describeError(error)}</p>}
       <p className="dialog-muted">
-        Your wallet asks you to approve every transaction. DEGEN WILD never sees your keys.
+        Your wallet asks you to approve every transaction. DegenWild never sees your keys.
       </p>
     </Modal>
   );

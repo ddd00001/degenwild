@@ -1,4 +1,4 @@
-# DEGEN WILD — web app
+# DegenWild — web app
 
 React + Vite frontend for the `degenwild` Anchor program, built on the red/black design from
 `C:\degenwild-localhost`. It uses `@solana/kit` 8 and connects wallets through Wallet Standard

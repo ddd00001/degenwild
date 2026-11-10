@@ -2,6 +2,7 @@ import { type Address } from '@solana/kit';
 import { type BattleView, type Randomness, opponentOf, payoutFor, refundDeadline, winnerOf } from '../chain';
 import { BattleStatus } from '../generated';
 import { Coin } from './Coin';
+import { Amount } from './Amount';
 import { SIDE_NAME, fmtSol, short, type Names } from '../format';
 
 export function BattleRow(props: {
@@ -102,7 +103,7 @@ export function BattleRow(props: {
         <div>
           <b>{label(b.creator)}</b>
           <small>
-            {creatorSide} · {fmtSol(b.amount)} SOL
+            {creatorSide} · <Amount lamports={b.amount} />
           </small>
         </div>
       </div>
@@ -111,11 +112,11 @@ export function BattleRow(props: {
         <span className={`row-coin ${b.creatorSide === 1 ? 'heads' : 'tails'} ${opp && winner === opp ? 'win' : ''} ${opp ? '' : 'empty'}`}>{b.creatorSide <= 1 ? <Coin side={(1 - b.creatorSide) as 0 | 1} /> : '?'}</span>
         <div>
           <b>{opp ? label(opp) : 'Waiting for player'}</b>
-          <small>{opp ? `${oppSide} · ${fmtSol(b.amount)} SOL` : `${oppSide} available`}</small>
+          <small>{opp ? <>{oppSide} · <Amount lamports={b.amount} /></> : `${oppSide} available`}</small>
         </div>
       </div>
       <div className="battle-meta">
-        <strong>{fmtSol(pot)} SOL</strong>
+        <strong><Amount lamports={pot} /></strong>
         <small>{meta}</small>
       </div>
       <div className="battle-action">

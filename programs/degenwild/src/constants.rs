@@ -14,7 +14,7 @@ pub const MAX_STAKE_LAMPORTS: u64 = 10_000_000_000;
 #[constant]
 pub const COINFLIP_FEE_BPS: u64 = 350;
 
-/// Public wallet authorized to initialize DEGEN WILD platform settings.
+/// Public wallet authorized to initialize DegenWild platform settings.
 pub const PLATFORM_ADMIN: Pubkey = pubkey!("4VUJ1pCqT1TWQhKFSyDC7EP9HkEAUSGrcaBpYhCEfx7b");
 
 /// Platform configuration PDA seed.

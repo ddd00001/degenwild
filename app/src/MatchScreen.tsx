@@ -3,6 +3,7 @@ import type { Address } from '@solana/kit';
 import { type BattleView, type Randomness, opponentOf, payoutFor } from './chain';
 import { explorerTx } from './config';
 import { Coin } from './components/Coin';
+import { Amount } from './components/Amount';
 
 type Phase = 'open' | 'waiting' | 'countdown' | 'flip' | 'result';
 
@@ -105,7 +106,9 @@ export function MatchScreen(props: {
       <div className="match-kicker">
         {props.replay ? 'REPLAY' : phase === 'open' ? 'WAITING FOR OPPONENT' : phase === 'result' ? 'RESULT' : playing ? 'MATCH FOUND' : 'LIVE'}
       </div>
-      <div className="match-pot">{props.fmtSol(pot)} SOL POT</div>
+      <div className="match-pot">
+        <Amount lamports={pot} /> POT
+      </div>
 
       <div className="match-versus">
         {player(b.creator, b.creatorSide)}

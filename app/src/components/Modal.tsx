@@ -7,7 +7,7 @@ export function HowDialog({ onClose }: { onClose: () => void }) {
     <Modal title="How coinflip works" onClose={onClose}>
       <p>
         <b>1.</b> Pick Heads or Tails and a stake ({fmtSol(MIN_STAKE_LAMPORTS)}–{fmtSol(MAX_STAKE_LAMPORTS, 0)} SOL). Your stake
-        goes into an on-chain escrow account owned by the DEGEN WILD program. You can cancel any time until someone joins.
+        goes into an on-chain escrow account owned by the DegenWild program. You can cancel any time until someone joins.
       </p>
       <p>
         <b>2.</b> An opponent joins with the exact same stake on the other side. Joining requests a provably fair random
@@ -18,7 +18,7 @@ export function HowDialog({ onClose }: { onClose: () => void }) {
         ~5 minutes, either player can refund both stakes.
       </p>
       <p className="dialog-muted">
-        Provably fair: neither player nor DEGEN WILD can choose the outcome. The randomness is signed by several independent
+        Provably fair: neither player nor DegenWild can choose the outcome. The randomness is signed by several independent
         nodes and checked on-chain before anyone is paid.
       </p>
     </Modal>

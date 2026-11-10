@@ -152,7 +152,7 @@ dialog code{background:#241618;padding:2px 6px;border-radius:4px;font-size:11px}
 .match-actions{display:grid;gap:8px;justify-items:center;margin-top:10px}
 .match-actions .primary-btn{width:100%;max-width:300px}
 .match-claimed{color:#7cf09c;font-weight:700;font-size:13px}
-@media (prefers-reduced-motion: reduce){.coin3d-wrap.idle .coin3d,.match-count{animation:none}}
+@media (prefers-reduced-motion: reduce){.coin3d-wrap.idle .coin3d{animation:coinPulse 1.8s ease-in-out infinite alternate}.match-count{animation:none}}
 .battle-action{gap:6px}
 .replay-btn{flex:0 0 34px;height:34px;border-radius:6px;border:1px solid #463033;background:#160f10;color:#ff7a80;font-size:12px}
 .replay-btn:hover{border-color:var(--red);color:#fff;background:#2a1416}
@@ -275,3 +275,98 @@ details.history .battle-row{opacity:.85}
 .pager button.active{background:#351316;border-color:#a82a33;color:#ff7a80}
 .pager button:disabled{opacity:.35}
 .pager-gap{color:#6f6464;font-size:12px;padding:0 2px}
+
+/* iOS/Safari webviews (Phantom in-app browser) need prefixed 3D properties */
+.coin3d{-webkit-transform-style:preserve-3d;transform-style:preserve-3d}
+.coin3d .coin-face{-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.match-stage{-webkit-perspective:900px;perspective:900px}
+@-webkit-keyframes coinIdle{to{-webkit-transform:rotateY(360deg);transform:rotateY(360deg)}}
+.coin3d-wrap.idle .coin3d{-webkit-animation:coinIdle 2.4s linear infinite;animation:coinIdle 2.4s linear infinite}
+@keyframes coinPulse{from{transform:scale(.94)}to{transform:scale(1.04)}}
+
+/* phone menu bar */
+.mobile-nav,.mobile-tip{display:none}
+@media(max-width:760px){
+  .mobile-nav{display:flex;gap:6px;margin:10px 0 0;overflow-x:auto;scrollbar-width:none}
+  .mobile-nav::-webkit-scrollbar{display:none}
+  .mobile-nav button{flex:0 0 auto;display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid #2b2020;background:#121010;color:#b9aaaa;font-size:12px;font-weight:700}
+  .mobile-nav button.active{border-color:#512024;background:linear-gradient(90deg,#291012,#151010);color:#fff;box-shadow:inset 0 -2px var(--red)}
+  .mobile-nav button.soon{opacity:.6}.mobile-nav button.soon.open{opacity:1;border-color:#5a3b25}
+  .mobile-tip{display:block;margin:8px 0 0;padding:10px 12px;border-radius:8px;background:#211315;border:1px solid #743038;color:#d9c9c9;font-size:12px;line-height:1.5}
+  .mobile-tip b{color:#fff}
+  .mobile-help{display:none}
+}
+@media(max-width:760px){
+  .mobile-nav{gap:5px}
+  .mobile-nav button{height:32px;padding:0 9px;font-size:11px;gap:5px}
+  .mobile-nav .soon-tag{font-size:8px;padding:1px 4px;letter-spacing:1px}
+  .mobile-nav button.help{margin-left:auto;width:32px;padding:0;justify-content:center;border-radius:50%;color:#ff7a80}
+}
+
+/* ---- roadmap (overview layout) ---- */
+.roadmap-page{margin:22px 0;display:grid;gap:18px}
+.rm-hero{padding:28px 32px;background:radial-gradient(ellipse at 85% 50%,#3a1216 0%,#171010 45%,#0d0c0c 100%)}
+.rm-hero h1{font:900 clamp(40px,5vw,60px)/1 'Barlow Condensed';color:#fff;margin:12px 0 10px;text-transform:uppercase}
+.rm-intro{max-width:780px;color:#e6d5d5;font-size:15px;line-height:1.6}
+.rm-intro blockquote{margin:0;padding:0;border:0;color:#f0dada}.rm-intro p{margin:0}
+.rm-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.rm-card{padding:22px 24px}
+.rm-card h2,.rm-timeline-section h2{font:800 26px 'Barlow Condensed';color:#fff;margin:0 0 10px}
+.rm-body{color:#cdbdbd;font-size:14px;line-height:1.65}
+.rm-body p{margin:6px 0}.rm-body ul{padding-left:18px;margin:6px 0}.rm-body li{margin:3px 0}
+.rm-body strong{color:#fff}.rm-body a{color:#ff7a80}
+.rm-feebar{display:flex;flex-wrap:wrap;align-items:center;margin:4px 0 14px}
+.rm-feebar-win{height:34px;display:flex;align-items:center;padding:0 12px;border-radius:8px 0 0 8px;background:linear-gradient(90deg,#1f5a32,#2f8a47);color:#dfffe9;font-size:12px}
+.rm-feebar-win b{margin-right:6px;font-size:14px}
+.rm-feebar-fee{height:34px;min-width:14px;border-radius:0 8px 8px 0;background:linear-gradient(90deg,#e92330,#a90f19)}
+.rm-feebar small{flex-basis:100%;text-align:right;margin-top:6px;color:#ff9a9f;font-size:11px}
+.rm-legend{display:flex;flex-wrap:wrap;gap:6px}
+.rm-timeline{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:14px;position:relative;overflow-x:auto;padding-bottom:6px}
+.rm-timeline::before{content:"";position:absolute;left:0;right:0;top:9px;height:2px;background:linear-gradient(90deg,#2f8a47,#8a5a2f 30%,#a82a33 50%,#3a2c2c 70%)}
+.rm-step{position:relative;padding-top:30px}
+.rm-dot{position:absolute;top:2px;left:14px;width:16px;height:16px;border-radius:50%;border:3px solid #0b0909;box-shadow:0 0 0 2px currentColor;background:currentColor}
+.rm-step.live{color:#38c25d}.rm-step.building{color:#ffb36b}.rm-step.next{color:#ff5a61}.rm-step.planned{color:#6f6464}
+.rm-step.live .rm-dot{box-shadow:0 0 0 2px #38c25d,0 0 14px #38c25d}
+.rm-step-card{height:100%;padding:16px 16px 12px;color:#cdbdbd}
+.rm-step-card h3{font:800 19px 'Barlow Condensed';color:#fff;margin:10px 0 4px}
+.rm-step.live .rm-step-card{border-color:#2f5d3a}.rm-step.next .rm-step-card{border-color:#5a2428}
+.rm-step.planned .rm-step-card{opacity:.85}
+.rm-status{font:800 10px Inter;letter-spacing:1.5px;padding:3px 8px;border-radius:5px;border:1px solid}
+.rm-status.live{color:#7cf09c;border-color:#2f8a47;background:#12301980}
+.rm-status.building{color:#ffb36b;border-color:#8a5a2f;background:#2a1a0e}
+.rm-status.next{color:#ff7a80;border-color:#a82a33;background:#2b1114}
+.rm-status.planned{color:#a99b9b;border-color:#463033;background:#151111}
+.rm-todo{display:inline-block;margin-right:6px;font:800 9px Inter;letter-spacing:1.5px;color:#111;background:#ffd34d;border-radius:3px;padding:2px 5px;vertical-align:1px}
+@media(max-width:760px){
+  .roadmap-page{margin:12px 0;gap:12px}
+  .rm-hero{padding:20px 18px}
+  .rm-cards{grid-template-columns:1fr}
+  .rm-card{padding:18px 16px}
+  .rm-legend{display:none}
+  .rm-timeline{grid-auto-flow:row;grid-auto-columns:auto;overflow:visible;padding-left:28px}
+  .rm-timeline::before{left:9px;right:auto;top:0;bottom:0;width:2px;height:auto;background:linear-gradient(180deg,#2f8a47,#8a5a2f 30%,#a82a33 50%,#3a2c2c 70%)}
+  .rm-step{padding-top:0}
+  .rm-dot{left:-26px;top:16px}
+}
+/* keep wide children (timeline) from stretching the page */
+.roadmap-page{grid-template-columns:minmax(0,1fr)}
+.rm-cards{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+.rm-timeline-section{min-width:0}
+.rm-feebar-win{white-space:nowrap}
+
+/* ---- amount + USD tooltip ---- */
+.amount{position:relative;cursor:help;border-bottom:1px dotted #ffffff40;white-space:nowrap;outline:none}
+.amount-tip{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);z-index:60;display:grid;gap:3px;min-width:200px;max-width:260px;padding:9px 11px;border-radius:8px;background:#211315;border:1px solid #743038;box-shadow:0 10px 30px #000c;color:#cdbdbd;font:500 11px/1.4 Inter;letter-spacing:0;text-transform:none;text-align:left;white-space:normal;opacity:0;pointer-events:none;transition:opacity .12s}
+.amount-tip b{color:#fff;font-size:13px;font-weight:800}
+.amount-tip em{font-style:normal;color:#8f8282;font-size:10px}
+.amount-tip::after{content:"";position:absolute;left:50%;top:100%;width:8px;height:8px;background:#211315;border-right:1px solid #743038;border-bottom:1px solid #743038;transform:translate(-50%,-4px) rotate(45deg)}
+.amount:hover .amount-tip,.amount:focus-visible .amount-tip,.amount.open .amount-tip{opacity:1}
+.battle-meta .amount-tip,.balance .amount-tip{left:auto;right:0;transform:none}
+.battle-meta .amount-tip::after,.balance .amount-tip::after{left:auto;right:14px}
+.balance .amount-tip{bottom:auto;top:calc(100% + 8px)}
+.balance .amount-tip::after{top:-4px;transform:rotate(225deg)}
+.match-pot .amount{border-bottom-color:#ffffff30}
+.match-pot .amount-tip{font-family:Inter}
+/* let tooltips float outside the pop-up's edges (dialogs clip by default);
+   keep scrolling on very short screens where the pop-up may not fit */
+@media (min-height:620px){.match-dialog{overflow:visible}}

@@ -6,7 +6,9 @@ import { CLUSTER, MAX_STAKE_LAMPORTS, MIN_STAKE_LAMPORTS, PLATFORM_ADMIN, POLL_M
 import { type BattleView, type Randomness, buildCancel, buildChangeUsername, buildCreate, buildCreateProfile, buildDeleteProfile, buildInitPlatform, buildJoin, buildRefund, buildSettle, describeError, isExpiredError, fetchAllBattles, fetchAllUsernames, fetchRandomness, fetchTreasury, opponentOf, payoutFor, winnerOf } from './chain';
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
+import { RoadmapPage } from './components/RoadmapPage';
 import { Coin } from './components/Coin';
+import { Amount } from './components/Amount';
 import { type GameResult, GameHistory, resultToBattle } from './history';
 import { SIDE_NAME, type Side, fmtSol, parseSol, short, timeAgo, type Names } from './format';
 import { BattleRow } from './components/BattleRow';
@@ -46,7 +48,19 @@ function useToast() {
 // ------------------------------------------------------------ app
 
 export default function App() {
-  const [view, setView] = useState<'coinflip'>('coinflip');
+  type View = 'coinflip' | 'roadmap';
+  const [view, setViewState] = useState<View>(() => (window.location.hash === '#roadmap' ? 'roadmap' : 'coinflip'));
+  // #roadmap is a shareable link; the coinflip page has no hash.
+  const setView = (v: View) => {
+    setViewState(v);
+    window.history.replaceState(null, '', v === 'roadmap' ? '#roadmap' : window.location.pathname + window.location.search);
+    window.scrollTo({ top: 0 });
+  };
+  useEffect(() => {
+    const onHash = () => setViewState(window.location.hash === '#roadmap' ? 'roadmap' : 'coinflip');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   const [side, setSide] = useState<Side>(0);
   const [stakeInput, setStakeInput] = useState('0.1');
   const [battles, setBattles] = useState<BattleView[]>([]);
@@ -60,6 +74,7 @@ export default function App() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
+  const [soonTip, setSoonTip] = useState<'jackpot' | 'rewards' | null>(null);
   const [busySince, setBusySince] = useState<number | null>(null);
   const [walletOpen, setWalletOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
@@ -339,8 +354,8 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <a className="brand" href="#" onClick={() => setView('coinflip')} aria-label="DEGEN WILD home">
-          <img className="brand-logo" src={`${import.meta.env.BASE_URL}degenwild-logo-t.png`} alt="DEGEN WILD" />
+        <a className="brand" href="#" onClick={() => setView('coinflip')} aria-label="DegenWild home">
+          <img className="brand-logo" src={`${import.meta.env.BASE_URL}degenwild-logo-t.png`} alt="DegenWild" />
         </a>
         <div className="nav-label">PLAY</div>
         <nav className="side-nav" aria-label="Main navigation">
@@ -355,6 +370,16 @@ export default function App() {
               on-chain like coinflip.
             </span>
           </div>
+          <div className="nav-link soon" tabIndex={0} aria-disabled="true" aria-describedby="rewards-tip">
+            <span className="nav-icon">★</span>Rewards
+            <span className="soon-tag">SOON</span>
+            <span className="nav-tip" role="tooltip" id="rewards-tip">
+              <b>Rewards are coming soon.</b> Earn perks just for playing on DegenWild.
+            </span>
+          </div>
+          <button className={`nav-link ${view === 'roadmap' ? 'active' : ''}`} onClick={() => setView('roadmap')}>
+            <span className="nav-icon">➜</span>Roadmap
+          </button>
           <button className="nav-link" onClick={() => setHowOpen(true)}>
             <span className="nav-icon">?</span>How it works
           </button>
@@ -373,22 +398,71 @@ export default function App() {
       <main className="main-area">
         <header className="topbar">
           <div className="mobile-brand">
-            <img className="brand-logo small" src={`${import.meta.env.BASE_URL}degenwild-logo-t.png`} alt="DEGEN WILD" />
+            <img className="brand-logo small" src={`${import.meta.env.BASE_URL}degenwild-logo-t.png`} alt="DegenWild" />
             <button className="mobile-help" onClick={() => setHowOpen(true)} aria-label="How it works">
               ?
             </button>
           </div>
           <div className="page-kicker">
-            PVP ARENA <span>/</span> COINFLIP
+            {view === 'roadmap' ? (
+              <>
+                DEGENWILD <span>/</span> ROADMAP
+              </>
+            ) : (
+              <>
+                PVP ARENA <span>/</span> COINFLIP
+              </>
+            )}
           </div>
           <div className="top-actions">
             <span className={`network-label ${CLUSTER}`}>
               <i></i> {CLUSTER.toUpperCase()}
             </span>
-            {me && balance !== null && <span className="balance">◎ {fmtSol(balance, 3)}</span>}
+            {me && balance !== null && <span className="balance">◎ <Amount lamports={balance} max={3} /></span>}
             <WalletButton me={me} name={myName} onOpen={() => setWalletOpen(true)} onAccount={() => setProfileOpen('edit')} />
           </div>
         </header>
+
+        {/* Phones: the side menu is hidden, so the same items live in a compact bar. */}
+        <nav className="mobile-nav" aria-label="Main navigation">
+          <button className={view === 'coinflip' ? 'active' : ''} onClick={() => setView('coinflip')}>
+            ◉ Coinflip
+          </button>
+          <button
+            className={`soon ${soonTip === 'jackpot' ? 'open' : ''}`}
+            onClick={() => setSoonTip((v) => (v === 'jackpot' ? null : 'jackpot'))}
+            aria-expanded={soonTip === 'jackpot'}
+          >
+            ♜ Jackpot <span className="soon-tag">SOON</span>
+          </button>
+          <button
+            className={`soon ${soonTip === 'rewards' ? 'open' : ''}`}
+            onClick={() => setSoonTip((v) => (v === 'rewards' ? null : 'rewards'))}
+            aria-expanded={soonTip === 'rewards'}
+          >
+            ★ Rewards <span className="soon-tag">SOON</span>
+          </button>
+          <button className={view === 'roadmap' ? 'active' : ''} onClick={() => setView('roadmap')}>
+            ➜ Roadmap
+          </button>
+          <button className="help" onClick={() => setHowOpen(true)} aria-label="How it works">
+            ?
+          </button>
+        </nav>
+        {soonTip && (
+          <div className="mobile-tip" role="status" onClick={() => setSoonTip(null)}>
+            {soonTip === 'jackpot' ? (
+              <>
+                <b>Jackpot is coming soon.</b> Everyone adds to one pot and a single provably fair draw picks the winner,
+                on-chain like coinflip.
+              </>
+            ) : (
+              <>
+                <b>Rewards are coming soon.</b> Earn perks just for playing on DegenWild.
+              </>
+            )}
+          </div>
+        )}
 
         {view === 'coinflip' ? (
           <section className="view active">
@@ -433,7 +507,7 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <b>Heads up:</b> DEGEN WILD isn't fully set up on {CLUSTER} yet. Battles can be created and joined, but
+                    <b>Heads up:</b> DegenWild isn't fully set up on {CLUSTER} yet. Battles can be created and joined, but
                     not settled until the admin finishes setup.
                   </>
                 )}
@@ -641,7 +715,7 @@ export default function App() {
                         <div key={r.signature} className={`recent-row ${r.winner === me ? 'mine-win' : ''}`}>
                           <span className="recent-coin" aria-label={r.coin ? 'Tails' : 'Heads'}><Coin side={r.coin} /></span>
                           <span className="recent-text">
-                            <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b>{fmtSol(r.payout)} SOL</b>
+                            <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b><Amount lamports={r.payout} /></b>
                           </span>
                           <span className="recent-time">{timeAgo(r.blockTime)}</span>
                           <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={() => replay(resultToBattle(r))}>
@@ -654,10 +728,14 @@ export default function App() {
               </div>
             </section>
           </section>
-        ) : null}
+        ) : (
+          <section className="view active">
+            <RoadmapPage />
+          </section>
+        )}
 
         <footer>
-          DEGEN WILD <span>·</span> EVERYTHING ON-CHAIN <span>·</span> {CLUSTER.toUpperCase()} <span>·</span>{' '}
+          DEGENWILD <span>·</span> EVERYTHING ON-CHAIN <span>·</span> {CLUSTER.toUpperCase()} <span>·</span>{' '}
           {CLUSTER === 'mainnet' ? 'PLAY RESPONSIBLY' : 'TEST NETWORK — NO REAL FUNDS'}
         </footer>
       </main>

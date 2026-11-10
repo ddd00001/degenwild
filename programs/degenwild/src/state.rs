@@ -27,7 +27,7 @@ pub struct Battle {
     pub bump: u8,
 }
 
-/// Stores the authorized DEGEN WILD platform settings.
+/// Stores the authorized DegenWild platform settings.
 #[account]
 #[derive(InitSpace)]
 pub struct PlatformConfig {
@@ -37,7 +37,7 @@ pub struct PlatformConfig {
     pub bump: u8,
 }
 
-/// A wallet's DEGEN WILD display name. PDA: [PROFILE_SEED, owner].
+/// A wallet's DegenWild display name. PDA: [PROFILE_SEED, owner].
 #[account]
 #[derive(InitSpace)]
 pub struct Profile {

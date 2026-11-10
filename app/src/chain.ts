@@ -52,7 +52,7 @@ const addrDec = getAddressDecoder();
 
 // ---------------------------------------------------------------- reads
 
-/** wallet -> DEGEN WILD username, for every profile on chain. */
+/** wallet -> DegenWild username, for every profile on chain. */
 export async function fetchAllUsernames(rpc: Rpc): Promise<Map<Address, string>> {
   const accounts = await rpc
     .getProgramAccounts(DEGENWILD_PROGRAM_ADDRESS, {
@@ -241,46 +241,97 @@ export function buildRefund(battle: BattleView) {
 
 // ---------------------------------------------------------------- errors
 
+type ErrInfo = { codes: number[]; text: string; customCode?: number };
+
+/**
+ * Collects error codes, messages and simulation logs from an error and its causes.
+ * Production builds of @solana/errors drop message text, so codes, `causeMessage` and logs matter most.
+ */
+function inspectError(err: unknown): ErrInfo {
+  const codes: number[] = [];
+  const parts: string[] = [];
+  let customCode: number | undefined;
+  const seen = new Set<unknown>();
+  const stack: unknown[] = [err];
+  while (stack.length) {
+    const cur = stack.pop();
+    if (!cur || typeof cur !== 'object' || seen.has(cur)) continue;
+    seen.add(cur);
+    const e = cur as { message?: unknown; cause?: unknown; context?: Record<string, unknown>; code?: unknown };
+    if (typeof e.message === 'string') parts.push(e.message);
+    if (typeof e.code === 'number') codes.push(e.code); // wallet errors, e.g. 4001 user rejected
+    const ctx = e.context;
+    if (ctx) {
+      if (typeof ctx.__code === 'number') codes.push(ctx.__code);
+      if (typeof ctx.code === 'number' && ctx.code >= 6000 && ctx.code < 7000) customCode = ctx.code;
+      if (typeof ctx.causeMessage === 'string') parts.push(ctx.causeMessage);
+      if (Array.isArray(ctx.logs)) parts.push(...ctx.logs.filter((l): l is string => typeof l === 'string'));
+      if (ctx.cause) stack.push(ctx.cause);
+    }
+    stack.push(e.cause);
+  }
+  const text = parts.join(' | ');
+  if (customCode === undefined) {
+    const m = text.match(/custom program error: (0x[0-9a-f]+|\d+)/i);
+    if (m && Number(m[1]) >= 6000) customCode = Number(m[1]);
+  }
+  return { codes, text, customCode };
+}
+
+// @solana/errors codes (stable across builds).
+const C = {
+  BLOCK_HEIGHT_EXCEEDED: 1,
+  BLOCKHASH_NOT_FOUND: 7050008,
+  ACCOUNT_NOT_FOUND: 7050003, // fee payer has never held SOL on this cluster
+  INSUFFICIENT_FUNDS_FOR_FEE: 7050005,
+  INSUFFICIENT_FUNDS_FOR_RENT: 7050031,
+  INSTRUCTION_INSUFFICIENT_FUNDS: 4615006,
+  PROGRAM_ACCOUNT_NOT_FOUND: 7050004,
+  WALLET_NOT_CONNECTED: 8900000,
+  WALLET_NO_SIGNER: 8900001,
+  WALLET_VERSION_UNSUPPORTED: 8900007,
+  CANNOT_SIGN: 5508012,
+  USER_REJECTED: 4001, // EIP-1193 / wallet-standard convention
+};
+
 /** True when the transaction's blockhash expired before it landed (so it can never land). */
 export function isExpiredError(err: unknown): boolean {
-  const seen = new Set<unknown>();
-  let cur: unknown = err;
-  while (cur && typeof cur === 'object' && !seen.has(cur)) {
-    seen.add(cur);
-    const m = (cur as { message?: string }).message ?? '';
-    if (/progressed past the last block|block height exceeded|blockhash not found/i.test(m)) return true;
-    cur = (cur as { cause?: unknown }).cause;
-  }
-  return false;
+  const { codes, text } = inspectError(err);
+  return (
+    codes.includes(C.BLOCK_HEIGHT_EXCEEDED) ||
+    codes.includes(C.BLOCKHASH_NOT_FOUND) ||
+    /progressed past the last block|block height exceeded|blockhash not found/i.test(text)
+  );
 }
 
 /** Turns RPC / wallet / program failures into something a player can act on. */
 export function describeError(err: unknown): string {
-  const seen = new Set<unknown>();
-  let cur: unknown = err;
-  const messages: string[] = [];
-  while (cur && typeof cur === 'object' && !seen.has(cur)) {
-    seen.add(cur);
-    const e = cur as { message?: string; context?: { code?: unknown; logs?: string[] }; cause?: unknown };
-    if (typeof e.context?.code === 'number' && e.context.code >= 6000 && e.context.code < 6100) {
-      return programError(e.context.code);
-    }
-    if (e.message) messages.push(e.message);
-    cur = e.cause;
-  }
-  const all = messages.join(' | ');
-  const custom = all.match(/custom program error: (0x[0-9a-f]+|\d+)/i);
-  if (custom) {
-    const code = Number(custom[1]);
-    if (code >= 6000) return programError(code);
-  }
-  if (/\b429\b|too many requests|rate.?limit/i.test(all)) return 'The network is busy right now (rate-limited) — retrying automatically.';
-  if (/reject|denied|cancel/i.test(all)) return 'You rejected the request in your wallet.';
-  if (/insufficient (funds|lamports)|0x1\b/i.test(all)) return 'Not enough SOL for the stake plus fees.';
-  if (/blockhash|expired/i.test(all)) return 'Transaction expired before it landed — try again.';
-  if (/program that does not exist|ProgramAccountNotFound|invalid program/i.test(all))
-    return 'The DEGEN WILD program is not deployed on this cluster yet.';
-  return messages[0] ?? 'Something went wrong.';
+  const { codes, text, customCode } = inspectError(err);
+  const has = (c: number) => codes.includes(c);
+  if (customCode !== undefined) return programError(customCode);
+  if (has(C.USER_REJECTED) || /reject|denied|cancell?ed by user|user declined/i.test(text))
+    return 'You rejected the request in your wallet.';
+  if (has(C.ACCOUNT_NOT_FOUND) || /no record of a prior credit/i.test(text))
+    return 'This wallet has no SOL on this network yet — fund it first.';
+  if (
+    has(C.INSUFFICIENT_FUNDS_FOR_FEE) ||
+    has(C.INSUFFICIENT_FUNDS_FOR_RENT) ||
+    has(C.INSTRUCTION_INSUFFICIENT_FUNDS) ||
+    /insufficient (funds|lamports)/i.test(text)
+  )
+    return 'Not enough SOL for the stake plus fees.';
+  if (isExpiredError(err)) return 'Transaction expired before it landed — try again.';
+  if (has(C.PROGRAM_ACCOUNT_NOT_FOUND) || /program that does not exist|ProgramAccountNotFound/i.test(text))
+    return 'The DegenWild program is not deployed on this cluster yet.';
+  if (has(C.WALLET_VERSION_UNSUPPORTED)) return 'Your wallet version can’t sign this transaction — update the wallet app.';
+  if (has(C.WALLET_NOT_CONNECTED) || has(C.WALLET_NO_SIGNER) || has(C.CANNOT_SIGN))
+    return 'Your wallet isn’t connected for signing — reconnect it and try again.';
+  if (/\b429\b|too many requests|rate.?limit/i.test(text))
+    return 'The network is busy right now (rate-limited) — retrying automatically.';
+  // Fall back to the most specific readable text we have, plus the code for support.
+  const readable = text.split(' | ').find((t) => t && !/^Solana error #\d+/.test(t));
+  const code = codes.find((c) => c > 0);
+  return `${readable ?? 'Something went wrong.'}${code ? ` (code ${code})` : ''}`;
 }
 
 // ---------------------------------------------------------------- usernames

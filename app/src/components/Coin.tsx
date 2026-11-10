@@ -68,7 +68,7 @@ export function Coin({ side, detailed = false }: { side: 0 | 1; detailed?: boole
         <g fill={m.ink} fontFamily="'Barlow Condensed', Inter, sans-serif" fontWeight="800" letterSpacing="1.6">
           {gold && (
             <text fontSize="7.2" textAnchor="middle">
-              <textPath href={`#top${id}`} startOffset="50%">DEGEN · WILD</textPath>
+              <textPath href={`#top${id}`} startOffset="50%">DEGENWILD</textPath>
             </text>
           )}
           <text fontSize="7.2" textAnchor="middle">
