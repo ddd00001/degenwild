@@ -1,5 +1,6 @@
 pub mod constants;
 pub mod error;
+pub mod events;
 pub mod fee;
 pub mod instructions;
 pub mod state;
@@ -47,5 +48,21 @@ pub mod degenwild {
 
     pub fn update_treasury(ctx: Context<UpdateTreasury>) -> Result<()> {
         crate::instructions::platform_config::handle_update_treasury(ctx)
+    }
+
+    pub fn create_profile(ctx: Context<CreateProfile>, username: String) -> Result<()> {
+        crate::instructions::username::handle_create_profile(ctx, username)
+    }
+
+    pub fn change_username(ctx: Context<ChangeUsername>, new_username: String) -> Result<()> {
+        crate::instructions::username::handle_change_username(ctx, new_username)
+    }
+
+    pub fn delete_profile(ctx: Context<DeleteProfile>) -> Result<()> {
+        crate::instructions::username::handle_delete_profile(ctx)
+    }
+
+    pub fn admin_remove_username(ctx: Context<AdminRemoveUsername>) -> Result<()> {
+        crate::instructions::username::handle_admin_remove_username(ctx)
     }
 }

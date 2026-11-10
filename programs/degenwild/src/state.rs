@@ -36,3 +36,21 @@ pub struct PlatformConfig {
     pub coinflip_fee_bps: u16,
     pub bump: u8,
 }
+
+/// A wallet's DEGEN WILD display name. PDA: [PROFILE_SEED, owner].
+#[account]
+#[derive(InitSpace)]
+pub struct Profile {
+    pub owner: Pubkey,
+    #[max_len(16)]
+    pub username: String,
+    pub bump: u8,
+}
+
+/// Reserves a lowercase username for one wallet. PDA: [USERNAME_SEED, lowercase(username)].
+#[account]
+#[derive(InitSpace)]
+pub struct UsernameClaim {
+    pub owner: Pubkey,
+    pub bump: u8,
+}

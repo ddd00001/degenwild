@@ -113,6 +113,7 @@ export type RefundExpiredBattleInput<
   TAccountRandomnessRequest extends InstructionAccountInput =
     InstructionAccountInput,
 > = {
+  /** Closed after both stakes are returned; rent goes back to the creator. */
   battle: TAccountBattle;
   creator: TAccountCreator;
   opponent: TAccountOpponent;
@@ -225,6 +226,7 @@ export type ParsedRefundExpiredBattleInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** Closed after both stakes are returned; rent goes back to the creator. */
     battle: TAccountMetas[0];
     creator: TAccountMetas[1];
     opponent: TAccountMetas[2];

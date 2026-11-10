@@ -13,5 +13,8 @@
   "6011": "Arithmetic overflow",
   "6012": "Side must be 0 (Heads) or 1 (Tails)",
   "6013": "ORAO randomness is already fulfilled; settle instead of refunding",
-  "6014": "Refund timeout has not passed yet"
+  "6014": "Refund timeout has not passed yet",
+  "6015": "Username must be 3-16 characters",
+  "6016": "Username may only contain letters, numbers and underscores",
+  "6017": "That username is reserved"
 }

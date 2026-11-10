@@ -45,6 +45,12 @@ export const DEGENWILD_ERROR__INVALID_SIDE = 0x177c; // 6012
 export const DEGENWILD_ERROR__RANDOMNESS_ALREADY_FULFILLED = 0x177d; // 6013
 /** RefundTooEarly: Refund timeout has not passed yet */
 export const DEGENWILD_ERROR__REFUND_TOO_EARLY = 0x177e; // 6014
+/** UsernameLength: Username must be 3-16 characters */
+export const DEGENWILD_ERROR__USERNAME_LENGTH = 0x177f; // 6015
+/** UsernameInvalidChars: Username may only contain letters, numbers and underscores */
+export const DEGENWILD_ERROR__USERNAME_INVALID_CHARS = 0x1780; // 6016
+/** UsernameReserved: That username is reserved */
+export const DEGENWILD_ERROR__USERNAME_RESERVED = 0x1781; // 6017
 
 export type DegenwildError =
   | typeof DEGENWILD_ERROR__ARITHMETIC_OVERFLOW
@@ -61,7 +67,10 @@ export type DegenwildError =
   | typeof DEGENWILD_ERROR__RANDOMNESS_REQUEST_MISMATCH
   | typeof DEGENWILD_ERROR__REFUND_TOO_EARLY
   | typeof DEGENWILD_ERROR__STAKE_TOO_HIGH
-  | typeof DEGENWILD_ERROR__STAKE_TOO_LOW;
+  | typeof DEGENWILD_ERROR__STAKE_TOO_LOW
+  | typeof DEGENWILD_ERROR__USERNAME_INVALID_CHARS
+  | typeof DEGENWILD_ERROR__USERNAME_LENGTH
+  | typeof DEGENWILD_ERROR__USERNAME_RESERVED;
 
 let degenwildErrorMessages: Record<DegenwildError, string> | undefined;
 if (process.env["NODE_ENV"] !== "production") {
@@ -81,6 +90,9 @@ if (process.env["NODE_ENV"] !== "production") {
     [DEGENWILD_ERROR__REFUND_TOO_EARLY]: `Refund timeout has not passed yet`,
     [DEGENWILD_ERROR__STAKE_TOO_HIGH]: `Stake is above the maximum`,
     [DEGENWILD_ERROR__STAKE_TOO_LOW]: `Stake is below the minimum`,
+    [DEGENWILD_ERROR__USERNAME_INVALID_CHARS]: `Username may only contain letters, numbers and underscores`,
+    [DEGENWILD_ERROR__USERNAME_LENGTH]: `Username must be 3-16 characters`,
+    [DEGENWILD_ERROR__USERNAME_RESERVED]: `That username is reserved`,
   };
 }
 

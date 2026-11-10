@@ -121,6 +121,7 @@ export type SettleBattleAsyncInput<
     InstructionAccountInput,
   TAccountTreasury extends InstructionAccountInput = InstructionAccountInput,
 > = {
+  /** Closed after payout; its rent reserve goes back to the creator who paid it. */
   battle: TAccountBattle;
   creator: TAccountCreator;
   opponent: TAccountOpponent;
@@ -280,6 +281,7 @@ export type SettleBattleInput<
     InstructionAccountInput,
   TAccountTreasury extends InstructionAccountInput = InstructionAccountInput,
 > = {
+  /** Closed after payout; its rent reserve goes back to the creator who paid it. */
   battle: TAccountBattle;
   creator: TAccountCreator;
   opponent: TAccountOpponent;
@@ -426,6 +428,7 @@ export type ParsedSettleBattleInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** Closed after payout; its rent reserve goes back to the creator who paid it. */
     battle: TAccountMetas[0];
     creator: TAccountMetas[1];
     opponent: TAccountMetas[2];

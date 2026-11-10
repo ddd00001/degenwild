@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::{BATTLE_SEED, COINFLIP_FEE_BPS, PLATFORM_CONFIG_SEED},
     error::ErrorCode,
+    events::BattleSettled,
     fee::calculate_coinflip_fee,
     state::{Battle, BattleStatus, PlatformConfig},
 };
@@ -11,8 +12,10 @@ const ORAO_RANDOMNESS_SEED: &[u8] = b"orao-vrf-randomness-request";
 
 #[derive(Accounts)]
 pub struct SettleBattle<'info> {
+    /// Closed after payout; its rent reserve goes back to the creator who paid it.
     #[account(
         mut,
+        close = creator,
         seeds = [
             BATTLE_SEED,
             battle.creator.as_ref(),
@@ -132,14 +135,27 @@ pub fn handle_settle_battle(ctx: Context<SettleBattle>) -> Result<()> {
 
     **treasury_info.try_borrow_mut_lamports()? = treasury_balance;
 
-    // Store the verified outcome.
+    // Record the outcome. The account is closed when the instruction exits,
+    // so the event is the lasting record; the status write guards re-entry within this tx.
     let battle = &mut ctx.accounts.battle;
-    battle.winner = Some(if winner_is_opponent {
+    let winner = if winner_is_opponent {
         ctx.accounts.opponent.key()
     } else {
         ctx.accounts.creator.key()
-    });
+    };
+    battle.winner = Some(winner);
     battle.status = BattleStatus::Settled;
+
+    emit!(BattleSettled {
+        battle: battle.key(),
+        battle_id: battle.battle_id,
+        creator: battle.creator,
+        opponent: ctx.accounts.opponent.key(),
+        winner,
+        coin,
+        payout: winner_payout,
+        fee: platform_fee,
+    });
 
     Ok(())
 }

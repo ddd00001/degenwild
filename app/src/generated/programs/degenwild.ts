@@ -37,32 +37,54 @@ import {
 import {
   getBattleCodec,
   getPlatformConfigCodec,
+  getProfileCodec,
+  getUsernameClaimCodec,
   type Battle,
   type BattleArgs,
   type PlatformConfig,
   type PlatformConfigArgs,
+  type Profile,
+  type ProfileArgs,
+  type UsernameClaim,
+  type UsernameClaimArgs,
 } from "../accounts";
 import {
+  getAdminRemoveUsernameInstruction,
   getCancelBattleInstruction,
+  getChangeUsernameInstructionAsync,
   getCreateBattleInstructionAsync,
+  getCreateProfileInstructionAsync,
+  getDeleteProfileInstructionAsync,
   getInitializePlatformConfigInstructionAsync,
   getJoinBattleInstructionAsync,
   getRefundExpiredBattleInstruction,
   getSettleBattleInstructionAsync,
   getUpdateTreasuryInstructionAsync,
+  parseAdminRemoveUsernameInstruction,
   parseCancelBattleInstruction,
+  parseChangeUsernameInstruction,
   parseCreateBattleInstruction,
+  parseCreateProfileInstruction,
+  parseDeleteProfileInstruction,
   parseInitializePlatformConfigInstruction,
   parseJoinBattleInstruction,
   parseRefundExpiredBattleInstruction,
   parseSettleBattleInstruction,
   parseUpdateTreasuryInstruction,
+  type AdminRemoveUsernameInput,
   type CancelBattleInput,
+  type ChangeUsernameAsyncInput,
   type CreateBattleAsyncInput,
+  type CreateProfileAsyncInput,
+  type DeleteProfileAsyncInput,
   type InitializePlatformConfigAsyncInput,
   type JoinBattleAsyncInput,
+  type ParsedAdminRemoveUsernameInstruction,
   type ParsedCancelBattleInstruction,
+  type ParsedChangeUsernameInstruction,
   type ParsedCreateBattleInstruction,
+  type ParsedCreateProfileInstruction,
+  type ParsedDeleteProfileInstruction,
   type ParsedInitializePlatformConfigInstruction,
   type ParsedJoinBattleInstruction,
   type ParsedRefundExpiredBattleInstruction,
@@ -72,7 +94,13 @@ import {
   type SettleBattleAsyncInput,
   type UpdateTreasuryAsyncInput,
 } from "../instructions";
-import { findBattlePda, findPlatformConfigPda } from "../pdas";
+import {
+  findBattlePda,
+  findNewClaimPda,
+  findPlatformConfigPda,
+  findProfilePda,
+  findUsernameClaimPda,
+} from "../pdas";
 
 export const DEGENWILD_PROGRAM_ADDRESS =
   "6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV" as Address<"6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV">;
@@ -80,6 +108,8 @@ export const DEGENWILD_PROGRAM_ADDRESS =
 export enum DegenwildAccount {
   Battle,
   PlatformConfig,
+  Profile,
+  UsernameClaim,
 }
 
 export function identifyDegenwildAccount(
@@ -108,15 +138,77 @@ export function identifyDegenwildAccount(
   ) {
     return DegenwildAccount.PlatformConfig;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([184, 101, 165, 188, 95, 63, 127, 188]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildAccount.Profile;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([83, 191, 129, 214, 239, 228, 224, 240]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildAccount.UsernameClaim;
+  }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
     { accountData: data, programName: "degenwild" },
   );
 }
 
+export enum DegenwildEvent {
+  BattleRefunded,
+  BattleSettled,
+}
+
+export function identifyDegenwildEvent(
+  event: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
+): DegenwildEvent {
+  const data = "data" in event ? event.data : event;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([90, 182, 20, 87, 57, 230, 174, 169]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildEvent.BattleRefunded;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([227, 254, 73, 116, 30, 106, 42, 155]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildEvent.BattleSettled;
+  }
+  throw new Error(
+    "The provided event could not be identified as a degenwild event.",
+  );
+}
+
 export enum DegenwildInstruction {
+  AdminRemoveUsername,
   CancelBattle,
+  ChangeUsername,
   CreateBattle,
+  CreateProfile,
+  DeleteProfile,
   InitializePlatformConfig,
   JoinBattle,
   RefundExpiredBattle,
@@ -132,6 +224,17 @@ export function identifyDegenwildInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([148, 166, 229, 227, 216, 171, 235, 45]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.AdminRemoveUsername;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([234, 61, 97, 187, 97, 170, 101, 141]),
       ),
       0,
@@ -143,12 +246,45 @@ export function identifyDegenwildInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([122, 228, 203, 143, 188, 195, 189, 130]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.ChangeUsername;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([2, 249, 54, 216, 42, 99, 187, 102]),
       ),
       0,
     )
   ) {
     return DegenwildInstruction.CreateBattle;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([225, 205, 234, 143, 17, 186, 50, 220]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.CreateProfile;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([213, 96, 148, 104, 75, 217, 8, 131]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.DeleteProfile;
   }
   if (
     containsBytes(
@@ -215,11 +351,23 @@ export type ParsedDegenwildInstruction<
   TProgram extends string = "6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV",
 > =
   | ({
+      instructionType: DegenwildInstruction.AdminRemoveUsername;
+    } & ParsedAdminRemoveUsernameInstruction<TProgram>)
+  | ({
       instructionType: DegenwildInstruction.CancelBattle;
     } & ParsedCancelBattleInstruction<TProgram>)
   | ({
+      instructionType: DegenwildInstruction.ChangeUsername;
+    } & ParsedChangeUsernameInstruction<TProgram>)
+  | ({
       instructionType: DegenwildInstruction.CreateBattle;
     } & ParsedCreateBattleInstruction<TProgram>)
+  | ({
+      instructionType: DegenwildInstruction.CreateProfile;
+    } & ParsedCreateProfileInstruction<TProgram>)
+  | ({
+      instructionType: DegenwildInstruction.DeleteProfile;
+    } & ParsedDeleteProfileInstruction<TProgram>)
   | ({
       instructionType: DegenwildInstruction.InitializePlatformConfig;
     } & ParsedInitializePlatformConfigInstruction<TProgram>)
@@ -241,6 +389,13 @@ export function parseDegenwildInstruction<TProgram extends string>(
 ): ParsedDegenwildInstruction<TProgram> {
   const instructionType = identifyDegenwildInstruction(instruction);
   switch (instructionType) {
+    case DegenwildInstruction.AdminRemoveUsername: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.AdminRemoveUsername,
+        ...parseAdminRemoveUsernameInstruction(instruction),
+      };
+    }
     case DegenwildInstruction.CancelBattle: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -248,11 +403,32 @@ export function parseDegenwildInstruction<TProgram extends string>(
         ...parseCancelBattleInstruction(instruction),
       };
     }
+    case DegenwildInstruction.ChangeUsername: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.ChangeUsername,
+        ...parseChangeUsernameInstruction(instruction),
+      };
+    }
     case DegenwildInstruction.CreateBattle: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: DegenwildInstruction.CreateBattle,
         ...parseCreateBattleInstruction(instruction),
+      };
+    }
+    case DegenwildInstruction.CreateProfile: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.CreateProfile,
+        ...parseCreateProfileInstruction(instruction),
+      };
+    }
+    case DegenwildInstruction.DeleteProfile: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.DeleteProfile,
+        ...parseDeleteProfileInstruction(instruction),
       };
     }
     case DegenwildInstruction.InitializePlatformConfig: {
@@ -315,17 +491,41 @@ export type DegenwildPluginAccounts = {
     SelfFetchFunctions<BattleArgs, Battle>;
   platformConfig: ReturnType<typeof getPlatformConfigCodec> &
     SelfFetchFunctions<PlatformConfigArgs, PlatformConfig>;
+  profile: ReturnType<typeof getProfileCodec> &
+    SelfFetchFunctions<ProfileArgs, Profile>;
+  usernameClaim: ReturnType<typeof getUsernameClaimCodec> &
+    SelfFetchFunctions<UsernameClaimArgs, UsernameClaim>;
 };
 
 export type DegenwildPluginInstructions = {
+  adminRemoveUsername: (
+    input: AdminRemoveUsernameInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getAdminRemoveUsernameInstruction> &
+    SelfPlanAndSendFunctions;
   cancelBattle: (
     input: CancelBattleInput,
     config?: { programAddress?: Address | HasAddress },
   ) => ReturnType<typeof getCancelBattleInstruction> & SelfPlanAndSendFunctions;
+  changeUsername: (
+    input: ChangeUsernameAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getChangeUsernameInstructionAsync> &
+    SelfPlanAndSendFunctions;
   createBattle: (
     input: CreateBattleAsyncInput,
     config?: { programAddress?: Address | HasAddress },
   ) => ReturnType<typeof getCreateBattleInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  createProfile: (
+    input: CreateProfileAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getCreateProfileInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  deleteProfile: (
+    input: DeleteProfileAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getDeleteProfileInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializePlatformConfig: (
     input: InitializePlatformConfigAsyncInput,
@@ -355,7 +555,10 @@ export type DegenwildPluginInstructions = {
 };
 
 export type DegenwildPluginPdas = {
+  profile: typeof findProfilePda;
+  newClaim: typeof findNewClaimPda;
   battle: typeof findBattlePda;
+  usernameClaim: typeof findUsernameClaimPda;
   platformConfig: typeof findPlatformConfigPda;
 };
 
@@ -379,8 +582,18 @@ export function degenwildProgram(
             client,
             getPlatformConfigCodec(),
           ),
+          profile: addSelfFetchFunctions(client, getProfileCodec()),
+          usernameClaim: addSelfFetchFunctions(client, getUsernameClaimCodec()),
         },
         instructions: {
+          adminRemoveUsername: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getAdminRemoveUsernameInstruction(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
           cancelBattle: (input, instructionConfig) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -389,10 +602,34 @@ export function degenwildProgram(
                   instructionConfig?.programAddress ?? config.programAddress,
               }),
             ),
+          changeUsername: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getChangeUsernameInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
           createBattle: (input, instructionConfig) =>
             addSelfPlanAndSendFunctions(
               client,
               getCreateBattleInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
+          createProfile: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getCreateProfileInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
+          deleteProfile: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getDeleteProfileInstructionAsync(input, {
                 programAddress:
                   instructionConfig?.programAddress ?? config.programAddress,
               }),
@@ -439,8 +676,23 @@ export function degenwildProgram(
             ),
         },
         pdas: {
+          profile: (seeds, pdaConfig) =>
+            findProfilePda(seeds, {
+              programAddress:
+                pdaConfig?.programAddress ?? config.programAddress,
+            }),
+          newClaim: (seeds, pdaConfig) =>
+            findNewClaimPda(seeds, {
+              programAddress:
+                pdaConfig?.programAddress ?? config.programAddress,
+            }),
           battle: (seeds, pdaConfig) =>
             findBattlePda(seeds, {
+              programAddress:
+                pdaConfig?.programAddress ?? config.programAddress,
+            }),
+          usernameClaim: (seeds, pdaConfig) =>
+            findUsernameClaimPda(seeds, {
               programAddress:
                 pdaConfig?.programAddress ?? config.programAddress,
             }),

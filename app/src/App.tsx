@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Address, type Instruction } from '@solana/kit';
+import { type Address, type Instruction, some } from '@solana/kit';
 import {
   useConnect,
   useConnectedWallet,
@@ -19,16 +19,22 @@ import {
   type BattleView,
   type Randomness,
   buildCancel,
+  buildChangeUsername,
   buildCreate,
+  buildCreateProfile,
+  buildDeleteProfile,
   buildJoin,
   buildRefund,
   buildSettle,
   describeError,
   fetchAllBattles,
+  fetchAllUsernames,
   fetchRandomness,
+  isUsernameTaken,
   opponentOf,
   payoutFor,
   refundDeadline,
+  validateUsername,
   winnerOf,
 } from './chain';
 import { BattleStatus } from './generated';
@@ -53,6 +59,24 @@ function parseSol(input: string): bigint | null {
 const short = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;
 const avatar = (a: string) => a[0].toUpperCase();
 
+const skipKey = (a: string) => `dw-skip-username:${a}`;
+function skippedUsername(a: string): boolean {
+  try {
+    return sessionStorage.getItem(skipKey(a)) === '1';
+  } catch {
+    return false;
+  }
+}
+function skipUsername(a: string) {
+  try {
+    sessionStorage.setItem(skipKey(a), '1');
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+type Names = Map<Address, string>;
+
 // ------------------------------------------------------------ toast
 
 type ToastMsg = { text: string; link?: string };
@@ -75,12 +99,17 @@ export default function App() {
   const [stakeInput, setStakeInput] = useState('0.1');
   const [battles, setBattles] = useState<BattleView[]>([]);
   const [randomness, setRandomness] = useState<Record<string, Randomness>>({});
+  const [finished, setFinished] = useState<BattleView[]>([]);
+  const lastSeen = useRef<{ battles: BattleView[]; rnd: Record<string, Randomness> }>({ battles: [], rnd: {} });
   const [slot, setSlot] = useState<bigint>(0n);
   const [balance, setBalance] = useState<bigint | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [walletOpen, setWalletOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
+  const [names, setNames] = useState<Names>(new Map());
+  const [namesLoaded, setNamesLoaded] = useState(false);
+  const [profileOpen, setProfileOpen] = useState<'first' | 'edit' | null>(null);
   const toast = useToast();
 
   const connected = useConnectedWallet(client);
@@ -90,18 +119,40 @@ export default function App() {
   // -------------------------------------------------------- polling chain state
   const refresh = useCallback(async () => {
     try {
-      const [all, s] = await Promise.all([
+      const [all, s, usernames] = await Promise.all([
         fetchAllBattles(client.rpc),
         client.rpc.getSlot({ commitment: 'confirmed' }).send(),
+        fetchAllUsernames(client.rpc),
       ]);
-      setBattles(all);
+      setNames(usernames);
+      setNamesLoaded(true);
       setSlot(s);
       setLoadError(null);
       const pending = all.filter((b) => b.status === BattleStatus.RandomnessPending);
       const entries = await Promise.all(
         pending.map(async (b) => [b.address, await fetchRandomness(client.rpc, b.randomnessAccount)] as const),
       );
-      setRandomness(Object.fromEntries(entries));
+      const rnd = Object.fromEntries(entries);
+
+      // Settle and refund close the battle account, so remember how battles that just
+      // disappeared ended (from the randomness we last saw) for this session's results list.
+      const prev = lastSeen.current;
+      const ended: BattleView[] = [];
+      for (const b of prev.battles) {
+        if (b.status !== BattleStatus.RandomnessPending || all.some((x) => x.address === b.address)) continue;
+        const r = prev.rnd[b.address];
+        if (r?.state === 'fulfilled') {
+          const winner = r.coin === b.creatorSide ? b.creator : opponentOf(b);
+          ended.push({ ...b, status: BattleStatus.Settled, winner: winner ? some(winner) : b.winner });
+        } else {
+          ended.push({ ...b, status: BattleStatus.Refunded });
+        }
+      }
+      if (ended.length) setFinished((f) => [...ended, ...f.filter((x) => !ended.some((e) => e.address === x.address))].slice(0, 10));
+      lastSeen.current = { battles: all, rnd };
+
+      setBattles(all);
+      setRandomness(rnd);
     } catch (e) {
       setLoadError(describeError(e));
     }
@@ -131,14 +182,14 @@ export default function App() {
 
   // -------------------------------------------------------- sending
   const send = useCallback(
-    async (label: string, build: () => Promise<Instruction> | Instruction, success: string) => {
+    async (label: string, build: () => Promise<Instruction> | Instruction, success: string): Promise<boolean> => {
       if (!connected) {
         setWalletOpen(true);
-        return;
+        return false;
       }
       if (!connected.signer) {
         toast.show('This wallet account cannot sign transactions on this network.');
-        return;
+        return false;
       }
       setBusy(label);
       try {
@@ -147,15 +198,24 @@ export default function App() {
         const result = await sender.sendTransaction([ix]);
         toast.show(success, explorerTx(result.context.signature));
         await Promise.all([refresh(), refreshBalance()]);
+        return true;
       } catch (e) {
         console.error(e);
         toast.show(describeError(e));
+        return false;
       } finally {
         setBusy(null);
       }
     },
     [connected, refresh, refreshBalance, toast],
   );
+
+  // First connect: ask for a username once names have loaded, unless they chose "later" this session.
+  const myName = me ? names.get(me) : undefined;
+  useEffect(() => {
+    if (me && namesLoaded && !myName && !skippedUsername(me)) setProfileOpen((p) => p ?? 'first');
+    if (!me) setProfileOpen(null);
+  }, [me, namesLoaded, myName]);
 
   const stake = parseSol(stakeInput);
   const stakeError =
@@ -185,9 +245,10 @@ export default function App() {
         ? battles
             .filter((b) => b.creator === me || opponentOf(b) === me)
             .filter((b) => b.status !== BattleStatus.Open)
+            .concat(finished.filter((b) => b.creator === me || opponentOf(b) === me))
             .slice(0, 12)
         : [],
-    [battles, me],
+    [battles, finished, me],
   );
   const myOpen = open.filter((b) => b.creator === me);
   const othersOpen = open.filter((b) => b.creator !== me);
@@ -238,7 +299,7 @@ export default function App() {
               <i></i> {CLUSTER.toUpperCase()}
             </span>
             {me && balance !== null && <span className="balance">◎ {fmtSol(balance, 3)}</span>}
-            <WalletButton me={me} onOpen={() => setWalletOpen(true)} />
+            <WalletButton me={me} name={myName} onOpen={() => setWalletOpen(true)} onAccount={() => setProfileOpen('edit')} />
           </div>
         </header>
 
@@ -341,6 +402,7 @@ export default function App() {
                 <div className="battle-list">
                   {[...myOpen, ...mine].map((b) => (
                     <BattleRow
+                      names={names}
                       key={b.address}
                       b={b}
                       me={me}
@@ -351,10 +413,10 @@ export default function App() {
                         void send(`cancel:${b.address}`, () => buildCancel(signer!, b), 'Battle cancelled — stake refunded.')
                       }
                       onSettle={() =>
-                        void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), 'Battle settled — payout sent.')
+                        void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), `You won ${fmtSol(payoutFor(b.amount).payout)} SOL — paid to your wallet.`)
                       }
                       onRefund={() =>
-                        void send(`refund:${b.address}`, () => buildRefund(b), 'Battle refunded — both stakes returned.')
+                        void send(`refund:${b.address}`, () => buildRefund(b), `Refunded — ${fmtSol(b.amount)} SOL back to each player.`)
                       }
                     />
                   ))}
@@ -386,6 +448,7 @@ export default function App() {
                 ) : (
                   othersOpen.map((b) => (
                     <BattleRow
+                      names={names}
                       key={b.address}
                       b={b}
                       me={me}
@@ -460,6 +523,29 @@ export default function App() {
       </div>
 
       {walletOpen && <WalletDialog onClose={() => setWalletOpen(false)} />}
+      {profileOpen && me && signer && (
+        <ProfileDialog
+          first={profileOpen === 'first'}
+          me={me}
+          current={myName}
+          busy={busy}
+          onClose={() => {
+            if (profileOpen === 'first') skipUsername(me);
+            setProfileOpen(null);
+          }}
+          onSave={async (name) => {
+            const ok = myName
+              ? await send('profile', () => buildChangeUsername(signer, myName, name), `You're now ${name}.`)
+              : await send('profile', () => buildCreateProfile(signer, name), `Welcome to the arena, ${name}!`);
+            if (ok) setProfileOpen(null);
+          }}
+          onDelete={async () => {
+            if (!myName) return;
+            const ok = await send('profile', () => buildDeleteProfile(signer, myName), 'Username deleted — rent refunded.');
+            if (ok) setProfileOpen(null);
+          }}
+        />
+      )}
       {howOpen && <HowDialog onClose={() => setHowOpen(false)} />}
     </div>
   );
@@ -469,6 +555,7 @@ export default function App() {
 
 function BattleRow(props: {
   b: BattleView;
+  names: Names;
   me?: Address;
   slot: bigint;
   rnd?: Randomness;
@@ -484,7 +571,8 @@ function BattleRow(props: {
   const { pot, payout } = payoutFor(b.amount);
   const creatorSide = SIDE_NAME[b.creatorSide] ?? '?';
   const oppSide = SIDE_NAME[1 - b.creatorSide] ?? '?';
-  const label = (a: Address) => (a === me ? 'You' : short(a));
+  const nameOf = (a: Address) => props.names.get(a);
+  const label = (a: Address) => (a === me ? `You${nameOf(a) ? ` (${nameOf(a)})` : ''}` : (nameOf(a) ?? short(a)));
   const isBusy = (k: string) => busy === `${k}:${b.address}`;
 
   let meta = 'POT';
@@ -557,7 +645,7 @@ function BattleRow(props: {
   return (
     <div className={`battle-row ${rowClass}`}>
       <div className="player">
-        <span className={`avatar ${winner === b.creator ? 'win' : ''}`}>{avatar(b.creator)}</span>
+        <span className={`avatar ${winner === b.creator ? 'win' : ''}`}>{avatar(nameOf(b.creator) ?? b.creator)}</span>
         <div>
           <b>{label(b.creator)}</b>
           <small>
@@ -567,7 +655,7 @@ function BattleRow(props: {
       </div>
       <span className="versus">VS</span>
       <div className="player">
-        <span className={`avatar ${opp && winner === opp ? 'win' : ''}`}>{opp ? avatar(opp) : '?'}</span>
+        <span className={`avatar ${opp && winner === opp ? 'win' : ''}`}>{opp ? avatar(nameOf(opp) ?? opp) : '?'}</span>
         <div>
           <b>{opp ? label(opp) : 'Waiting for player'}</b>
           <small>{opp ? `${oppSide} · ${fmtSol(b.amount)} SOL` : `${oppSide} available`}</small>
@@ -584,22 +672,104 @@ function BattleRow(props: {
 
 // ------------------------------------------------------------ wallet
 
-function WalletButton({ me, onOpen }: { me?: Address; onOpen: () => void }) {
+function WalletButton(props: { me?: Address; name?: string; onOpen: () => void; onAccount: () => void }) {
   const status = useWalletStatus(client);
-  const { dispatch: disconnect } = useDisconnect(client);
-  if (me) {
+  if (props.me) {
     return (
-      <button className="wallet-btn" onClick={() => disconnect()} title="Disconnect">
+      <button className="wallet-btn" onClick={props.onAccount} title="Account">
         <span className="wallet-symbol">◈</span>
-        {short(me)}
+        {props.name ?? short(props.me)}
       </button>
     );
   }
   return (
-    <button className="wallet-btn" onClick={onOpen}>
+    <button className="wallet-btn" onClick={props.onOpen}>
       <span className="wallet-symbol">◈</span>
       {status === 'connecting' || status === 'reconnecting' ? 'Connecting…' : 'Connect Wallet'}
     </button>
+  );
+}
+
+function ProfileDialog(props: {
+  first: boolean;
+  me: Address;
+  current?: string;
+  busy: string | null;
+  onClose: () => void;
+  onSave: (name: string) => void;
+  onDelete: () => void;
+}) {
+  const [name, setName] = useState(props.current ?? '');
+  const [taken, setTaken] = useState<boolean | null>(null);
+  const { dispatch: disconnect } = useDisconnect(client);
+  const trimmed = name.trim();
+  const unchanged = props.current !== undefined && trimmed === props.current;
+  const caseOnly = props.current !== undefined && !unchanged && trimmed.toLowerCase() === props.current.toLowerCase();
+  const error = trimmed ? (validateUsername(trimmed) ?? (caseOnly ? "Changing only capital letters isn't supported." : null)) : null;
+  const saving = props.busy === 'profile';
+
+  // Live availability check, debounced.
+  useEffect(() => {
+    setTaken(null);
+    if (!trimmed || error || unchanged) return;
+    const id = window.setTimeout(() => {
+      isUsernameTaken(client.rpc, trimmed).then(setTaken, () => setTaken(null));
+    }, 350);
+    return () => window.clearTimeout(id);
+  }, [trimmed, error, unchanged]);
+
+  const canSave = !!trimmed && !error && !unchanged && taken === false && !saving;
+  const hint = !trimmed
+    ? '3–16 characters: letters, numbers and _'
+    : error ?? (unchanged ? 'This is your current name.' : taken === null ? 'Checking…' : taken ? 'Already taken.' : 'Available!');
+
+  return (
+    <Modal title={props.first ? 'Pick your name' : 'Your account'} onClose={props.onClose}>
+      <p>
+        {props.first
+          ? 'Other players will see this instead of your wallet address.'
+          : <>Wallet <code>{short(props.me)}</code></>}
+      </p>
+      <form
+        className="username-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (canSave) props.onSave(trimmed);
+        }}
+      >
+        <div className={`amount-input ${error || taken ? 'invalid' : ''}`}>
+          <span className="sol-symbol">@</span>
+          <input
+            autoFocus
+            maxLength={16}
+            value={name}
+            placeholder="DegenLord"
+            onChange={(e) => setName(e.target.value.replace(/\s/g, ''))}
+            aria-label="Username"
+          />
+        </div>
+        <small className={`username-hint ${error || taken ? 'bad' : taken === false ? 'good' : ''}`}>{hint}</small>
+        <button className="primary-btn" type="submit" disabled={!canSave}>
+          {saving ? 'Confirm in wallet…' : props.current ? 'Change name' : 'Claim name'}
+        </button>
+      </form>
+      <p className="dialog-muted">
+        Stored on-chain. Costs ~0.0025 SOL rent, fully refunded if you delete it. Offensive or impersonating names can be
+        removed by DEGEN WILD.
+      </p>
+      <div className="dialog-actions">
+        {props.first ? (
+          <button className="link-btn" onClick={props.onClose}>Maybe later</button>
+        ) : (
+          <>
+            {props.current && (
+              <button className="link-btn" disabled={saving} onClick={props.onDelete}>Delete username</button>
+            )}
+            <button className="link-btn" onClick={() => { disconnect(); props.onClose(); }}>Disconnect wallet</button>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }
 

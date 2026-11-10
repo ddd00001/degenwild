@@ -36,6 +36,10 @@ import {
   fetchRandomness,
   fetchOraoNetwork,
   payoutFor,
+  buildCreateProfile,
+  buildChangeUsername,
+  fetchAllUsernames,
+  isUsernameTaken,
 } from '../src/chain';
 
 const RPC = 'http://127.0.0.1:8899';
@@ -153,13 +157,15 @@ async function main() {
   const r2 = await fetchRandomness(rpc, b.randomnessAccount);
   check('fetchRandomness decodes fulfilled coin', r2.state === 'fulfilled' && r2.coin === 1);
 
-  const [bobBefore, treBefore] = [await bal(bob.c, bob.kp.address), await bal(bob.c, treasury)];
+  const [bobBefore, treBefore, aliceBefore] = [await bal(bob.c, bob.kp.address), await bal(bob.c, treasury), await bal(bob.c, alice.kp.address)];
+  const battleRent = await bal(bob.c, b.address) - 2n * stake;
   // Settle is permissionless: alice (the loser) sends it.
   const sig = await send(alice.c, await buildSettle(rpc, b));
-  const [bobAfter, treAfter] = [await bal(bob.c, bob.kp.address), await bal(bob.c, treasury)];
+  const [bobAfter, treAfter, aliceAfter] = [await bal(bob.c, bob.kp.address), await bal(bob.c, treasury), await bal(bob.c, alice.kp.address)];
   const { payout, fee } = payoutFor(stake);
-  b = (await fetchAllBattles(rpc)).find((x) => x.address === c2.battle)!;
-  check('settle: status Settled, winner = bob', b.status === BattleStatus.Settled && b.winner.__option === 'Some' && b.winner.value === bob.kp.address);
+  check('settle: battle account closed', !(await fetchAllBattles(rpc)).some((x) => x.address === c2.battle) && (await bal(bob.c, c2.battle)) === 0n);
+  // Alice (loser) paid the settle tx fee (5000) and got the battle rent back.
+  check('settle: rent reserve returned to creator', aliceAfter - aliceBefore === battleRent - 5000n, `${aliceAfter - aliceBefore} vs rent ${battleRent}`);
   check('settle: bob received pot minus 3.5%', bobAfter - bobBefore === payout, `${bobAfter - bobBefore}`);
   check('settle: treasury received fee', treAfter - treBefore === fee, `${treAfter - treBefore}`);
   console.log(`      settle sig ${sig.context.signature}`);
@@ -179,10 +185,27 @@ async function main() {
   const slot = await rpc.getSlot({ commitment: 'confirmed' }).send();
   await cheat('surfnet_timeTravel', [{ absoluteSlot: Number(slot) + 800 }]);
   const aBefore = await bal(alice.c, alice.kp.address);
+  const rent3 = await bal(alice.c, b.address) - 2n * stake;
   await send(bob.c, buildRefund(b));
   const aAfter = await bal(alice.c, alice.kp.address);
-  b = (await fetchAllBattles(rpc)).find((x) => x.address === c3.battle)!;
-  check('refund: status Refunded, creator got stake back', b.status === BattleStatus.Refunded && aAfter - aBefore === stake);
+  check('refund: battle closed, creator got stake + rent back', (await bal(alice.c, c3.battle)) === 0n && aAfter - aBefore === stake + rent3, `${aAfter - aBefore}`);
+
+  // ---- usernames (mixed case exercises the lowercase claim PDA)
+  const nameA = `Degen_${Date.now() % 100000}`;
+  await send(alice.c, await buildCreateProfile(alice.kp, nameA));
+  let names = await fetchAllUsernames(rpc);
+  check('username: profile readable with original casing', names.get(alice.kp.address) === nameA);
+  check('username: taken check is case-insensitive', await isUsernameTaken(rpc, nameA.toUpperCase()));
+  try {
+    await send(bob.c, await buildCreateProfile(bob.kp, nameA.toLowerCase()));
+    check('username: duplicate (other case) rejected', false);
+  } catch {
+    check('username: duplicate (other case) rejected', true);
+  }
+  const nameB = `${nameA}_v2`;
+  await send(alice.c, await buildChangeUsername(alice.kp, nameA, nameB));
+  names = await fetchAllUsernames(rpc);
+  check('username: change works and frees old name', names.get(alice.kp.address) === nameB && !(await isUsernameTaken(rpc, nameA)));
 
   console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');
   process.exit(failures ? 1 : 0);

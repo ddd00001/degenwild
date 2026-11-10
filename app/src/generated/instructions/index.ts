@@ -6,8 +6,12 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from "./adminRemoveUsername";
 export * from "./cancelBattle";
+export * from "./changeUsername";
 export * from "./createBattle";
+export * from "./createProfile";
+export * from "./deleteProfile";
 export * from "./initializePlatformConfig";
 export * from "./joinBattle";
 export * from "./refundExpiredBattle";

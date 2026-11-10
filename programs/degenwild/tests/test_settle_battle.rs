@@ -190,6 +190,11 @@ fn battle_state(svm: &LiteSVM, battle: &Pubkey) -> Battle {
     Battle::try_deserialize(&mut data).unwrap()
 }
 
+/// The battle account is closed (no lamports, no data) once settled or refunded.
+fn is_closed(svm: &LiteSVM, battle: &Pubkey) -> bool {
+    svm.get_account(battle).map_or(true, |a| a.lamports == 0 && a.data.is_empty())
+}
+
 fn assert_nothing_moved(env: &Env) {
     assert_eq!(balance(&env.svm, &env.creator), 0);
     assert_eq!(balance(&env.svm, &env.opponent), 0);
@@ -210,15 +215,12 @@ fn winner_follows_lowest_bit_of_randomness() {
             (env.creator, env.opponent)
         };
 
-        assert_eq!(balance(&env.svm, &winner), PAYOUT);
-        assert_eq!(balance(&env.svm, &loser), 0);
+        // The creator always gets the battle's rent reserve back on close.
+        let rent_back = |who: Pubkey| if who == env.creator { env.battle_rent } else { 0 };
+        assert_eq!(balance(&env.svm, &winner), PAYOUT + rent_back(winner));
+        assert_eq!(balance(&env.svm, &loser), rent_back(loser));
         assert_eq!(balance(&env.svm, &env.treasury), FEE);
-        // Escrow keeps only its rent reserve.
-        assert_eq!(balance(&env.svm, &env.battle), env.battle_rent);
-
-        let state = battle_state(&env.svm, &env.battle);
-        assert_eq!(state.status, BattleStatus::Settled);
-        assert_eq!(state.winner, Some(winner));
+        assert!(is_closed(&env.svm, &env.battle), "battle account should be closed");
     }
 }
 
@@ -229,7 +231,8 @@ fn payout_and_fee_add_up_to_the_pot() {
     let total = balance(&env.svm, &env.creator)
         + balance(&env.svm, &env.opponent)
         + balance(&env.svm, &env.treasury);
-    assert_eq!(total, 2 * STAKE);
+    assert_eq!(total, 2 * STAKE + env.battle_rent);
+    assert_eq!(balance(&env.svm, &env.battle), 0);
 }
 
 #[test]
@@ -263,8 +266,8 @@ fn cannot_settle_twice() {
     assert!(settle(&mut env));
     env.svm.expire_blockhash();
     assert!(!settle(&mut env));
-    // Still exactly one payout.
-    assert_eq!(balance(&env.svm, &env.creator), PAYOUT);
+    // Still exactly one payout (plus the rent refund from closing).
+    assert_eq!(balance(&env.svm, &env.creator), PAYOUT + env.battle_rent);
     assert_eq!(balance(&env.svm, &env.treasury), FEE);
 }
 
@@ -314,19 +317,19 @@ fn creator_side_decides_the_winner() {
     // Creator picked Tails (1): coin 1 -> creator wins.
     let mut env = setup_side(1, Req::Fulfilled, BattleStatus::RandomnessPending, 1, 0);
     assert!(settle(&mut env));
-    assert_eq!(balance(&env.svm, &env.creator), PAYOUT);
+    assert_eq!(balance(&env.svm, &env.creator), PAYOUT + env.battle_rent);
     assert_eq!(balance(&env.svm, &env.opponent), 0);
 
     // Creator picked Tails (1): coin 0 -> opponent wins.
     let mut env = setup_side(0, Req::Fulfilled, BattleStatus::RandomnessPending, 1, 0);
     assert!(settle(&mut env));
     assert_eq!(balance(&env.svm, &env.opponent), PAYOUT);
-    assert_eq!(balance(&env.svm, &env.creator), 0);
+    assert_eq!(balance(&env.svm, &env.creator), env.battle_rent);
 
     // Creator picked Heads (0): coin 0 -> creator wins.
     let mut env = setup_side(0, Req::Fulfilled, BattleStatus::RandomnessPending, 0, 0);
     assert!(settle(&mut env));
-    assert_eq!(balance(&env.svm, &env.creator), PAYOUT);
+    assert_eq!(balance(&env.svm, &env.creator), PAYOUT + env.battle_rent);
 }
 
 #[test]
@@ -335,11 +338,10 @@ fn refund_returns_both_stakes_after_timeout() {
     env.svm.warp_to_slot(JOINED_AT + TIMEOUT);
     assert!(refund(&mut env));
 
-    assert_eq!(balance(&env.svm, &env.creator), STAKE);
+    assert_eq!(balance(&env.svm, &env.creator), STAKE + env.battle_rent);
     assert_eq!(balance(&env.svm, &env.opponent), STAKE);
     assert_eq!(balance(&env.svm, &env.treasury), 0);
-    assert_eq!(balance(&env.svm, &env.battle), env.battle_rent);
-    assert_eq!(battle_state(&env.svm, &env.battle).status, BattleStatus::Refunded);
+    assert!(is_closed(&env.svm, &env.battle), "battle account should be closed");
 }
 
 #[test]
@@ -360,7 +362,7 @@ fn cannot_refund_when_randomness_is_fulfilled() {
     // Settlement still works.
     env.svm.expire_blockhash();
     assert!(settle(&mut env));
-    assert_eq!(balance(&env.svm, &env.creator), PAYOUT);
+    assert_eq!(balance(&env.svm, &env.creator), PAYOUT + env.battle_rent);
 }
 
 #[test]
@@ -370,6 +372,6 @@ fn cannot_refund_twice() {
     assert!(refund(&mut env));
     env.svm.expire_blockhash();
     assert!(!refund(&mut env));
-    assert_eq!(balance(&env.svm, &env.creator), STAKE);
+    assert_eq!(balance(&env.svm, &env.creator), STAKE + env.battle_rent);
     assert_eq!(balance(&env.svm, &env.opponent), STAKE);
 }

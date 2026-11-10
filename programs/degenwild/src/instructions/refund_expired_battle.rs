@@ -3,13 +3,16 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::{BATTLE_SEED, REFUND_TIMEOUT_SLOTS},
     error::ErrorCode,
+    events::BattleRefunded,
     state::{Battle, BattleStatus},
 };
 
 #[derive(Accounts)]
 pub struct RefundExpiredBattle<'info> {
+    /// Closed after both stakes are returned; rent goes back to the creator.
     #[account(
         mut,
+        close = creator,
         seeds = [
             BATTLE_SEED,
             battle.creator.as_ref(),
@@ -86,6 +89,14 @@ pub fn handle_refund_expired_battle(ctx: Context<RefundExpiredBattle>) -> Result
     **opponent_info.try_borrow_mut_lamports()? = opponent_balance;
 
     ctx.accounts.battle.status = BattleStatus::Refunded;
+
+    emit!(BattleRefunded {
+        battle: ctx.accounts.battle.key(),
+        battle_id: ctx.accounts.battle.battle_id,
+        creator: ctx.accounts.battle.creator,
+        opponent: ctx.accounts.opponent.key(),
+        amount,
+    });
 
     Ok(())
 }

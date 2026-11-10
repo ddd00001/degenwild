@@ -8,3 +8,5 @@
 
 export * from "./battle";
 export * from "./platformConfig";
+export * from "./profile";
+export * from "./usernameClaim";

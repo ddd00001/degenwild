@@ -46,4 +46,13 @@ pub enum ErrorCode {
 
     #[msg("Refund timeout has not passed yet")]
     RefundTooEarly,
+
+    #[msg("Username must be 3-16 characters")]
+    UsernameLength,
+
+    #[msg("Username may only contain letters, numbers and underscores")]
+    UsernameInvalidChars,
+
+    #[msg("That username is reserved")]
+    UsernameReserved,
 }

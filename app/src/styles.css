@@ -112,3 +112,10 @@ dialog a{color:#ff7a80}
 @media(max-width:1050px){.battle-row{grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr) 120px 105px}}
 @media(max-width:760px){.brand-logo{max-width:52px}.battle-row{grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr)}.battle-action{grid-column:3;grid-row:2}.hero-logo{width:150px}}
 @media(max-width:500px){.hero-logo{width:110px}}
+.username-form{display:grid;gap:8px;margin:14px 0 6px}
+.username-form .primary-btn{margin-top:6px}
+.username-hint{font-size:11px;color:#8e8181}.username-hint.bad{color:#ff7a80}.username-hint.good{color:#7cf09c}
+.dialog-actions{display:flex;justify-content:space-between;gap:10px;margin-top:6px}
+.link-btn{background:none;border:0;color:#b9a9aa;font-size:12px;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.link-btn:hover{color:#fff}
+dialog code{background:#241618;padding:2px 6px;border-radius:4px;font-size:11px}

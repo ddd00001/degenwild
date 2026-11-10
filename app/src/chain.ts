@@ -26,6 +26,13 @@ import {
   getJoinBattleInstructionAsync,
   getRefundExpiredBattleInstruction,
   getSettleBattleInstructionAsync,
+  findProfilePda,
+  findUsernameClaimPda,
+  getChangeUsernameInstructionAsync,
+  getCreateProfileInstructionAsync,
+  getDeleteProfileInstructionAsync,
+  getProfileDecoder,
+  getProfileDiscriminatorBytes,
 } from './generated';
 import { COINFLIP_FEE_BPS, ORAO_VRF_PROGRAM, REFUND_TIMEOUT_SLOTS } from './config';
 import type { AppClient } from './client';
@@ -43,6 +50,38 @@ const addrEnc = getAddressEncoder();
 const addrDec = getAddressDecoder();
 
 // ---------------------------------------------------------------- reads
+
+/** wallet -> DEGEN WILD username, for every profile on chain. */
+export async function fetchAllUsernames(rpc: Rpc): Promise<Map<Address, string>> {
+  const accounts = await rpc
+    .getProgramAccounts(DEGENWILD_PROGRAM_ADDRESS, {
+      encoding: 'base64',
+      commitment: 'confirmed',
+      filters: [
+        {
+          memcmp: {
+            offset: 0n,
+            bytes: getBase58Decoder().decode(getProfileDiscriminatorBytes()) as never,
+            encoding: 'base58',
+          },
+        },
+      ],
+    })
+    .send();
+  const decoder = getProfileDecoder();
+  const b64 = getBase64Encoder();
+  const names = new Map<Address, string>();
+  for (const { account } of accounts) {
+    try {
+      const p = decoder.decode(b64.encode(account.data[0]));
+      // On-chain data is untrusted: only show names that pass the same rules the program enforces.
+      if (validateUsername(p.username) === null) names.set(p.owner, p.username);
+    } catch {
+      /* not a profile */
+    }
+  }
+  return names;
+}
 
 /** All Battle accounts owned by the program. Data is decoded and owner-checked. */
 export async function fetchAllBattles(rpc: Rpc): Promise<BattleView[]> {
@@ -227,4 +266,52 @@ export function describeError(err: unknown): string {
   if (/program that does not exist|ProgramAccountNotFound|invalid program/i.test(all))
     return 'The DEGEN WILD program is not deployed on this cluster yet.';
   return messages[0] ?? 'Something went wrong.';
+}
+
+// ---------------------------------------------------------------- usernames
+
+// Mirrors programs/degenwild/src/constants.rs + instructions/username.rs.
+const RESERVED = ['support', 'mod', 'moderator', 'official', 'team', 'staff', 'system', 'dev', 'owner', 'help'];
+const RESERVED_FRAGMENTS = ['degenwild', 'degen_wild', 'admin'];
+
+/** Returns an error message, or null if the program will accept this name. */
+export function validateUsername(name: string): string | null {
+  if (name.length < 3 || name.length > 16) return 'Username must be 3–16 characters.';
+  if (!/^[A-Za-z0-9_]+$/.test(name)) return 'Only letters, numbers and underscores.';
+  const key = name.toLowerCase();
+  if (RESERVED.includes(key) || RESERVED_FRAGMENTS.some((f) => key.includes(f))) return 'That username is reserved.';
+  return null;
+}
+
+/** The claim PDA is keyed by the lowercase name; the generated helper would use it as typed. */
+const claimFor = async (name: string) => (await findUsernameClaimPda({ username: name.toLowerCase() }))[0];
+
+export async function isUsernameTaken(rpc: Rpc, name: string): Promise<boolean> {
+  const acc = await fetchEncodedAccount(rpc, await claimFor(name), { commitment: 'confirmed' });
+  return acc.exists;
+}
+
+export async function buildCreateProfile(owner: TransactionSigner, username: string) {
+  return (await getCreateProfileInstructionAsync({
+    owner,
+    usernameClaim: await claimFor(username),
+    username,
+  })) as Instruction;
+}
+
+export async function buildChangeUsername(owner: TransactionSigner, oldName: string, newName: string) {
+  return (await getChangeUsernameInstructionAsync({
+    owner,
+    oldClaim: await claimFor(oldName),
+    newClaim: await claimFor(newName),
+    newUsername: newName,
+  })) as Instruction;
+}
+
+export async function buildDeleteProfile(owner: TransactionSigner, name: string) {
+  return (await getDeleteProfileInstructionAsync({ owner, usernameClaim: await claimFor(name) })) as Instruction;
+}
+
+export async function profileAddress(owner: Address) {
+  return (await findProfilePda({ owner }))[0];
 }

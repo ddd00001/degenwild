@@ -7,4 +7,7 @@
  */
 
 export * from "./battle";
+export * from "./newClaim";
 export * from "./platformConfig";
+export * from "./profile";
+export * from "./usernameClaim";
