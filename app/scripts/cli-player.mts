@@ -2,12 +2,14 @@
 //
 //   RPC=https://api.devnet.solana.com npx tsx scripts/cli-player.mts join <creatorWallet>
 //   RPC=https://api.devnet.solana.com npx tsx scripts/cli-player.mts settle <battleAddress>
+//   RPC=... npx tsx scripts/cli-player.mts create <sol> <heads|tails>
+//   RPC=... npx tsx scripts/cli-player.mts cancel <battleAddress>
 //   RPC=... npx tsx scripts/cli-player.mts status
 import { homedir } from 'node:os';
 import { type Address, createClient } from '@solana/kit';
 import { solanaRpc } from '@solana/kit-plugin-rpc';
 import { signerFromFile } from '@solana/kit-plugin-signer';
-import { buildJoin, buildSettle, describeError, fetchAllBattles, fetchRandomness, opponentOf } from '../src/chain';
+import { buildCancel, buildCreate, buildJoin, buildSettle, describeError, fetchAllBattles, fetchRandomness, opponentOf } from '../src/chain';
 import { BattleStatus } from '../src/generated';
 
 const RPC = process.env.RPC ?? 'http://127.0.0.1:8899';
@@ -24,6 +26,17 @@ try {
     if (!b) throw new Error(`No open battle from ${arg}`);
     const res = await c.sendTransaction([await buildJoin(c.rpc, c.identity, b)]);
     console.log(`joined ${b.address} for ${Number(b.amount) / 1e9} SOL on ${b.creatorSide ? 'HEADS' : 'TAILS'}\n  tx ${res.context.signature}`);
+  } else if (cmd === 'create') {
+    const lamports = BigInt(Math.round(Number(arg) * 1e9));
+    const side = process.argv[4] === 'tails' ? 1 : 0;
+    const { ix, battle } = await buildCreate(c.identity, lamports, side);
+    const res = await c.sendTransaction([ix]);
+    console.log(`created ${battle} for ${arg} SOL on ${side ? 'TAILS' : 'HEADS'}\n  tx ${res.context.signature}`);
+  } else if (cmd === 'cancel') {
+    const b = battles.find((x) => x.address === (arg as Address));
+    if (!b) throw new Error(`Battle ${arg} not found`);
+    const res = await c.sendTransaction([buildCancel(c.identity, b)]);
+    console.log(`cancelled ${b.address}\n  tx ${res.context.signature}`);
   } else if (cmd === 'settle') {
     const b = battles.find((x) => x.address === (arg as Address));
     if (!b) throw new Error(`Battle ${arg} not found (already settled?)`);

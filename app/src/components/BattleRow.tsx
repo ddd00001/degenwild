@@ -16,6 +16,7 @@ export function BattleRow(props: {
   onSettle?: () => void;
   onRefund?: () => void;
   onReplay?: () => void;
+  onView?: () => void;
 }) {
   const { b, me, slot, rnd, busy } = props;
   const opp = opponentOf(b);
@@ -24,7 +25,7 @@ export function BattleRow(props: {
   const creatorSide = SIDE_NAME[b.creatorSide] ?? '?';
   const oppSide = SIDE_NAME[1 - b.creatorSide] ?? '?';
   const nameOf = (a: Address) => props.names.get(a);
-  const label = (a: Address) => (a === me ? 'You' : (nameOf(a) ?? short(a)));
+  const label = (a: Address) => (a === me ? `You${nameOf(a) ? ` (${nameOf(a)})` : ''}` : (nameOf(a) ?? short(a)));
   const isBusy = (k: string) => busy === `${k}:${b.address}`;
 
   let meta = 'POT';
@@ -118,6 +119,11 @@ export function BattleRow(props: {
         <small>{meta}</small>
       </div>
       <div className="battle-action">
+        {props.onView && b.status !== BattleStatus.Settled && b.status !== BattleStatus.Refunded && (
+          <button className="view-btn" onClick={props.onView} title="Open the battle pop-up">
+            View
+          </button>
+        )}
         {action}
         {props.onReplay && (b.status === BattleStatus.Settled || rnd?.state === 'fulfilled') && (
           <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={props.onReplay}>

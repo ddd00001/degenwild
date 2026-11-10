@@ -243,6 +243,39 @@ export default function App() {
   }, [results, me, match]);
 
   /** Re-runs the match pop-up for a battle whose coin has already landed. */
+  /** Opens the live pop-up for an active battle — also while it's still waiting for an opponent. */
+  const watch = (b: BattleView) => {
+    seenMatches.current.add(b.address);
+    setMatch(b);
+    setMatchRnd(randomness[b.address]);
+    setMatchClaimed(false);
+    setMatchReplay(false);
+  };
+  // Keep the battle on screen current (e.g. an opponent joins while you're watching).
+  useEffect(() => {
+    if (!match || matchReplay) return;
+    const fresh = battles.find((b) => b.address === match.address);
+    if (fresh && (fresh.status !== match.status || opponentOf(fresh) !== opponentOf(match))) setMatch(fresh);
+  }, [battles, match, matchReplay]);
+
+  // Shareable link: ?battle=<address> opens that battle's pop-up once it has loaded.
+  const linked = useRef<string | null>(new URLSearchParams(window.location.search).get('battle'));
+  useEffect(() => {
+    const target = linked.current;
+    if (!target || match) return;
+    const b = battles.find((x) => x.address === target);
+    if (b) {
+      linked.current = null;
+      watch(b);
+      return;
+    }
+    const r = results.find((x) => x.battle === target);
+    if (r) {
+      linked.current = null;
+      replay(resultToBattle(r));
+    }
+  });
+
   const replay = (b: BattleView) => {
     const r = randomness[b.address];
     const w = winnerOf(b);
@@ -310,6 +343,14 @@ export default function App() {
           <button className={`nav-link ${view === 'coinflip' ? 'active' : ''}`} onClick={() => setView('coinflip')}>
             <span className="nav-icon">◉</span>Coinflip
           </button>
+          <div className="nav-link soon" tabIndex={0} aria-disabled="true" aria-describedby="jackpot-tip">
+            <span className="nav-icon">♜</span>Jackpot
+            <span className="soon-tag">SOON</span>
+            <span className="nav-tip" role="tooltip" id="jackpot-tip">
+              <b>Jackpot is coming soon.</b> Everyone adds to one pot and a single provably fair draw picks the winner,
+              on-chain like coinflip.
+            </span>
+          </div>
           <button className="nav-link" onClick={() => setHowOpen(true)}>
             <span className="nav-icon">?</span>How it works
           </button>
@@ -473,6 +514,7 @@ export default function App() {
                       rnd={randomness[b.address]}
                       busy={busy}
                       onReplay={() => replay(b)}
+                      onView={() => watch(b)}
                       onCancel={() =>
                         void send(`cancel:${b.address}`, () => buildCancel(signer!, b), 'Battle cancelled — stake refunded.')
                       }
@@ -510,6 +552,7 @@ export default function App() {
                       rnd={randomness[b.address]}
                       busy={busy}
                       onReplay={() => replay(b)}
+                      onView={() => watch(b)}
                       onCancel={() =>
                         void send(`cancel:${b.address}`, () => buildCancel(signer!, b), 'Battle cancelled — stake refunded.')
                       }
@@ -555,6 +598,7 @@ export default function App() {
                       me={me}
                       slot={slot}
                       busy={busy}
+                      onView={() => watch(b)}
                       onJoin={() => {
                         if (!signer) return setWalletOpen(true);
                         void send(
@@ -625,11 +669,37 @@ export default function App() {
       </div>
 
       {walletOpen && <WalletDialog onClose={() => setWalletOpen(false)} />}
-      {match && me && (
+      {match && (
         <MatchScreen
           battle={match}
           rnd={matchRnd}
           me={me}
+          open={
+            match.status === BattleStatus.Open
+              ? {
+                  joining: busy === `join:${match.address}`,
+                  cancelling: busy === `cancel:${match.address}`,
+                  onJoin:
+                    match.creator !== me
+                      ? () => {
+                          if (!signer) return setWalletOpen(true);
+                          void send(
+                            `join:${match.address}`,
+                            () => buildJoin(client.rpc, signer, match),
+                            `Joined for ${fmtSol(match.amount)} SOL on ${SIDE_NAME[1 - match.creatorSide]}. Flipping…`,
+                          );
+                        }
+                      : undefined,
+                  onCancel:
+                    match.creator === me && signer
+                      ? async () => {
+                          const ok = await send(`cancel:${match.address}`, () => buildCancel(signer, match), 'Battle cancelled — stake refunded.');
+                          if (ok) setMatch(null);
+                        }
+                      : undefined,
+                }
+              : undefined
+          }
           nameOf={(a) => names.get(a) ?? short(a)}
           fmtSol={fmtSol}
           claiming={busy === `settle:${match.address}`}
