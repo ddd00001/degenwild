@@ -268,3 +268,10 @@ details.history .battle-row{opacity:.85}
 .view-btn:hover{border-color:var(--red);color:#fff;background:#2a1416}
 @media(min-width:1051px){.battle-row{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr) 150px auto}}
 @media(min-width:761px) and (max-width:1050px){.battle-row{grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr) 120px auto}}
+.pager{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:10px}
+.pager-group{display:contents}
+.pager button{min-width:30px;height:30px;padding:0 8px;border-radius:6px;border:1px solid #332626;background:#151111;color:#b9aaaa;font-size:12px;font-weight:700}
+.pager button:hover:not(:disabled){border-color:#8c2b32;color:#fff}
+.pager button.active{background:#351316;border-color:#a82a33;color:#ff7a80}
+.pager button:disabled{opacity:.35}
+.pager-gap{color:#6f6464;font-size:12px;padding:0 2px}

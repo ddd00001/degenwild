@@ -11,7 +11,8 @@
     "dev:local": "VITE_CLUSTER=localnet vite",
     "codegen": "node scripts/codama.mjs",
     "e2e:local": "tsx scripts/e2e-local.ts",
-    "bot": "node --env-file-if-exists=.env.local --import tsx scripts/settle-bot.mts"
+    "bot": "node --env-file-if-exists=.env.local --import tsx scripts/settle-bot.mts",
+    "build:pages": "PAGES=1 tsc -b && PAGES=1 vite build"
   },
   "dependencies": {
     "@solana/kit": "^8.6.0",

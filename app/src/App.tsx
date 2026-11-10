@@ -59,6 +59,7 @@ export default function App() {
   const [balance, setBalance] = useState<bigint | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
   const [busySince, setBusySince] = useState<number | null>(null);
   const [walletOpen, setWalletOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
@@ -322,7 +323,7 @@ export default function App() {
                 .filter((r) => !battles.some((b) => b.address === r.battle))
                 .map(resultToBattle),
             )
-            .slice(0, 15)
+            .slice(0, 100)
         : [],
     [battles, results, me],
   );
@@ -330,13 +331,16 @@ export default function App() {
   const isDone = (b: BattleView) => b.status === BattleStatus.Settled || b.status === BattleStatus.Refunded;
   const myActive = [...myOpen, ...mine.filter((b) => !isDone(b))];
   const myHistory = mine.filter(isDone);
+  const HISTORY_PAGE = 5;
+  const historyPages = Math.max(1, Math.ceil(myHistory.length / HISTORY_PAGE));
+  const historyShown = myHistory.slice((Math.min(historyPage, historyPages) - 1) * HISTORY_PAGE, Math.min(historyPage, historyPages) * HISTORY_PAGE);
   const othersOpen = open.filter((b) => b.creator !== me);
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <a className="brand" href="#" onClick={() => setView('coinflip')} aria-label="DEGEN WILD home">
-          <img className="brand-logo" src="/degenwild-logo-t.png" alt="DEGEN WILD" />
+          <img className="brand-logo" src={`${import.meta.env.BASE_URL}degenwild-logo-t.png`} alt="DEGEN WILD" />
         </a>
         <div className="nav-label">PLAY</div>
         <nav className="side-nav" aria-label="Main navigation">
@@ -369,7 +373,7 @@ export default function App() {
       <main className="main-area">
         <header className="topbar">
           <div className="mobile-brand">
-            <img className="brand-logo small" src="/degenwild-logo-t.png" alt="DEGEN WILD" />
+            <img className="brand-logo small" src={`${import.meta.env.BASE_URL}degenwild-logo-t.png`} alt="DEGEN WILD" />
             <button className="mobile-help" onClick={() => setHowOpen(true)} aria-label="How it works">
               ?
             </button>
@@ -542,7 +546,7 @@ export default function App() {
                   </div>
                 </summary>
                 <div className="battle-list">
-                  {myHistory.map((b) => (
+                  {historyShown.map((b) => (
                     <BattleRow
                       names={names}
                       key={b.address}
@@ -565,6 +569,9 @@ export default function App() {
                     />
                   ))}
                 </div>
+                {historyPages > 1 && (
+                  <Pager page={Math.min(historyPage, historyPages)} pages={historyPages} onPage={setHistoryPage} />
+                )}
               </details>
             )}
 
@@ -758,5 +765,25 @@ export default function App() {
       )}
       {howOpen && <HowDialog onClose={() => setHowOpen(false)} />}
     </div>
+  );
+}
+
+/** Compact 1 2 3 … pager, right-aligned under a list. */
+function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (p: number) => void }) {
+  // Show first, last, and the pages around the current one.
+  const nums = [...new Set([1, page - 1, page, page + 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  return (
+    <nav className="pager" aria-label="History pages">
+      <button disabled={page === 1} onClick={() => onPage(page - 1)} aria-label="Previous page">‹</button>
+      {nums.map((n, i) => (
+        <span key={n} className="pager-group">
+          {i > 0 && n - nums[i - 1] > 1 && <span className="pager-gap">…</span>}
+          <button className={n === page ? 'active' : ''} aria-current={n === page ? 'page' : undefined} onClick={() => onPage(n)}>
+            {n}
+          </button>
+        </span>
+      ))}
+      <button disabled={page === pages} onClick={() => onPage(page + 1)} aria-label="Next page">›</button>
+    </nav>
   );
 }
