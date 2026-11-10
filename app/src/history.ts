@@ -1,12 +1,14 @@
-import { type Address, type Signature, getBase64Encoder } from '@solana/kit';
+import { type Address, type Signature, getBase64Encoder, none, some } from '@solana/kit';
 import {
   BATTLE_REFUNDED_EVENT_DISCRIMINATOR,
   BATTLE_SETTLED_EVENT_DISCRIMINATOR,
+  BattleStatus,
   DEGENWILD_PROGRAM_ADDRESS,
   getBattleRefundedEventDecoder,
   getBattleSettledEventDecoder,
 } from './generated';
 import type { AppClient } from './client';
+import type { BattleView } from './chain';
 
 type Rpc = AppClient['rpc'];
 
@@ -130,4 +132,24 @@ export class GameHistory {
     }
     return results; // newest first
   }
+}
+
+export function resultToBattle(r: GameResult): BattleView {
+  const settled = r.kind === 'settled';
+  return {
+    address: r.battle,
+    discriminator: new Uint8Array(8),
+    creator: r.creator,
+    opponent: some(r.opponent),
+    amount: settled ? (r.payout + r.fee) / 2n : r.amount,
+    battleId: r.battleId,
+    status: settled ? BattleStatus.Settled : BattleStatus.Refunded,
+    randomnessSeed: new Uint8Array(32),
+    randomnessAccount: r.battle,
+    winner: settled ? some(r.winner) : none(),
+    // Settled: the creator's side follows from who won. Refund events don't carry it (shown as "?").
+    creatorSide: settled ? (r.winner === r.creator ? r.coin : 1 - r.coin) : 255,
+    joinedSlot: 0n,
+    bump: 0,
+  };
 }

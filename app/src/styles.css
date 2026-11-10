@@ -187,3 +187,73 @@ dialog code{background:#241618;padding:2px 6px;border-radius:4px;font-size:11px}
 .match-receipt a{color:#ff7a80;font-family:ui-monospace,Menlo,monospace;font-size:11px;text-decoration:none}
 .match-receipt a:hover{text-decoration:underline}
 .match-receipt-muted{color:#6f6464;font-size:11px}
+
+/* ---- cleanup pass ---- */
+.brand-logo{filter:drop-shadow(0 4px 18px #ff202b40)}
+.hero.slim{height:auto;min-height:0;margin:22px 0 18px;padding:22px 28px;display:block;background:linear-gradient(100deg,#2a0f12 0%,#150f0f 55%,#0d0c0c 100%)}
+.hero.slim h1{font-size:clamp(34px,4vw,48px);line-height:1;margin:0 0 6px}
+.hero.slim p{margin:0;font-size:12px}
+.create-panel{padding-bottom:12px}
+.create-btn{margin-bottom:14px}
+.row-coin{width:34px;height:34px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;font:900 15px 'Barlow Condensed';border:2px solid #ff7a1f}
+.row-coin.heads{background:radial-gradient(circle at 35% 30%,#ff8a4a,#e5241f 55%,#8d0d12);color:#fff}
+.row-coin.tails{background:radial-gradient(circle at 35% 30%,#3b3b3b,#151515 60%,#050505);color:#ff3038}
+.row-coin.win{border-color:#2f8a47;box-shadow:0 0 0 3px #2f8a4733}
+.row-coin.empty{opacity:.4;border-style:dashed}
+details.history>summary{list-style:none;cursor:pointer}
+details.history>summary::-webkit-details-marker{display:none}
+.history-toggle{display:inline-block;margin-left:8px;font-size:14px;color:#8f8585;transition:transform .2s}
+details.history[open] .history-toggle{transform:rotate(180deg)}
+details.history .battle-row{opacity:.85}
+.wallet-wait{position:fixed;top:88px;left:calc(50% + 114px);transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;background:#211315;border:1px solid #743038;color:#f0dada;font-size:12px;font-weight:600;box-shadow:0 8px 30px #000a}
+.wallet-wait-dot{width:8px;height:8px;border-radius:50%;background:#ff3038;box-shadow:0 0 10px #ff3038;animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{from{opacity:.35}to{opacity:1}}
+@media(max-width:760px){.wallet-wait{left:calc(50% + 34px);top:72px}}
+
+
+
+/* ---- mobile ---- */
+.mobile-help{display:none}
+.create-controls>*,.battle-row>*,.recent-row>*{min-width:0}
+@media(max-width:760px){
+  .sidebar{display:none}
+  .main-area{margin-left:0;padding:0 12px 20px;overflow-x:hidden}
+  .topbar{height:62px;gap:10px}
+  .mobile-brand{display:flex;align-items:center;gap:10px}
+  .mobile-brand .brand-logo.small{width:78px;max-width:none}
+  .mobile-help{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid #4a2a2d;background:#160f10;color:#ff7a80;font-weight:800}
+  .top-actions{gap:8px;min-width:0}
+  .balance{font-size:11px}
+  .wallet-btn{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hero.slim{margin:12px 0;padding:16px 18px}
+  .hero.slim h1{font-size:32px}
+  .create-panel{padding:16px 14px 10px}
+  .create-controls{grid-template-columns:1fr;gap:14px}
+  .side-choice{font-size:12px;gap:7px}
+  .quick-amounts button{min-width:0}
+  .battle-row{grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:6px;padding:10px}
+  .battle-meta{grid-column:1/3;text-align:left}
+  .battle-action{grid-column:3;justify-content:flex-end}
+  .recent-row{grid-template-columns:28px minmax(0,1fr) 34px;gap:8px}
+  .recent-time{display:none}
+  .toast{left:50%;max-width:calc(100vw - 24px)}
+  .wallet-wait{left:50%;top:70px}
+  .match-dialog{padding:18px 14px}
+  .match-stage{height:150px}
+  .coin3d-wrap{width:120px;height:120px}
+  .match-outcome{font-size:32px}
+}
+
+/* ---- SVG coins ---- */
+.coin-svg{width:100%;height:100%;display:block;filter:drop-shadow(0 3px 6px #000a)}
+.coin-face,.match-coin,.row-coin,.recent-coin,.coin-mini{background:none !important;border:none !important;box-shadow:none !important;border-radius:50%;padding:0;display:block}
+.coin3d .coin-face{position:absolute;inset:0;backface-visibility:hidden}
+.coin3d .coin-face.tails{transform:rotateY(180deg)}
+.coin3d .coin-face .coin-svg{filter:drop-shadow(0 10px 22px #000c) drop-shadow(0 0 24px #ffb43a40)}
+.coin-mini{width:26px;height:26px}
+.match-player.winner .match-coin,.row-coin.win{box-shadow:0 0 0 3px #38c25d,0 0 20px #38c25d99 !important}
+.row-coin.empty{opacity:.35}
+.trust-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.trust-badges span{font-size:11px;color:#b9a9aa;padding:6px 11px;border:1px solid #4a2a2d;border-radius:20px;background:#140d0e}
+.trust-badges b{color:#fff;font-weight:700}
+@media(max-width:760px){.trust-badges span{font-size:10px;padding:5px 9px}}

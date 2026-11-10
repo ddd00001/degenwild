@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Address } from '@solana/kit';
 import { type BattleView, type Randomness, opponentOf, payoutFor } from './chain';
 import { explorerTx } from './config';
+import { Coin } from './components/Coin';
 
 type Phase = 'waiting' | 'countdown' | 'flip' | 'result';
 
@@ -81,7 +82,7 @@ export function MatchScreen(props: {
   const player = (a: Address | null, side: number) => (
     <div className={`match-player ${phase === 'result' && a === winner ? 'winner' : ''} ${phase === 'result' && a !== winner ? 'loser' : ''}`}>
       <span className={`match-coin ${side === 1 ? 'tails' : 'heads'}`} aria-label={SIDE[side] ?? 'Unknown side'}>
-        {side === 1 ? 'T' : side === 0 ? 'H' : '?'}
+        {side === 0 || side === 1 ? <Coin side={side as 0 | 1} /> : '?'}
       </span>
       <b>{a === me ? 'You' : a ? props.nameOf(a) : '…'}</b>
       <small>{SIDE[side]}</small>
@@ -114,8 +115,12 @@ export function MatchScreen(props: {
                 transition: phase === 'flip' ? `transform ${FLIP_MS}ms cubic-bezier(.15,.7,.2,1)` : 'none',
               }}
             >
-              <div className="coin-face heads">H</div>
-              <div className="coin-face tails">T</div>
+              <div className="coin-face heads">
+                <Coin side={0} detailed />
+              </div>
+              <div className="coin-face tails">
+                <Coin side={1} detailed />
+              </div>
             </div>
           </div>
         )}

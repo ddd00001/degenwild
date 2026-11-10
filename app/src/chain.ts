@@ -241,6 +241,19 @@ export function buildRefund(battle: BattleView) {
 
 // ---------------------------------------------------------------- errors
 
+/** True when the transaction's blockhash expired before it landed (so it can never land). */
+export function isExpiredError(err: unknown): boolean {
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (cur && typeof cur === 'object' && !seen.has(cur)) {
+    seen.add(cur);
+    const m = (cur as { message?: string }).message ?? '';
+    if (/progressed past the last block|block height exceeded|blockhash not found/i.test(m)) return true;
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 /** Turns RPC / wallet / program failures into something a player can act on. */
 export function describeError(err: unknown): string {
   const seen = new Set<unknown>();
@@ -261,6 +274,7 @@ export function describeError(err: unknown): string {
     const code = Number(custom[1]);
     if (code >= 6000) return programError(code);
   }
+  if (/\b429\b|too many requests|rate.?limit/i.test(all)) return 'The network is busy right now (rate-limited) — retrying automatically.';
   if (/reject|denied|cancel/i.test(all)) return 'You rejected the request in your wallet.';
   if (/insufficient (funds|lamports)|0x1\b/i.test(all)) return 'Not enough SOL for the stake plus fees.';
   if (/blockhash|expired/i.test(all)) return 'Transaction expired before it landed — try again.';
