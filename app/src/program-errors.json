@@ -1,0 +1,17 @@
+{
+  "6000": "Stake is below the minimum",
+  "6001": "Stake is above the maximum",
+  "6002": "Battle is not open",
+  "6003": "Battle already has an opponent",
+  "6004": "The creator cannot join their own battle",
+  "6005": "Opponent stake must exactly match the creator's stake",
+  "6006": "ORAO randomness has not been fulfilled yet",
+  "6007": "ORAO randomness request does not match this battle",
+  "6008": "Battle is not ready for settlement",
+  "6009": "Platform fee configuration is invalid",
+  "6010": "Battle escrow does not contain the expected pot",
+  "6011": "Arithmetic overflow",
+  "6012": "Side must be 0 (Heads) or 1 (Tails)",
+  "6013": "ORAO randomness is already fulfilled; settle instead of refunding",
+  "6014": "Refund timeout has not passed yet"
+}
