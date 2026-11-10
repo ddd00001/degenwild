@@ -120,6 +120,7 @@ pub fn handle_join_battle(ctx: Context<JoinBattle>, amount: u64) -> Result<()> {
     battle.randomness_seed = seed;
     battle.randomness_account = expected_request;
     battle.status = BattleStatus::RandomnessPending;
+    battle.joined_slot = Clock::get()?.slot;
 
     Ok(())
 }

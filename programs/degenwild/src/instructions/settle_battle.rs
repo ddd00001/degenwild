@@ -78,8 +78,9 @@ pub fn handle_settle_battle(ctx: Context<SettleBattle>) -> Result<()> {
 
     let randomness = fulfilled.randomness;
 
-    // Fixed mapping: 0 = creator, 1 = opponent.
-    let winner_is_opponent = randomness[0] & 1 == 1;
+    // Coin result: 0 = Heads, 1 = Tails. The creator wins if it matches their pick.
+    let coin = randomness[0] & 1;
+    let winner_is_opponent = coin != battle.creator_side;
 
     let winner_info = if winner_is_opponent {
         ctx.accounts.opponent.to_account_info()

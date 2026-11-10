@@ -53,6 +53,16 @@ fn account_with<T: AccountSerialize>(state: &T, lamports: u64, owner: Pubkey, mi
 }
 
 fn setup(first_byte: u8, kind: Req, status: BattleStatus) -> Env {
+    setup_side(first_byte, kind, status, 0, 0)
+}
+
+fn setup_side(
+    first_byte: u8,
+    kind: Req,
+    status: BattleStatus,
+    creator_side: u8,
+    joined_slot: u64,
+) -> Env {
     let mut svm = LiteSVM::new();
     let bytes = include_bytes!(concat!(
         env!("CARGO_TARGET_TMPDIR"),
@@ -94,6 +104,8 @@ fn setup(first_byte: u8, kind: Req, status: BattleStatus) -> Env {
         randomness_seed: SEED,
         randomness_account: request,
         winner: None,
+        creator_side,
+        joined_slot,
         bump,
     };
     let battle_len = 8 + Battle::INIT_SPACE;
@@ -270,4 +282,94 @@ fn cannot_redirect_payout_to_wrong_treasury_or_opponent() {
     env.opponent = real_opponent;
 
     assert_nothing_moved(&env);
+}
+
+fn refund_tx(env: &Env) -> VersionedTransaction {
+    let ix = Instruction::new_with_bytes(
+        degenwild::id(),
+        &degenwild::instruction::RefundExpiredBattle {}.data(),
+        degenwild::accounts::RefundExpiredBattle {
+            battle: env.battle,
+            creator: env.creator,
+            opponent: env.opponent,
+            randomness_request: env.request,
+        }
+        .to_account_metas(None),
+    );
+    let blockhash = env.svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[ix], Some(&env.caller.pubkey()), &blockhash);
+    VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[&env.caller]).unwrap()
+}
+
+fn refund(env: &mut Env) -> bool {
+    let tx = refund_tx(env);
+    env.svm.send_transaction(tx).is_ok()
+}
+
+const JOINED_AT: u64 = 100;
+const TIMEOUT: u64 = degenwild::constants::REFUND_TIMEOUT_SLOTS;
+
+#[test]
+fn creator_side_decides_the_winner() {
+    // Creator picked Tails (1): coin 1 -> creator wins.
+    let mut env = setup_side(1, Req::Fulfilled, BattleStatus::RandomnessPending, 1, 0);
+    assert!(settle(&mut env));
+    assert_eq!(balance(&env.svm, &env.creator), PAYOUT);
+    assert_eq!(balance(&env.svm, &env.opponent), 0);
+
+    // Creator picked Tails (1): coin 0 -> opponent wins.
+    let mut env = setup_side(0, Req::Fulfilled, BattleStatus::RandomnessPending, 1, 0);
+    assert!(settle(&mut env));
+    assert_eq!(balance(&env.svm, &env.opponent), PAYOUT);
+    assert_eq!(balance(&env.svm, &env.creator), 0);
+
+    // Creator picked Heads (0): coin 0 -> creator wins.
+    let mut env = setup_side(0, Req::Fulfilled, BattleStatus::RandomnessPending, 0, 0);
+    assert!(settle(&mut env));
+    assert_eq!(balance(&env.svm, &env.creator), PAYOUT);
+}
+
+#[test]
+fn refund_returns_both_stakes_after_timeout() {
+    let mut env = setup_side(0, Req::Pending, BattleStatus::RandomnessPending, 0, JOINED_AT);
+    env.svm.warp_to_slot(JOINED_AT + TIMEOUT);
+    assert!(refund(&mut env));
+
+    assert_eq!(balance(&env.svm, &env.creator), STAKE);
+    assert_eq!(balance(&env.svm, &env.opponent), STAKE);
+    assert_eq!(balance(&env.svm, &env.treasury), 0);
+    assert_eq!(balance(&env.svm, &env.battle), env.battle_rent);
+    assert_eq!(battle_state(&env.svm, &env.battle).status, BattleStatus::Refunded);
+}
+
+#[test]
+fn cannot_refund_before_timeout() {
+    let mut env = setup_side(0, Req::Pending, BattleStatus::RandomnessPending, 0, JOINED_AT);
+    env.svm.warp_to_slot(JOINED_AT + TIMEOUT - 1);
+    assert!(!refund(&mut env));
+    assert_nothing_moved(&env);
+}
+
+#[test]
+fn cannot_refund_when_randomness_is_fulfilled() {
+    let mut env = setup_side(0, Req::Fulfilled, BattleStatus::RandomnessPending, 0, JOINED_AT);
+    env.svm.warp_to_slot(JOINED_AT + TIMEOUT + 10_000);
+    assert!(!refund(&mut env));
+    assert_nothing_moved(&env);
+
+    // Settlement still works.
+    env.svm.expire_blockhash();
+    assert!(settle(&mut env));
+    assert_eq!(balance(&env.svm, &env.creator), PAYOUT);
+}
+
+#[test]
+fn cannot_refund_twice() {
+    let mut env = setup_side(0, Req::Pending, BattleStatus::RandomnessPending, 0, JOINED_AT);
+    env.svm.warp_to_slot(JOINED_AT + TIMEOUT);
+    assert!(refund(&mut env));
+    env.svm.expire_blockhash();
+    assert!(!refund(&mut env));
+    assert_eq!(balance(&env.svm, &env.creator), STAKE);
+    assert_eq!(balance(&env.svm, &env.opponent), STAKE);
 }

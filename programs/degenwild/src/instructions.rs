@@ -10,3 +10,5 @@ pub use platform_config::*;
 
 pub mod settle_battle;
 pub use settle_battle::*;
+pub mod refund_expired_battle;
+pub use refund_expired_battle::*;

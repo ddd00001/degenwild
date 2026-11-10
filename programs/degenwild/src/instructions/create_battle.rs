@@ -22,14 +22,21 @@ pub struct CreateBattle<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handle_create_battle(ctx: Context<CreateBattle>, battle_id: u64, amount: u64) -> Result<()> {
+pub fn handle_create_battle(ctx: Context<CreateBattle>, battle_id: u64, amount: u64, creator_side: u8) -> Result<()> {
     require!(amount >= MIN_STAKE_LAMPORTS, ErrorCode::StakeTooLow);
+    require!(
+        amount <= crate::constants::MAX_STAKE_LAMPORTS,
+        ErrorCode::StakeTooHigh
+    );
 
     ctx.accounts.battle.creator = ctx.accounts.creator.key();
     ctx.accounts.battle.opponent = None;
     ctx.accounts.battle.amount = amount;
     ctx.accounts.battle.battle_id = battle_id;
     ctx.accounts.battle.status = BattleStatus::Open;
+    ctx.accounts.battle.creator_side = creator_side;
+    ctx.accounts.battle.joined_slot = 0;
+    require!(creator_side <= 1, ErrorCode::InvalidSide);
     ctx.accounts.battle.randomness_seed = [0; 32];
     ctx.accounts.battle.randomness_account = Pubkey::default();
     ctx.accounts.battle.winner = None;

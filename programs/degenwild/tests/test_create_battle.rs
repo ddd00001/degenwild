@@ -44,7 +44,7 @@ fn create_battle_tx(
     let battle = battle_pda(&creator.pubkey(), battle_id);
     let ix = Instruction::new_with_bytes(
         degenwild::id(),
-        &degenwild::instruction::CreateBattle { battle_id, amount }.data(),
+        &degenwild::instruction::CreateBattle { battle_id, amount, creator_side: 0 }.data(),
         degenwild::accounts::CreateBattle {
             creator: creator.pubkey(),
             battle,
@@ -336,4 +336,65 @@ fn unauthorized_wallet_cannot_initialize_platform_config() {
 
     // Unauthorized initialization must not create the config account.
     assert!(svm.get_account(&platform_config).is_none());
+}
+
+fn create_battle_side_tx(
+    svm: &LiteSVM,
+    creator: &Keypair,
+    battle_id: u64,
+    amount: u64,
+    creator_side: u8,
+) -> VersionedTransaction {
+    let battle = battle_pda(&creator.pubkey(), battle_id);
+    let ix = Instruction::new_with_bytes(
+        degenwild::id(),
+        &degenwild::instruction::CreateBattle { battle_id, amount, creator_side }.data(),
+        degenwild::accounts::CreateBattle {
+            creator: creator.pubkey(),
+            battle,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    );
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[ix], Some(&creator.pubkey()), &blockhash);
+    VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[creator]).unwrap()
+}
+
+#[test]
+fn create_battle_stores_chosen_side() {
+    let (mut svm, creator) = setup();
+    let tx = create_battle_side_tx(&svm, &creator, 1, 100_000_000, 1);
+    assert!(svm.send_transaction(tx).is_ok());
+
+    let account = svm.get_account(&battle_pda(&creator.pubkey(), 1)).unwrap();
+    let mut data: &[u8] = &account.data;
+    let state = degenwild::state::Battle::try_deserialize(&mut data).unwrap();
+    assert_eq!(state.creator_side, 1);
+}
+
+#[test]
+fn create_battle_rejects_invalid_side() {
+    let (mut svm, creator) = setup();
+    let tx = create_battle_side_tx(&svm, &creator, 1, 100_000_000, 2);
+    assert!(svm.send_transaction(tx).is_err());
+}
+
+#[test]
+fn create_battle_rejects_stake_below_new_minimum() {
+    let (mut svm, creator) = setup();
+    let tx = create_battle_tx(&svm, &creator, 1, 40_000_000); // 0.04 SOL
+    assert!(svm.send_transaction(tx).is_err());
+}
+
+#[test]
+fn create_battle_accepts_exact_maximum_and_rejects_above() {
+    let (mut svm, creator) = setup();
+    svm.airdrop(&creator.pubkey(), 30_000_000_000).unwrap();
+
+    let ok = create_battle_tx(&svm, &creator, 1, 10_000_000_000); // exactly 10 SOL
+    assert!(svm.send_transaction(ok).is_ok());
+
+    let too_high = create_battle_tx(&svm, &creator, 2, 10_000_000_001);
+    assert!(svm.send_transaction(too_high).is_err());
 }

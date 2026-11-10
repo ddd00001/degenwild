@@ -16,8 +16,13 @@ declare_id!("6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV");
 pub mod degenwild {
     use super::*;
 
-    pub fn create_battle(ctx: Context<CreateBattle>, battle_id: u64, amount: u64) -> Result<()> {
-        crate::instructions::create_battle::handle_create_battle(ctx, battle_id, amount)
+    pub fn create_battle(
+        ctx: Context<CreateBattle>,
+        battle_id: u64,
+        amount: u64,
+        creator_side: u8,
+    ) -> Result<()> {
+        crate::instructions::create_battle::handle_create_battle(ctx, battle_id, amount, creator_side)
     }
 
     pub fn join_battle(ctx: Context<JoinBattle>, amount: u64) -> Result<()> {
@@ -30,6 +35,10 @@ pub mod degenwild {
 
     pub fn settle_battle(ctx: Context<SettleBattle>) -> Result<()> {
         crate::instructions::settle_battle::handle_settle_battle(ctx)
+    }
+
+    pub fn refund_expired_battle(ctx: Context<RefundExpiredBattle>) -> Result<()> {
+        crate::instructions::refund_expired_battle::handle_refund_expired_battle(ctx)
     }
 
     pub fn initialize_platform_config(ctx: Context<InitializePlatformConfig>) -> Result<()> {

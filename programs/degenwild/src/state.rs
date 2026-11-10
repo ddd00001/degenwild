@@ -6,6 +6,7 @@ pub enum BattleStatus {
     Joined,
     RandomnessPending,
     Settled,
+    Refunded,
 }
 
 #[account]
@@ -19,6 +20,10 @@ pub struct Battle {
     pub randomness_seed: [u8; 32],
     pub randomness_account: Pubkey,
     pub winner: Option<Pubkey>,
+    /// 0 = Heads, 1 = Tails (the creator's pick).
+    pub creator_side: u8,
+    /// Slot at which the opponent joined (used for the refund timeout).
+    pub joined_slot: u64,
     pub bump: u8,
 }
 

@@ -5,6 +5,9 @@ pub enum ErrorCode {
     #[msg("Stake is below the minimum")]
     StakeTooLow,
 
+    #[msg("Stake is above the maximum")]
+    StakeTooHigh,
+
     #[msg("Battle is not open")]
     BattleNotOpen,
 
@@ -34,4 +37,13 @@ pub enum ErrorCode {
 
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+
+    #[msg("Side must be 0 (Heads) or 1 (Tails)")]
+    InvalidSide,
+
+    #[msg("ORAO randomness is already fulfilled; settle instead of refunding")]
+    RandomnessAlreadyFulfilled,
+
+    #[msg("Refund timeout has not passed yet")]
+    RefundTooEarly,
 }
