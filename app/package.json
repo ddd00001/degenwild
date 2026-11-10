@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "dev:local": "VITE_CLUSTER=localnet vite",
     "codegen": "node scripts/codama.mjs",
-    "e2e:local": "tsx scripts/e2e-local.ts"
+    "e2e:local": "tsx scripts/e2e-local.ts",
+    "bot": "tsx scripts/settle-bot.mts"
   },
   "dependencies": {
     "@solana/kit": "^8.6.0",

@@ -156,3 +156,34 @@ dialog code{background:#241618;padding:2px 6px;border-radius:4px;font-size:11px}
 .battle-action{gap:6px}
 .replay-btn{flex:0 0 34px;height:34px;border-radius:6px;border:1px solid #463033;background:#160f10;color:#ff7a80;font-size:12px}
 .replay-btn:hover{border-color:var(--red);color:#fff;background:#2a1416}
+.recent-list{display:grid;gap:6px;margin-top:14px}
+.recent-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto 34px;align-items:center;gap:12px;padding:9px 12px;background:#100d0d;border:1px solid #241b1b;border-radius:8px;font-size:12px;color:#b9a9aa}
+.recent-row b{color:#fff}.recent-row.mine-win{border-color:#2f5d3a}
+.recent-coin{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:900 13px 'Barlow Condensed';border:2px solid #ff7a1f}
+.recent-coin.heads{background:#e5241f;color:#fff}.recent-coin.tails{background:#151515;color:#ff3038}
+.recent-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent-time{font-size:10px;color:#7d7070;white-space:nowrap}
+.double-down-btn{width:100%;max-width:300px;height:44px;border-radius:7px;border:1px solid #ff9a3d;background:linear-gradient(105deg,#ff7a1f,#d1340f);color:#fff;font-weight:800;font-size:13px;box-shadow:0 0 22px #ff7a1f55;text-shadow:0 1px #7a2a06}
+.double-down-btn:hover{filter:brightness(1.12)}
+/* cleaner match pop-up */
+.match-dialog{padding:22px 24px 22px}
+.match-close{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;border:1px solid transparent;background:transparent;color:#9b8d8d;font-size:24px;line-height:1}
+.match-close:hover{color:#fff;border-color:#4a2a2d;background:#1d1213}
+.match-kicker{font-size:10px}
+.match-pot{font-size:28px;margin:6px 0 16px}
+.match-stage{height:170px;margin:8px 0 2px}
+.match-status{min-height:0;font-size:12px;color:#a99b9b}
+.match-claimed{font-size:12px;margin-top:6px}
+.match-actions{margin-top:14px}
+.match-actions:empty{display:none}
+.match-claimed{display:inline-block;margin-top:10px;padding:6px 12px;border-radius:20px;background:#12301980;border:1px solid #2f8a47;color:#7cf09c;font-size:12px;font-weight:700}
+.match-optional{font-size:10px;color:#7d7070}
+.match-coin{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font:900 26px 'Barlow Condensed';border:3px solid #ff7a1f;box-shadow:inset 0 -5px 12px #00000050;transition:.4s}
+.match-coin.heads{background:radial-gradient(circle at 35% 30%,#ff8a4a,#e5241f 55%,#8d0d12);color:#fff}
+.match-coin.tails{background:radial-gradient(circle at 35% 30%,#3b3b3b,#151515 60%,#050505);color:#ff3038}
+.match-player.winner .match-coin{border-color:#2f8a47;box-shadow:0 0 0 4px #2f8a4733,0 0 26px #2f8a4799}
+.match-receipt{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;margin-top:12px;padding:9px 12px;border:1px solid #3a2729;border-radius:8px;background:#120d0d;font-size:12px;color:#b9a9aa}
+.match-receipt b{color:#fff}
+.match-receipt a{color:#ff7a80;font-family:ui-monospace,Menlo,monospace;font-size:11px;text-decoration:none}
+.match-receipt a:hover{text-decoration:underline}
+.match-receipt-muted{color:#6f6464;font-size:11px}

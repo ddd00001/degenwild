@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Address, type Instruction, some } from '@solana/kit';
+import { type Address, type Instruction, none, some } from '@solana/kit';
 import {
   useConnect,
   useConnectedWallet,
@@ -42,6 +42,7 @@ import {
 } from './chain';
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
+import { type GameResult, GameHistory } from './history';
 
 type Side = 0 | 1;
 const SIDE_NAME = ['HEADS', 'TAILS'] as const;
@@ -62,6 +63,36 @@ function parseSol(input: string): bigint | null {
 }
 const short = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;
 const avatar = (a: string) => a[0].toUpperCase();
+
+function timeAgo(t: number | null): string {
+  if (!t) return '';
+  const s = Math.max(0, Math.floor(Date.now() / 1000 - t));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+/** Shapes a finished-game event like a battle so rows and replays can reuse the battle UI. */
+function resultToBattle(r: GameResult): BattleView {
+  const settled = r.kind === 'settled';
+  return {
+    address: r.battle,
+    discriminator: new Uint8Array(8),
+    creator: r.creator,
+    opponent: some(r.opponent),
+    amount: settled ? (r.payout + r.fee) / 2n : r.amount,
+    battleId: r.battleId,
+    status: settled ? BattleStatus.Settled : BattleStatus.Refunded,
+    randomnessSeed: new Uint8Array(32),
+    randomnessAccount: r.battle,
+    winner: settled ? some(r.winner) : none(),
+    // Settled: the creator's side follows from who won. Refund events don't carry it (shown as "?").
+    creatorSide: settled ? (r.winner === r.creator ? r.coin : 1 - r.coin) : 255,
+    joinedSlot: 0n,
+    bump: 0,
+  };
+}
 
 const skipKey = (a: string) => `dw-skip-username:${a}`;
 function skippedUsername(a: string): boolean {
@@ -103,8 +134,9 @@ export default function App() {
   const [stakeInput, setStakeInput] = useState('0.1');
   const [battles, setBattles] = useState<BattleView[]>([]);
   const [randomness, setRandomness] = useState<Record<string, Randomness>>({});
-  const [finished, setFinished] = useState<BattleView[]>([]);
-  const lastSeen = useRef<{ battles: BattleView[]; rnd: Record<string, Randomness> }>({ battles: [], rnd: {} });
+  // Finished games, read from the program's BattleSettled / BattleRefunded events (newest first).
+  const [results, setResults] = useState<GameResult[]>([]);
+  const history = useRef(new GameHistory(client.rpc));
   const [slot, setSlot] = useState<bigint>(0n);
   const [balance, setBalance] = useState<bigint | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -146,22 +178,14 @@ export default function App() {
       );
       const rnd = Object.fromEntries(entries);
 
-      // Settle and refund close the battle account, so remember how battles that just
-      // disappeared ended (from the randomness we last saw) for this session's results list.
-      const prev = lastSeen.current;
-      const ended: BattleView[] = [];
-      for (const b of prev.battles) {
-        if (b.status !== BattleStatus.RandomnessPending || all.some((x) => x.address === b.address)) continue;
-        const r = prev.rnd[b.address];
-        if (r?.state === 'fulfilled') {
-          const winner = r.coin === b.creatorSide ? b.creator : opponentOf(b);
-          ended.push({ ...b, status: BattleStatus.Settled, winner: winner ? some(winner) : b.winner });
-        } else {
-          ended.push({ ...b, status: BattleStatus.Refunded });
-        }
+      // Settled/refunded battles close their accounts; their outcome lives on in the event log.
+      try {
+        const fresh = await history.current.poll();
+        if (fresh.length)
+          setResults((r) => [...fresh, ...r.filter((x) => !fresh.some((f) => f.signature === x.signature))].slice(0, 60));
+      } catch {
+        /* history is best-effort */
       }
-      if (ended.length) setFinished((f) => [...ended, ...f.filter((x) => !ended.some((e) => e.address === x.address))].slice(0, 10));
-      lastSeen.current = { battles: all, rnd };
 
       setBattles(all);
       setRandomness(rnd);
@@ -250,8 +274,37 @@ export default function App() {
     }
   }, [battles, me, match, slot]);
   useEffect(() => {
-    if (match && randomness[match.address]) setMatchRnd(randomness[match.address]);
-  }, [match, randomness]);
+    if (!match) return;
+    if (randomness[match.address]) return setMatchRnd(randomness[match.address]);
+    // Settled before we saw the coin land (e.g. by the auto-settle bot): take the result from its event.
+    const r = results.find((x) => x.battle === match.address);
+    if (r?.kind === 'settled') {
+      setMatchRnd({ state: 'fulfilled', coin: r.coin });
+      setMatchClaimed(true);
+    }
+  }, [match, randomness, results]);
+
+  // The bot can settle a battle between two polls, so we may never see it "pending".
+  // A fresh result for one of my battles (last ~90s) opens the pop-up too.
+  useEffect(() => {
+    if (!me || match) return;
+    const now = Date.now() / 1000;
+    const r = results.find(
+      (x) =>
+        x.kind === 'settled' &&
+        (x.creator === me || x.opponent === me) &&
+        !seenMatches.current.has(x.battle) &&
+        x.blockTime !== null &&
+        now - x.blockTime < 90,
+    );
+    if (r && r.kind === 'settled') {
+      seenMatches.current.add(r.battle);
+      setMatch(resultToBattle(r));
+      setMatchRnd({ state: 'fulfilled', coin: r.coin });
+      setMatchClaimed(true);
+      setMatchReplay(false);
+    }
+  }, [results, me, match]);
 
   /** Re-runs the match pop-up for a battle whose coin has already landed. */
   const replay = (b: BattleView) => {
@@ -294,10 +347,15 @@ export default function App() {
         ? battles
             .filter((b) => b.creator === me || opponentOf(b) === me)
             .filter((b) => b.status !== BattleStatus.Open)
-            .concat(finished.filter((b) => b.creator === me || opponentOf(b) === me))
-            .slice(0, 12)
+            .concat(
+              results
+                .filter((r) => r.creator === me || r.opponent === me)
+                .filter((r) => !battles.some((b) => b.address === r.battle))
+                .map(resultToBattle),
+            )
+            .slice(0, 15)
         : [],
-    [battles, finished, me],
+    [battles, results, me],
   );
   const myOpen = open.filter((b) => b.creator === me);
   const othersOpen = open.filter((b) => b.creator !== me);
@@ -541,6 +599,40 @@ export default function App() {
                 )}
               </div>
             </section>
+
+            <section className="lobby-section">
+              <div className="lobby-heading">
+                <div>
+                  <div className="eyebrow">LIVE FEED</div>
+                  <h2>Recent games</h2>
+                </div>
+              </div>
+              <div className="recent-list">
+                {results.filter((r) => r.kind === 'settled').length === 0 ? (
+                  <div className="empty-state">No finished games yet.</div>
+                ) : (
+                  results
+                    .filter((r): r is Extract<GameResult, { kind: 'settled' }> => r.kind === 'settled')
+                    .slice(0, 10)
+                    .map((r) => {
+                      const loser = r.winner === r.creator ? r.opponent : r.creator;
+                      const nm = (a: Address) => (a === me ? 'You' : (names.get(a) ?? short(a)));
+                      return (
+                        <div key={r.signature} className={`recent-row ${r.winner === me ? 'mine-win' : ''}`}>
+                          <span className={`recent-coin ${r.coin ? 'tails' : 'heads'}`}>{r.coin ? 'T' : 'H'}</span>
+                          <span className="recent-text">
+                            <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b>{fmtSol(r.payout)} SOL</b>
+                          </span>
+                          <span className="recent-time">{timeAgo(r.blockTime)}</span>
+                          <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={() => replay(resultToBattle(r))}>
+                            ▶
+                          </button>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </section>
           </section>
         ) : (
           <section className="view active">
@@ -607,6 +699,23 @@ export default function App() {
           claiming={busy === `settle:${match.address}`}
           claimed={matchClaimed}
           replay={matchReplay}
+          payoutTx={results.find((r) => r.kind === 'settled' && r.battle === match.address)?.signature}
+          doubleDown={
+            signer
+              ? {
+                  amount: match.amount * 2n > MAX_STAKE_LAMPORTS ? MAX_STAKE_LAMPORTS : match.amount * 2n,
+                  busy: busy === 'double',
+                  onClick: async (amount, s) => {
+                    const ok = await send(
+                      'double',
+                      async () => (await buildCreate(signer, amount, s)).ix,
+                      `Double Down: ${fmtSol(amount)} SOL on ${SIDE_NAME[s]} is open — waiting for a challenger.`,
+                    );
+                    if (ok) setMatch(null);
+                  },
+                }
+              : undefined
+          }
           onClaim={async () => {
             const ok = await send(
               `settle:${match.address}`,

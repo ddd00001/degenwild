@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Address } from '@solana/kit';
 import { type BattleView, type Randomness, opponentOf, payoutFor } from './chain';
+import { explorerTx } from './config';
 
 type Phase = 'waiting' | 'countdown' | 'flip' | 'result';
 
@@ -21,6 +22,10 @@ export function MatchScreen(props: {
   claiming: boolean;
   claimed: boolean;
   replay?: boolean;
+  /** Signature of the transaction that paid the winner, if known (from the event log). */
+  payoutTx?: string;
+  /** Double Down: open a new battle at this stake on the same side. */
+  doubleDown?: { amount: bigint; busy: boolean; onClick: (amount: bigint, side: 0 | 1) => void };
   onClaim: () => void;
   onClose: () => void;
 }) {
@@ -75,14 +80,19 @@ export function MatchScreen(props: {
 
   const player = (a: Address | null, side: number) => (
     <div className={`match-player ${phase === 'result' && a === winner ? 'winner' : ''} ${phase === 'result' && a !== winner ? 'loser' : ''}`}>
-      <span className="match-avatar">{a ? props.nameOf(a)[0].toUpperCase() : '?'}</span>
+      <span className={`match-coin ${side === 1 ? 'tails' : 'heads'}`} aria-label={SIDE[side] ?? 'Unknown side'}>
+        {side === 1 ? 'T' : side === 0 ? 'H' : '?'}
+      </span>
       <b>{a === me ? 'You' : a ? props.nameOf(a) : '…'}</b>
       <small>{SIDE[side]}</small>
     </div>
   );
 
   return (
-    <dialog ref={dialog} className="match-dialog" onClose={props.onClose} onCancel={(e) => phase !== 'result' && phase !== 'waiting' && e.preventDefault()}>
+    <dialog ref={dialog} className="match-dialog" onClose={props.onClose}>
+      <button className="match-close" onClick={props.onClose} aria-label="Close">
+        ×
+      </button>
       <div className="match-kicker">{props.replay ? 'REPLAY' : phase === 'result' ? 'RESULT' : 'MATCH FOUND'}</div>
       <div className="match-pot">{props.fmtSol(pot)} SOL POT</div>
 
@@ -119,6 +129,23 @@ export function MatchScreen(props: {
           <>
             <div className="match-landed">LANDED {SIDE[coin]}</div>
             <div className={`match-outcome ${iWon ? 'win' : 'loss'}`}>{iWon ? `YOU WON ${props.fmtSol(payout)} SOL` : 'YOU LOST'}</div>
+            {iWon && props.claimed && !props.replay && (
+              <div className="match-claimed">✓ Already sent to your wallet — nothing to claim</div>
+            )}
+            {props.replay && winner && (
+              <div className="match-receipt">
+                <span>
+                  <b>{winner === me ? 'You' : props.nameOf(winner)}</b> got paid <b>{props.fmtSol(payout)} SOL</b>
+                </span>
+                {props.payoutTx ? (
+                  <a href={explorerTx(props.payoutTx)} target="_blank" rel="noreferrer" title={props.payoutTx}>
+                    tx {props.payoutTx.slice(0, 6)}…{props.payoutTx.slice(-6)} ↗
+                  </a>
+                ) : (
+                  <span className="match-receipt-muted">payout tx not in recent history</span>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -129,11 +156,17 @@ export function MatchScreen(props: {
             {props.claiming ? 'Confirm in wallet…' : `Claim ${props.fmtSol(payout)} SOL`}
           </button>
         )}
-        {phase === 'result' && iWon && props.claimed && !props.replay && <div className="match-claimed">Paid to your wallet ✓</div>}
-        {(phase === 'result' || phase === 'waiting') && (
-          <button className="link-btn" onClick={props.onClose}>
-            {phase === 'waiting' ? 'Hide — I’ll watch from the lobby' : iWon && !props.claimed && !props.replay ? 'Claim later' : 'Close'}
+        {phase === 'result' && iWon && !props.replay && props.doubleDown && (
+          <button
+            className="double-down-btn"
+            disabled={props.doubleDown.busy}
+            onClick={() => props.doubleDown!.onClick(props.doubleDown!.amount, mySide as 0 | 1)}
+          >
+            {props.doubleDown.busy ? 'Confirm in wallet…' : `🔥 Double Down · ${props.fmtSol(props.doubleDown.amount)} SOL on ${SIDE[mySide]}`}
           </button>
+        )}
+        {phase === 'result' && iWon && !props.replay && props.doubleDown && (
+          <small className="match-optional">Optional — bet again at double the stake, or close with ×</small>
         )}
       </div>
     </dialog>
