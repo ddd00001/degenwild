@@ -13,10 +13,10 @@ degenwild = "6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV"
 degenwild = "6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "cargo test"
+test = "cargo build-sbf --arch v2 && cargo test"
 
 [hooks]
