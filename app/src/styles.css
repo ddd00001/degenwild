@@ -119,3 +119,40 @@ dialog a{color:#ff7a80}
 .link-btn{background:none;border:0;color:#b9a9aa;font-size:12px;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
 .link-btn:hover{color:#fff}
 dialog code{background:#241618;padding:2px 6px;border-radius:4px;font-size:11px}
+.join-small.inline{height:30px;margin-left:10px}
+
+/* ---- match screen ---- */
+.match-dialog{width:min(520px,calc(100vw - 32px));max-width:none;padding:28px 26px 22px;text-align:center;background:radial-gradient(ellipse at 50% 35%,#3a1216 0%,#171010 45%,#0d0b0b 100%);border:1px solid #8f2a32;box-shadow:0 0 80px #ff202b33,0 30px 90px #000d}
+.match-dialog::backdrop{background:#000d;backdrop-filter:blur(3px)}
+.match-kicker{font:800 11px Inter;letter-spacing:3px;color:#ff5a61}
+.match-pot{font:900 34px/1 'Barlow Condensed';margin:8px 0 18px;text-shadow:0 0 24px #ff202b55}
+.match-versus{display:grid;grid-template-columns:1fr 44px 1fr;align-items:center;gap:8px}
+.match-player{display:grid;justify-items:center;gap:5px;transition:.4s}
+.match-player b{font-size:14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.match-player small{font:800 10px Inter;letter-spacing:2px;color:#a79b9b}
+.match-avatar{width:54px;height:54px;border-radius:12px;display:grid;place-items:center;background:#281315;border:1px solid #603036;color:#ff747a;font:900 26px 'Barlow Condensed'}
+.match-player.winner .match-avatar{background:#123019;border-color:#2f8a47;color:#7cf09c;box-shadow:0 0 26px #2f8a4766}
+.match-player.loser{opacity:.45}
+.match-vs{font:900 18px 'Barlow Condensed';color:#ff3038;letter-spacing:2px}
+.match-stage{height:190px;display:grid;place-items:center;perspective:900px;margin:12px 0 4px}
+.match-count{font:900 130px/1 'Barlow Condensed';color:#fff;text-shadow:0 0 40px #ff202b;animation:countPop .9s ease-out both}
+@keyframes countPop{0%{transform:scale(1.8);opacity:0}25%{transform:scale(1);opacity:1}80%{opacity:1}100%{transform:scale(.7);opacity:0}}
+.coin3d-wrap{width:140px;height:140px}
+.coin3d-wrap.idle .coin3d{animation:coinIdle 2.4s linear infinite}
+@keyframes coinIdle{to{transform:rotateY(360deg)}}
+.coin3d{position:relative;width:100%;height:100%;transform-style:preserve-3d}
+.coin-face{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;font:900 64px 'Barlow Condensed';backface-visibility:hidden;border:6px solid #ff7a1f;box-shadow:inset 0 0 0 4px #00000040,inset 0 -10px 24px #00000050,0 0 34px #ff3a1f55}
+.coin-face.heads{background:radial-gradient(circle at 35% 30%,#ff8a4a,#e5241f 55%,#8d0d12);color:#fff}
+.coin-face.tails{background:radial-gradient(circle at 35% 30%,#3b3b3b,#151515 60%,#050505);color:#ff3038;transform:rotateY(180deg)}
+.match-status{min-height:64px;color:#c9b9b9;font-size:13px}
+.match-landed{font:800 12px Inter;letter-spacing:3px;color:#a79b9b}
+.match-outcome{font:900 38px/1.1 'Barlow Condensed';margin-top:6px;animation:countPop 0s}
+.match-outcome.win{color:#7cf09c;text-shadow:0 0 26px #2f8a4788}
+.match-outcome.loss{color:#ff5a61}
+.match-actions{display:grid;gap:8px;justify-items:center;margin-top:10px}
+.match-actions .primary-btn{width:100%;max-width:300px}
+.match-claimed{color:#7cf09c;font-weight:700;font-size:13px}
+@media (prefers-reduced-motion: reduce){.coin3d-wrap.idle .coin3d,.match-count{animation:none}}
+.battle-action{gap:6px}
+.replay-btn{flex:0 0 34px;height:34px;border-radius:6px;border:1px solid #463033;background:#160f10;color:#ff7a80;font-size:12px}
+.replay-btn:hover{border-color:var(--red);color:#fff;background:#2a1416}

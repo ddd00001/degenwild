@@ -33,13 +33,14 @@ import {
   getDeleteProfileInstructionAsync,
   getProfileDecoder,
   getProfileDiscriminatorBytes,
+  getInitializePlatformConfigInstructionAsync,
 } from './generated';
 import { COINFLIP_FEE_BPS, ORAO_VRF_PROGRAM, REFUND_TIMEOUT_SLOTS } from './config';
 import type { AppClient } from './client';
 import PROGRAM_ERRORS from './program-errors.json';
 
 const programError = (code: number) =>
-  (PROGRAM_ERRORS as Record<string, string>)[code] ?? `Program error ${code}`;
+  ((PROGRAM_ERRORS as Record<string, string>)[code] ?? `Program error ${code}`).replace(/ORAO randomness/g, 'The fair result');
 
 type Rpc = AppClient['rpc'];
 
@@ -124,8 +125,8 @@ export async function fetchOraoNetwork(rpc: Rpc): Promise<OraoNetwork> {
     seeds: [utf8.encode('orao-vrf-network-configuration')],
   });
   const acc = await fetchEncodedAccount(rpc, networkState, { commitment: 'confirmed' });
-  if (!acc.exists) throw new Error('ORAO VRF is not available on this cluster.');
-  if (acc.programAddress !== ORAO_VRF_PROGRAM) throw new Error('ORAO network state has an unexpected owner.');
+  if (!acc.exists) throw new Error('The randomness network is not available on this cluster.');
+  if (acc.programAddress !== ORAO_VRF_PROGRAM) throw new Error('The randomness network returned unexpected data.');
   const d = acc.data;
   return {
     treasury: addrDec.decode(d.slice(40, 72)),
@@ -314,4 +315,9 @@ export async function buildDeleteProfile(owner: TransactionSigner, name: string)
 
 export async function profileAddress(owner: Address) {
   return (await findProfilePda({ owner }))[0];
+}
+
+/** Admin only: creates the platform config (treasury starts as the admin wallet). */
+export async function buildInitPlatform(admin: TransactionSigner) {
+  return (await getInitializePlatformConfigInstructionAsync({ admin })) as Instruction;
 }

@@ -16,6 +16,9 @@ export const RPC_URL: string = import.meta.env?.VITE_RPC_URL ?? DEFAULT_RPC[CLUS
 /** Wallet Standard chain. Wallets rarely advertise solana:localnet, so override with VITE_WALLET_CHAIN=solana:devnet when testing locally. */
 export const CHAIN = (import.meta.env?.VITE_WALLET_CHAIN ?? `solana:${CLUSTER}`) as `solana:${string}`;
 
+/** Mirrors PLATFORM_ADMIN in programs/degenwild/src/constants.rs. */
+export const PLATFORM_ADMIN = address('4VUJ1pCqT1TWQhKFSyDC7EP9HkEAUSGrcaBpYhCEfx7b');
+
 export const ORAO_VRF_PROGRAM = address('VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y');
 
 /** Mirrors programs/degenwild/src/constants.rs */

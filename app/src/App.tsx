@@ -12,6 +12,7 @@ import {
   CLUSTER,
   MAX_STAKE_LAMPORTS,
   MIN_STAKE_LAMPORTS,
+  PLATFORM_ADMIN,
   POLL_MS,
   explorerTx,
 } from './config';
@@ -23,6 +24,7 @@ import {
   buildCreate,
   buildCreateProfile,
   buildDeleteProfile,
+  buildInitPlatform,
   buildJoin,
   buildRefund,
   buildSettle,
@@ -30,6 +32,7 @@ import {
   fetchAllBattles,
   fetchAllUsernames,
   fetchRandomness,
+  fetchTreasury,
   isUsernameTaken,
   opponentOf,
   payoutFor,
@@ -38,6 +41,7 @@ import {
   winnerOf,
 } from './chain';
 import { BattleStatus } from './generated';
+import { MatchScreen } from './MatchScreen';
 
 type Side = 0 | 1;
 const SIDE_NAME = ['HEADS', 'TAILS'] as const;
@@ -108,8 +112,14 @@ export default function App() {
   const [walletOpen, setWalletOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
   const [names, setNames] = useState<Names>(new Map());
+  const [treasury, setTreasury] = useState<Address | null | undefined>(undefined);
   const [namesLoaded, setNamesLoaded] = useState(false);
   const [profileOpen, setProfileOpen] = useState<'first' | 'edit' | null>(null);
+  const [match, setMatch] = useState<BattleView | null>(null);
+  const [matchRnd, setMatchRnd] = useState<Randomness | undefined>(undefined);
+  const [matchClaimed, setMatchClaimed] = useState(false);
+  const [matchReplay, setMatchReplay] = useState(false);
+  const seenMatches = useRef<Set<string>>(new Set());
   const toast = useToast();
 
   const connected = useConnectedWallet(client);
@@ -119,11 +129,13 @@ export default function App() {
   // -------------------------------------------------------- polling chain state
   const refresh = useCallback(async () => {
     try {
-      const [all, s, usernames] = await Promise.all([
+      const [all, s, usernames, tre] = await Promise.all([
         fetchAllBattles(client.rpc),
         client.rpc.getSlot({ commitment: 'confirmed' }).send(),
         fetchAllUsernames(client.rpc),
+        fetchTreasury(client.rpc),
       ]);
+      setTreasury(tre);
       setNames(usernames);
       setNamesLoaded(true);
       setSlot(s);
@@ -216,6 +228,43 @@ export default function App() {
     if (me && namesLoaded && !myName && !skippedUsername(me)) setProfileOpen((p) => p ?? 'first');
     if (!me) setProfileOpen(null);
   }, [me, namesLoaded, myName]);
+
+  // Match pop-up: open when a battle I'm in has just been joined. Skip ones that were joined
+  // long before this page loaded (~60s), so reloading doesn't replay old matches.
+  useEffect(() => {
+    if (!me || match) return;
+    const fresh = battles.find(
+      (b) =>
+        b.status === BattleStatus.RandomnessPending &&
+        (b.creator === me || opponentOf(b) === me) &&
+        !seenMatches.current.has(b.address) &&
+        slot > 0n &&
+        slot - b.joinedSlot < 150n,
+    );
+    if (fresh) {
+      seenMatches.current.add(fresh.address);
+      setMatch(fresh);
+      setMatchRnd(undefined);
+      setMatchClaimed(false);
+      setMatchReplay(false);
+    }
+  }, [battles, me, match, slot]);
+  useEffect(() => {
+    if (match && randomness[match.address]) setMatchRnd(randomness[match.address]);
+  }, [match, randomness]);
+
+  /** Re-runs the match pop-up for a battle whose coin has already landed. */
+  const replay = (b: BattleView) => {
+    const r = randomness[b.address];
+    const w = winnerOf(b);
+    const coin = r?.state === 'fulfilled' ? r.coin : w ? ((w === b.creator ? b.creatorSide : 1 - b.creatorSide) as 0 | 1) : null;
+    if (coin === null) return;
+    seenMatches.current.add(b.address);
+    setMatch(b);
+    setMatchRnd({ state: 'fulfilled', coin });
+    setMatchClaimed(b.status === BattleStatus.Settled);
+    setMatchReplay(true);
+  };
 
   const stake = parseSol(stakeInput);
   const stakeError =
@@ -329,6 +378,30 @@ export default function App() {
               </div>
             )}
 
+            {treasury === null && !loadError && (
+              <div className="banner">
+                {me === PLATFORM_ADMIN && signer ? (
+                  <>
+                    <b>Admin:</b> the platform isn't set up on {CLUSTER} yet, so battles can't be settled.{' '}
+                    <button
+                      className="join-small hot inline"
+                      disabled={busy !== null}
+                      onClick={() =>
+                        void send('init', () => buildInitPlatform(signer), 'Platform initialized — fees go to your wallet.')
+                      }
+                    >
+                      {busy === 'init' ? 'Confirm…' : 'Initialize platform'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <b>Heads up:</b> DEGEN WILD isn't fully set up on {CLUSTER} yet. Battles can be created and joined, but
+                    not settled until the admin finishes setup.
+                  </>
+                )}
+              </div>
+            )}
+
             <section className="create-panel panel">
               <div className="section-top">
                 <div>
@@ -409,6 +482,7 @@ export default function App() {
                       slot={slot}
                       rnd={randomness[b.address]}
                       busy={busy}
+                      onReplay={() => replay(b)}
                       onCancel={() =>
                         void send(`cancel:${b.address}`, () => buildCancel(signer!, b), 'Battle cancelled — stake refunded.')
                       }
@@ -459,7 +533,7 @@ export default function App() {
                         void send(
                           `join:${b.address}`,
                           () => buildJoin(client.rpc, signer, b),
-                          `Joined for ${fmtSol(b.amount)} SOL on ${SIDE_NAME[1 - b.creatorSide]}. Waiting for ORAO…`,
+                          `Joined for ${fmtSol(b.amount)} SOL on ${SIDE_NAME[1 - b.creatorSide]}. Flipping…`,
                         );
                       }}
                     />
@@ -523,6 +597,27 @@ export default function App() {
       </div>
 
       {walletOpen && <WalletDialog onClose={() => setWalletOpen(false)} />}
+      {match && me && (
+        <MatchScreen
+          battle={match}
+          rnd={matchRnd}
+          me={me}
+          nameOf={(a) => names.get(a) ?? short(a)}
+          fmtSol={fmtSol}
+          claiming={busy === `settle:${match.address}`}
+          claimed={matchClaimed}
+          replay={matchReplay}
+          onClaim={async () => {
+            const ok = await send(
+              `settle:${match.address}`,
+              () => buildSettle(client.rpc, match),
+              `You won ${fmtSol(payoutFor(match.amount).payout)} SOL — paid to your wallet.`,
+            );
+            if (ok) setMatchClaimed(true);
+          }}
+          onClose={() => setMatch(null)}
+        />
+      )}
       {profileOpen && me && signer && (
         <ProfileDialog
           first={profileOpen === 'first'}
@@ -564,6 +659,7 @@ function BattleRow(props: {
   onCancel?: () => void;
   onSettle?: () => void;
   onRefund?: () => void;
+  onReplay?: () => void;
 }) {
   const { b, me, slot, rnd, busy } = props;
   const opp = opponentOf(b);
@@ -617,7 +713,7 @@ function BattleRow(props: {
           action = <span className="result-tag">LOSS</span>;
         }
       } else if (slot >= deadline) {
-        meta = 'VRF TIMED OUT';
+        meta = 'FLIP TIMED OUT';
         action = (
           <button className="join-small ghost" disabled={busy !== null} onClick={props.onRefund}>
             {isBusy('refund') ? 'Confirm…' : 'Refund both'}
@@ -665,7 +761,14 @@ function BattleRow(props: {
         <strong>{fmtSol(pot)} SOL</strong>
         <small>{meta}</small>
       </div>
-      <div className="battle-action">{action}</div>
+      <div className="battle-action">
+        {action}
+        {props.onReplay && (b.status === BattleStatus.Settled || rnd?.state === 'fulfilled') && (
+          <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={props.onReplay}>
+            ▶
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -815,14 +918,17 @@ function HowDialog({ onClose }: { onClose: () => void }) {
         goes into an on-chain escrow account owned by the DEGEN WILD program. You can cancel any time until someone joins.
       </p>
       <p>
-        <b>2.</b> An opponent joins with the exact same stake on the other side. Joining also requests verifiable randomness
-        from ORAO VRF; the joiner pays ORAO's small request fee.
+        <b>2.</b> An opponent joins with the exact same stake on the other side. Joining requests a provably fair random
+        result from an independent randomness network; the joiner pays its small fee (~0.0003 SOL).
       </p>
       <p>
-        <b>3.</b> Once ORAO fulfils, anyone can settle. The winner receives the pot minus a 3.5% platform fee. If ORAO never
-        answers within ~5 minutes, either player can refund both stakes.
+        <b>3.</b> Seconds later the coin lands. The winner claims the pot minus a 3.5% platform fee. If no result arrives within
+        ~5 minutes, either player can refund both stakes.
       </p>
-      <p className="dialog-muted">Neither player nor DEGEN WILD can choose the outcome — it comes from ORAO's randomness.</p>
+      <p className="dialog-muted">
+        Provably fair: neither player nor DEGEN WILD can choose the outcome. The randomness is signed by several independent
+        nodes and checked on-chain before anyone is paid.
+      </p>
     </Modal>
   );
 }
