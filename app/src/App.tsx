@@ -7,6 +7,7 @@ import { type BattleView, type Randomness, buildCancel, buildChangeUsername, bui
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
 import { RoadmapPage } from './components/RoadmapPage';
+import { Welcome, shouldShowWelcome } from './components/Welcome';
 import { Coin } from './components/Coin';
 import { Amount } from './components/Amount';
 import { type GameResult, GameHistory, resultToBattle } from './history';
@@ -78,6 +79,7 @@ export default function App() {
   const [busySince, setBusySince] = useState<number | null>(null);
   const [walletOpen, setWalletOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(shouldShowWelcome);
   const [names, setNames] = useState<Names>(new Map());
   const [treasury, setTreasury] = useState<Address | null | undefined>(undefined);
   const [namesLoaded, setNamesLoaded] = useState(false);
@@ -201,9 +203,9 @@ export default function App() {
   // First connect: ask for a username once names have loaded, unless they chose "later" this session.
   const myName = me ? names.get(me) : undefined;
   useEffect(() => {
-    if (me && namesLoaded && !myName && !skippedUsername(me)) setProfileOpen((p) => p ?? 'first');
+    if (me && namesLoaded && !myName && !skippedUsername(me) && !welcomeOpen) setProfileOpen((p) => p ?? 'first');
     if (!me) setProfileOpen(null);
-  }, [me, namesLoaded, myName]);
+  }, [me, namesLoaded, myName, welcomeOpen]);
 
   // Match pop-up: open when a battle I'm in has just been joined. Skip ones that were joined
   // long before this page loaded (~60s), so reloading doesn't replay old matches.
@@ -753,6 +755,7 @@ export default function App() {
         )}
       </div>
 
+      {welcomeOpen && <Welcome onClose={() => setWelcomeOpen(false)} />}
       {walletOpen && <WalletDialog onClose={() => setWalletOpen(false)} />}
       {match && (
         <MatchScreen
