@@ -11,7 +11,7 @@ import { signerFromFile } from '@solana/kit-plugin-signer';
 import { buildRefund, buildSettle, describeError, fetchAllBattles, fetchRandomness, opponentOf, refundDeadline } from '../src/chain';
 import { BattleStatus } from '../src/generated';
 
-const RPC = process.env.RPC ?? 'https://api.devnet.solana.com';
+const RPC = process.env.RPC ?? process.env.VITE_RPC_URL ?? 'https://api.devnet.solana.com';
 const KEYPAIR = process.env.BOT_KEYPAIR ?? `${homedir()}/.config/solana/id.json`;
 const POLL_MS = Number(process.env.POLL_MS ?? 3000);
 const LOW_BALANCE = 50_000_000n; // warn below 0.05 SOL
@@ -33,7 +33,7 @@ process.on('SIGINT', () => {
   log('stopping…');
 });
 
-log(`auto-settle bot on ${RPC} · fee payer ${short(c.identity.address)} · every ${POLL_MS}ms`);
+log(`auto-settle bot on ${RPC.replace(/([?&](api-)?key=)[^&]+/i, '$1…')} · fee payer ${short(c.identity.address)} · every ${POLL_MS}ms`);
 let ticks = 0;
 
 while (running) {
