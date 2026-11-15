@@ -4,7 +4,7 @@
 //   FAUCET_SECRET_KEY  JSON array of the faucet keypair's 64 bytes (a dedicated devnet-only wallet)
 //   FAUCET_RPC_URL     optional, defaults to the public devnet RPC
 //
-// Abuse limits: devnet only, fixed amount (FAUCET_DRIP_SOL, default 5), only to wallets that are nearly empty,
+// Abuse limits: devnet only, fixed amount (FAUCET_DRIP_SOL, default 0.4), only to wallets that are nearly empty,
 // one request per IP per 10 minutes, and a per-instance hourly cap. Worst case someone
 // drains the faucet wallet of devnet SOL, which has no value.
 import {
@@ -27,7 +27,7 @@ import {
 } from '@solana/kit';
 
 const RPC_URL = process.env.FAUCET_RPC_URL ?? 'https://api.devnet.solana.com';
-const DRIP = BigInt(Math.round(Number(process.env.FAUCET_DRIP_SOL ?? 5) * 1e9)); // default 5 SOL
+const DRIP = BigInt(Math.round(Number(process.env.FAUCET_DRIP_SOL ?? 0.4) * 1e9)); // default 0.4 SOL
 const MIN_DRIP = 200_000_000n; // if the faucet runs low, still send at least 0.2 SOL
 const ONLY_BELOW = 60_000_000n; // only fund wallets holding less than 0.06 SOL
 const IP_COOLDOWN_MS = 10 * 60_000;

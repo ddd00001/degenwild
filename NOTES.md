@@ -48,7 +48,7 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - House wallet `CMSs…7sqo` (`~/.config/solana/degenwild-faucet.json`, devnet only) is both the faucet and the house
   opponent, shown on the site as "Degen Bot" (`HOUSE_WALLET` in `src/config.ts`). Vercel env `FAUCET_SECRET_KEY`
   holds its key (set for Production + Preview). Top it up from the CLI wallet.
-- Faucet `app/api/faucet.ts`: sends FAUCET_DRIP_SOL (default 5) to near-empty wallets, or what it can spare (min 0.2).
+- Faucet `app/api/faucet.ts`: sends FAUCET_DRIP_SOL (default 0.4) to near-empty wallets, or what it can spare (min 0.2).
   1 per IP per 10 min, 60/h per instance.
 - House `app/server/house.ts` (bundled to `app/api/house.js` by `npm run build:api`, commit both): "Play house" button on your own open battle; the house joins and settles right away (no PC needed).
 - Bot: `npm run bot` also auto-joins open battles <= 5 SOL after 10 s as the house (HOUSE=0 to disable).
