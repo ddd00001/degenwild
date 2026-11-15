@@ -245,8 +245,8 @@ export default function App() {
     else toast.show('Demo wallet ready — pick a side and flip!');
   }, [fundDemo, toast]);
 
-  // Demo: when Degen Bot won against me, pay it out from the demo wallet (settle is permissionless),
-  // in case the house function timed out before it could settle.
+  // Demo: pay out my finished battles from the demo wallet (settle is permissionless, no prompt needed),
+  // whoever won, so nobody has to press Claim and Degen Bot wins never get stuck.
   const houseSettling = useRef(new Set<string>());
   useEffect(() => {
     if (!demo) return;
@@ -254,13 +254,20 @@ export default function App() {
       const r = randomness[b.address];
       if (r?.state !== 'fulfilled' || houseSettling.current.has(b.address)) continue;
       const winnerAddr = r.coin === b.creatorSide ? b.creator : opponentOf(b);
-      if (winnerAddr !== HOUSE_WALLET || (b.creator !== me && opponentOf(b) !== me)) continue;
+      if (!winnerAddr || (b.creator !== me && opponentOf(b) !== me)) continue;
       houseSettling.current.add(b.address);
       void buildSettle(client.rpc, b)
         .then((ix) => demo.client.sendTransaction([ix]))
-        .then(() => refresh(), () => { /* already settled by the house or bot */ });
+        .then(
+          () => {
+            setMatchClaimed((c) => c || match?.address === b.address);
+            void refresh();
+            void refreshBalance();
+          },
+          () => { /* already settled by the house or bot */ },
+        );
     }
-  }, [battles, randomness, demo, me, refresh]);
+  }, [battles, randomness, demo, me, match, refresh, refreshBalance]);
 
   /** Devnet: the house joins my open battle right away (server-side, no wallet prompt). */
   const playHouse = useCallback(
@@ -884,6 +891,7 @@ export default function App() {
           fmtSol={fmtSol}
           claiming={busy === `settle:${match.address}`}
           claimed={matchClaimed}
+          autoPay={!!demo}
           replay={matchReplay}
           payoutTx={results.find((r) => r.kind === 'settled' && r.battle === match.address)?.signature}
           doubleDown={

@@ -24,6 +24,8 @@ export function MatchScreen(props: {
   fmtSol: (l: bigint) => string;
   claiming: boolean;
   claimed: boolean;
+  /** Demo wallet: winnings are paid out automatically, so there is no Claim button. */
+  autoPay?: boolean;
   replay?: boolean;
   /** Signature of the transaction that paid the winner, if known (from the event log). */
   payoutTx?: string;
@@ -156,7 +158,7 @@ export function MatchScreen(props: {
               {iWon ? `YOU WON ${props.fmtSol(payout)} SOL` : playing ? 'YOU LOST' : `${winner ? props.nameOf(winner) : '?'} WON ${props.fmtSol(payout)} SOL`}
             </div>
             {iWon && props.claimed && !props.replay && (
-              <div className="match-claimed">✓ Already sent to your wallet — nothing to claim</div>
+              <div className="match-claimed">✓ Winnings sent to your wallet</div>
             )}
             {props.replay && winner && (
               <div className="match-receipt">
@@ -192,7 +194,10 @@ export function MatchScreen(props: {
             {props.open.cancelling ? 'Confirm in wallet…' : 'Cancel battle & refund my stake'}
           </button>
         )}
-        {phase === 'result' && iWon && !props.claimed && (
+        {phase === 'result' && iWon && !props.claimed && props.autoPay && (
+          <small className="match-optional">Sending your winnings to your wallet…</small>
+        )}
+        {phase === 'result' && iWon && !props.claimed && !props.autoPay && (
           <button className="primary-btn" disabled={props.claiming} onClick={props.onClaim}>
             {props.claiming ? 'Confirm in wallet…' : `Claim ${props.fmtSol(payout)} SOL`}
           </button>
@@ -203,7 +208,7 @@ export function MatchScreen(props: {
             disabled={props.doubleDown.busy}
             onClick={() => props.doubleDown!.onClick(props.doubleDown!.amount, mySide as 0 | 1)}
           >
-            {props.doubleDown.busy ? 'Confirm in wallet…' : `🔥 Double Down · ${props.fmtSol(props.doubleDown.amount)} SOL on ${SIDE[mySide]}`}
+            {props.doubleDown.busy ? 'Confirm in wallet…' : `Double Down · ${props.fmtSol(props.doubleDown.amount)} SOL on ${SIDE[mySide]}`}
           </button>
         )}
         {phase === 'result' && iWon && !props.replay && props.doubleDown && (
