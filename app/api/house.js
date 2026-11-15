@@ -12119,7 +12119,7 @@ function describeError(err) {
 
 // server/house.ts
 var RPC_URL2 = process.env.FAUCET_RPC_URL ?? "https://api.devnet.solana.com";
-var HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 5) * 1e9));
+var HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 1) * 1e9));
 var RESERVE = 20000000n;
 var IP_COOLDOWN_MS = 5e3;
 var lastByIp = /* @__PURE__ */ new Map();

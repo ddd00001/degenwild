@@ -13,6 +13,8 @@ const RPC =
 const TOKEN_PROGRAMS = ['TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'];
 const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const LIMIT = 100;
+/** Only this mint may be looked up (keeps strangers from burning RPC credits on other tokens). Keep in sync with WILD_MINT in src/config.ts. */
+const WILD_MINT = '';
 const cache = new Map<string, { at: number; body: string }>();
 
 function base58(bytes: Uint8Array): string {
@@ -91,6 +93,7 @@ const reply = (status: number, body: unknown, maxAge = 0) =>
 export async function GET(req: Request): Promise<Response> {
   const mint = new URL(req.url).searchParams.get('mint') ?? '';
   if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) return reply(400, { error: 'Invalid mint address.' });
+  if (mint !== WILD_MINT) return reply(403, { error: 'Only the $WILD leaderboard is served here.' });
 
   const hit = cache.get(mint);
   if (hit && Date.now() - hit.at < 60_000) return reply(200, hit.body, 60);

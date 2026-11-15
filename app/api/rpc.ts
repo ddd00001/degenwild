@@ -25,7 +25,10 @@ const ALLOWED = new Set([
   'simulateTransaction',
 ]);
 
-type RpcCall = { method?: unknown; id?: unknown };
+// getProgramAccounts is expensive: only allow scans of the DegenWild program.
+const DEGENWILD_PROGRAM = '6Gv48CrXyPgqNtJsPgAW95ynm6CvbvjkB5x2p3ru2dYV';
+
+type RpcCall = { method?: unknown; id?: unknown; params?: unknown };
 
 const reply = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -45,7 +48,12 @@ export async function POST(req: Request): Promise<Response> {
   }
   const calls = Array.isArray(body) ? body : [body];
   if (calls.length > 20) return reply(400, { error: 'batch too large' });
-  const bad = calls.find((c) => typeof c.method !== 'string' || !ALLOWED.has(c.method));
+  const bad = calls.find(
+    (c) =>
+      typeof c.method !== 'string' ||
+      !ALLOWED.has(c.method) ||
+      (c.method === 'getProgramAccounts' && !(Array.isArray(c.params) && c.params[0] === DEGENWILD_PROGRAM)),
+  );
   if (bad) return reply(403, { jsonrpc: '2.0', id: bad.id ?? null, error: { code: -32601, message: `Method not allowed: ${String(bad.method)}` } });
 
   const res = await fetch(UPSTREAM, { method: 'POST', headers: { 'content-type': 'application/json' }, body: text });

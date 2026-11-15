@@ -7,7 +7,7 @@
 //
 // House opponent (devnet only, on by default): if nobody joins an open battle within
 // HOUSE_DELAY_MS (default 10s), the bot's wallet joins it so a lone visitor still gets a game.
-// Only battles up to HOUSE_MAX_SOL (default 5). Disable with HOUSE=0.
+// Only battles up to HOUSE_MAX_SOL (default 1). Disable with HOUSE=0.
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { type Address, createClient } from '@solana/kit';
@@ -23,7 +23,7 @@ const LOW_BALANCE = 50_000_000n; // warn below 0.05 SOL
 const ON_MAINNET = /mainnet/i.test(RPC);
 const HOUSE = process.env.HOUSE !== '0' && !ON_MAINNET;
 const HOUSE_DELAY_MS = Number(process.env.HOUSE_DELAY_MS ?? 10_000);
-const HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 5) * 1e9));
+const HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 1) * 1e9));
 const HOUSE_RESERVE = 20_000_000n; // keep 0.02 SOL for fees and the randomness fee
 
 const c = await createClient()

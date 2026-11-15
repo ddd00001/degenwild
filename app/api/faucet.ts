@@ -31,6 +31,7 @@ const DRIP = BigInt(Math.round(Number(process.env.FAUCET_DRIP_SOL ?? 0.4) * 1e9)
 const MIN_DRIP = 200_000_000n; // if the faucet runs low, still send at least 0.2 SOL
 const ONLY_BELOW = 60_000_000n; // only fund wallets holding less than 0.06 SOL
 const IP_COOLDOWN_MS = 10 * 60_000;
+const HOUSE_RESERVE = 3_000_000_000n; // never drip below 3 SOL: the same wallet is Degen Bot's bankroll
 const HOURLY_CAP = 60;
 const SYSTEM_PROGRAM = address('11111111111111111111111111111111');
 
@@ -87,7 +88,7 @@ export async function POST(req: Request): Promise<Response> {
     const faucet = await createKeyPairSignerFromBytes(new Uint8Array(JSON.parse(secret) as number[]));
     const { value: faucetBalance } = await rpc.getBalance(faucet.address, { commitment: 'confirmed' }).send();
     // Send the full drip, or whatever the faucet can spare (but at least MIN_DRIP).
-    const spare = faucetBalance - 5_000_000n;
+    const spare = faucetBalance - HOUSE_RESERVE;
     const amount = spare >= DRIP ? DRIP : spare;
     if (amount < MIN_DRIP) return json(503, 'The faucet is empty right now — check back soon.');
 

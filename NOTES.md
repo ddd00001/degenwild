@@ -54,3 +54,11 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - House `app/server/house.ts` (bundled to `app/api/house.js` by `npm run build:api`, commit both): "Play house" button on your own open battle; the house joins and settles right away (no PC needed).
 - RPC: the deployed site calls `app/api/rpc.ts`, which forwards to Vercel env `FAUCET_RPC_URL` (Helius devnet URL; also used by faucet + house). Websockets use public devnet.
 - Bot: `npm run bot` also auto-joins open battles <= 5 SOL after 10 s as the house (HOUSE=0 to disable).
+
+## Security notes (2026-11-15)
+- Local `npm run build` refuses to run while `.env.local` has a keyed `VITE_RPC_URL` (use `VITE_RPC_URL= npm run build`).
+- `/api/rpc` allows only the site's methods and only scans the DegenWild program. `/api/holders` serves only the $WILD mint
+  (set `WILD_MINT` in BOTH `app/api/holders.ts` and `app/src/config.ts`).
+- Faucet keeps a 3 SOL reserve for Degen Bot; house plays battles up to 1 SOL (HOUSE_MAX_SOL).
+- `app/vercel.json` sets anti-framing and basic security headers.
+

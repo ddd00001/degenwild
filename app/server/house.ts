@@ -10,7 +10,7 @@ import { buildJoin, buildSettle, describeError, fetchBattle, fetchRandomness } f
 import { BattleStatus } from '../src/generated/index.ts';
 
 const RPC_URL = process.env.FAUCET_RPC_URL ?? 'https://api.devnet.solana.com';
-const HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 5) * 1e9));
+const HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 1) * 1e9));
 const RESERVE = 20_000_000n; // keep 0.02 SOL for fees
 const IP_COOLDOWN_MS = 5_000;
 const lastByIp = new Map<string, number>();
