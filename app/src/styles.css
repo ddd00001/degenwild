@@ -770,3 +770,5 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 .battle-row:hover .pot-val{filter:drop-shadow(0 0 20px #f5c54266)}
 @media(prefers-reduced-motion:reduce){.pot-val .pot-num{animation:none}}
 .pot-val .amount,.pot-full .pot-val .amount{background-image:linear-gradient(100deg,#fff6d6 0%,#ffe08a 30%,#fffbe8 45%,#ffd166 60%,#e8a317 100%)}
+/* Pot: bare Solana mark, no circle */
+.pot-sol,.pot-full .pot-sol{width:auto;height:auto;background:none;border:0;border-radius:0;box-shadow:none;color:#ffd166;font-size:.8em;font-weight:700;text-shadow:0 0 10px #f5c54266}
