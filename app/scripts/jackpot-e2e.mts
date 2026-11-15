@@ -1,6 +1,7 @@
 // Devnet: initialize the jackpot (once) and optionally play a full round with 3 throwaway wallets.
 //   npx tsx scripts/jackpot-e2e.mts init
-//   npx tsx scripts/jackpot-e2e.mts round
+//   npx tsx scripts/jackpot-e2e.mts round    (full round, 3 wallets)
+//   npx tsx scripts/jackpot-e2e.mts enter    (2 wallets enter, the site/keeper does the rest)
 import { homedir } from 'node:os';
 import { AccountRole, type Instruction, createClient, generateKeyPairSigner, getU32Encoder, getU64Encoder, address } from '@solana/kit';
 import { solanaRpc } from '@solana/kit-plugin-rpc';
@@ -33,7 +34,8 @@ if (process.argv[2] === 'init') {
     console.log('initialized:', (await fetchJackpot(cli.rpc)).state);
   }
 } else {
-  const stakes = [1_000_000_000n, 2_000_000_000n, 500_000_000n];
+  const onlyEnter = process.argv[2] === 'enter';
+  const stakes = onlyEnter ? [300_000_000n, 200_000_000n] : [1_000_000_000n, 2_000_000_000n, 500_000_000n];
   const players = await Promise.all(stakes.map(() => generateKeyPairSigner()));
   await cli.sendTransaction(players.map((p, i) => transfer(p.address, stakes[i] + 30_000_000n)));
   for (const [i, p] of players.entries()) {
@@ -42,6 +44,7 @@ if (process.argv[2] === 'init') {
     await c.sendTransaction([await buildEnterJackpot(p, stakes[i], j.state!.currentRound)]);
     console.log(`player ${i + 1} entered ${Number(stakes[i]) / 1e9} SOL`);
   }
+  if (onlyEnter) process.exit(0);
   let j = await fetchJackpot(cli.rpc);
   const end = Number(j.round!.countdownEnd);
   console.log(`round ${j.state!.currentRound}: total ${Number(j.round!.total) / 1e9} SOL, countdown ends in ${end - Math.floor(Date.now() / 1000)}s`);

@@ -219,7 +219,12 @@ export function JackpotPage(props: {
   if (phase === 'result' && result) status = <>Winner!</>;
   else if (phase === 'landing') status = <>Landing…</>;
   else if (drawing || due) status = <>Spinning…</>;
-  else if (secondsLeft !== null) status = <>Spin in</>;
+  else if (secondsLeft !== null)
+    status = (
+      <>
+        Spin in {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
+      </>
+    );
   else if (players === 1) status = <>Need 1 more player</>;
   else status = <>Be the first in</>;
 
@@ -311,11 +316,11 @@ export function JackpotPage(props: {
               <text x={C} y={C - 30} className="jp-hub-label">
                 {phase === 'result' ? 'WON' : 'POT'}
               </text>
-              <text x={C} y={C + 2} className="jp-hub-pot">
+              <text x={C} y={C - 4} className="jp-hub-pot">
                 {fmtSol(phase === 'result' && result ? result.payout : (shown?.total ?? 0n))}
               </text>
-              <text x={C} y={C + 22} className="jp-hub-sol">SOL</text>
-              <text x={C} y={C + 50} className={`jp-hub-timer ${secondsLeft !== null && secondsLeft <= 10 && !entriesClosed ? 'hot' : ''}`}>
+              <text x={C} y={C + 26} className="jp-hub-sol">SOL</text>
+              <text x={C} y={C + 54} className={`jp-hub-timer ${secondsLeft !== null && secondsLeft <= 10 && !entriesClosed ? 'hot' : ''}`}>
                 {secondsLeft !== null && !entriesClosed
                   ? `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
                   : ''}
@@ -336,7 +341,7 @@ export function JackpotPage(props: {
                 <small>ROUND #{result.roundId.toString()} WINNER</small>
                 <b>{nameOf(result.winner)}</b>
                 <span>
-                  won <Amount lamports={result.payout} /> SOL with a {pct(
+                  won <Amount lamports={result.payout} /> with a {pct(
                     result.entries.find((e) => e.player === result.winner)?.amount ?? 0n,
                     result.total,
                   )}% chance
@@ -427,7 +432,7 @@ export function JackpotPage(props: {
                       <Avatar address={s.player} size={30} ring={s.color} />
                       <span className="jp-name">{nameOf(s.player)}</span>
                       <span className="jp-amt">
-                        <Amount lamports={s.amount} /> SOL
+                        <Amount lamports={s.amount} />
                       </span>
                       <span className="jp-chance">{s.chance.toFixed(2)}%</span>
                     </li>
@@ -439,7 +444,7 @@ export function JackpotPage(props: {
           {view?.state && view.state.lastRound > 0n && phase !== 'result' && (
             <p className="jp-last">
               Last pot #{view.state.lastRound.toString()}: <Avatar address={view.state.lastWinner} size={18} />{' '}
-              <b>{nameOf(view.state.lastWinner)}</b> won <Amount lamports={view.state.lastPayout} /> SOL
+              <b>{nameOf(view.state.lastWinner)}</b> won <Amount lamports={view.state.lastPayout} />
             </p>
           )}
         </aside>
