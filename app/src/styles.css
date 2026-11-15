@@ -761,3 +761,6 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 @keyframes countPop2{0%{transform:scale(1.25);opacity:0}20%{transform:scale(1);opacity:1}100%{transform:scale(.96);opacity:1}}
 @media(max-width:500px){.match-pot .pot-val{font-size:30px}.match-count-wrap{width:120px;height:120px}.match-count-wrap .match-count{font-size:66px}}
 @media(prefers-reduced-motion:reduce){.match-count-ring .bar,.match-count-wrap .match-count{animation:none}}
+.jp-replay-count{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.jp-replay-count .match-count-wrap{width:42%;height:auto;aspect-ratio:1;border-radius:50%;background:#0f0a0b}
+.jp-replay-count .match-count{font-size:64px}

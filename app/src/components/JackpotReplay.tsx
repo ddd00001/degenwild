@@ -20,8 +20,8 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
   const [entries, setEntries] = useState<ReplayEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rot, setRot] = useState(0);
-  const [phase, setPhase] = useState<'loading' | 'spinning' | 'result'>('loading');
-  const [run, setRun] = useState(0);
+  const [phase, setPhase] = useState<'loading' | 'countdown' | 'spinning' | 'result'>('loading');
+  const [count, setCount] = useState(3);
   const solUsd = useSolPrice()?.usd;
 
   useEffect(() => {
@@ -40,9 +40,18 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
   }, [r.round]);
 
   // Spin: ticket's spot on the wheel ends under the pointer at the top.
+  // Short 3-2-1 before the wheel goes, like the coinflip pop-up.
   useEffect(() => {
     if (!entries || entries.length === 0) return;
-    setPhase('spinning');
+    setPhase('countdown');
+    setCount(3);
+    const ids = [1, 2].map((n) => window.setTimeout(() => setCount(3 - n), n * 800));
+    const go = window.setTimeout(() => setPhase('spinning'), 2400);
+    return () => [...ids, go].forEach((id) => window.clearTimeout(id));
+  }, [entries]);
+
+  useEffect(() => {
+    if (phase !== 'spinning') return;
     const theta = (Number((r.ticket * 1_000_000n) / r.total) / 1_000_000) * 360;
     const target = 360 * 5 + ((360 - theta) % 360);
     const t0 = performance.now();
@@ -56,7 +65,8 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
     setRot(0);
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [entries, run, r.ticket, r.total]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase === 'spinning']);
 
   let acc = 0n;
   const segs = (entries ?? []).map((e, i) => {
@@ -108,6 +118,8 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
             })}
           </g>
           <circle cx={C} cy={C} r={R_IN - 4} fill="#0f0a0b" className="jp-hub" />
+          {phase !== 'countdown' && (
+            <>
           <text x={C} y={C - 26} className="jp-hub-label">
             {done ? 'WON' : 'POT'}
           </text>
@@ -118,8 +130,21 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
             SOL
             {solUsd ? <tspan className="jp-hub-usd"> ≈ {usd(r.total, solUsd)}</tspan> : null}
           </text>
+            </>
+          )}
           <path d={`M${C - 15} 2 L${C + 15} 2 L${C} 34 Z`} className="jp-pointer" />
         </svg>
+        {phase === 'countdown' && (
+          <div className="jp-replay-count" key={count}>
+            <div className="match-count-wrap">
+              <svg className="match-count-ring" viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="52" className="track" />
+                <circle cx="60" cy="60" r="52" className="bar" />
+              </svg>
+              <div className="match-count">{count}</div>
+            </div>
+          </div>
+        )}
         {phase === 'loading' && !error && <div className="jp-replay-status">Loading the round from the chain…</div>}
         {error && <div className="jp-replay-status">{error}</div>}
       </div>
@@ -162,11 +187,6 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
         <dd>{short(r.round)}</dd>
       </dl>
 
-      <div className="match-actions">
-        <button className="primary-btn" disabled={!done} onClick={() => setRun((n) => n + 1)}>
-          Replay again
-        </button>
-      </div>
     </dialog>
   );
 }
