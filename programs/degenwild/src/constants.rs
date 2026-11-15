@@ -47,8 +47,8 @@ pub const JACKPOT_STATE_SEED: &[u8] = b"jackpot_state";
 /// Jackpot round PDA: [JACKPOT_ROUND_SEED, round_id (u64 LE)].
 pub const JACKPOT_ROUND_SEED: &[u8] = b"jackpot_round";
 
-/// Smallest single jackpot entry: 0.01 SOL.
-pub const JACKPOT_MIN_ENTRY_LAMPORTS: u64 = 10_000_000;
+/// Smallest single jackpot entry: 0.05 SOL (same as a coinflip stake).
+pub const JACKPOT_MIN_ENTRY_LAMPORTS: u64 = 50_000_000;
 
 /// Largest single jackpot entry: 10 SOL.
 pub const JACKPOT_MAX_ENTRY_LAMPORTS: u64 = 10_000_000_000;

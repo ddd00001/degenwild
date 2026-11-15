@@ -89,6 +89,28 @@ export default function App() {
   // Finished games, read from the program's BattleSettled / BattleRefunded events (newest first).
   const [results, setResults] = useState<GameResult[]>([]);
   const [jackpotResults, setJackpotResults] = useState<JackpotResult[]>([]);
+  // New results stay out of the feeds for a few seconds, so the lists never spoil a flip or spin
+  // that is still animating. Anything from the first load is shown right away.
+  const firstSeen = useRef(new Map<string, number>());
+  const historyLoaded = useRef(false);
+  const [feedTick, setFeedTick] = useState(0);
+  const FEED_DELAY_MS = 9000;
+  const stamp = (sigs: string[]) => {
+    const now = historyLoaded.current ? Date.now() : 0;
+    let fresh = false;
+    for (const s of sigs)
+      if (!firstSeen.current.has(s)) {
+        firstSeen.current.set(s, now);
+        fresh ||= now > 0;
+      }
+    if (fresh) window.setTimeout(() => setFeedTick((n) => n + 1), FEED_DELAY_MS + 50);
+  };
+  const released = (sig: string) => (firstSeen.current.get(sig) ?? 0) <= Date.now() - FEED_DELAY_MS;
+  const releasedJackpots = useMemo(
+    () => jackpotResults.filter((j) => released(j.signature)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [jackpotResults, feedTick],
+  );
   const history = useRef(new GameHistory(client.rpc));
   const pollTick = useRef(0);
   const [slot, setSlot] = useState<bigint>(0n);
@@ -152,6 +174,8 @@ export default function App() {
       // Settled/refunded battles close their accounts; their outcome lives on in the event log.
       try {
         const { games: fresh, jackpots } = await history.current.poll();
+        stamp([...fresh.map((g) => g.signature), ...jackpots.map((j) => j.signature)]);
+        historyLoaded.current = true;
         if (fresh.length)
           setResults((r) => [...fresh, ...r.filter((x) => !fresh.some((f) => f.signature === x.signature))].slice(0, 60));
         if (jackpots.length)
@@ -817,11 +841,11 @@ export default function App() {
                 </div>
               </div>
               <div className="recent-list">
-                {results.filter((r) => r.kind === 'settled').length === 0 ? (
+                {results.filter((r) => r.kind === 'settled' && released(r.signature)).length === 0 ? (
                   <div className="empty-state">No finished games yet.</div>
                 ) : (
                   results
-                    .filter((r): r is Extract<GameResult, { kind: 'settled' }> => r.kind === 'settled')
+                    .filter((r): r is Extract<GameResult, { kind: 'settled' }> => r.kind === 'settled' && released(r.signature))
                     .slice(0, 10)
                     .map((r) => {
                       const loser = r.winner === r.creator ? r.opponent : r.creator;
@@ -881,7 +905,7 @@ export default function App() {
                 send('jackpot', () => buildEnterJackpot(signer!, amount, roundId), `You're in the pot with ${fmtSol(amount)} SOL. Good luck!`)
               }
               onLeave={(roundId) => send('jackpot', () => buildLeaveJackpot(signer!, roundId), 'You left the pot: SOL refunded.')}
-              recent={jackpotResults}
+              recent={releasedJackpots}
             />
             </div>
             <ChatPanel me={me} signer={signer} names={names} onConnect={() => setWalletOpen(true)} />

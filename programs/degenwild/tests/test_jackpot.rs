@@ -170,7 +170,8 @@ fn entry_limits_are_enforced() {
     let mut svm = svm();
     let a = funded(&mut svm, 20);
     init(&mut svm, &a);
-    assert!(enter(&mut svm, &a, 1, 9_999_999).is_err(), "below 0.01 SOL");
+    assert!(enter(&mut svm, &a, 1, 49_999_999).is_err(), "below 0.05 SOL");
+    assert!(enter(&mut svm, &a, 1, 10_000_000).is_err(), "old 0.01 SOL minimum is gone");
     assert!(enter(&mut svm, &a, 1, 10 * SOL + 1).is_err(), "above 10 SOL");
 }
 

@@ -12,7 +12,7 @@ import { Avatar, avatarName } from './Avatar';
 import { fmtUsd, useSolPrice } from '../price';
 
 /** Keep in sync with programs/degenwild/src/constants.rs. */
-const MIN_ENTRY = 10_000_000n; // 0.01 SOL
+const MIN_ENTRY = 50_000_000n; // 0.05 SOL
 const MAX_ENTRY = 10_000_000_000n; // 10 SOL
 const COUNTDOWN_SECS = 120;
 const POLL_MS = 2_000;
@@ -248,7 +248,7 @@ export function JackpotPage(props: {
   const myEntry = shown?.entries.find((e) => e.player === me);
   const stake = parseSol(stakeInput);
   const stakeError =
-    stake === null ? 'Enter an amount' : stake < MIN_ENTRY ? 'Minimum is 0.01 SOL' : stake > MAX_ENTRY ? 'Maximum is 10 SOL' : null;
+    stake === null ? 'Enter an amount' : stake < MIN_ENTRY ? 'Minimum is 0.05 SOL' : stake > MAX_ENTRY ? 'Maximum is 10 SOL' : null;
   const total = round?.total ?? 0n;
   const solUsd = useSolPrice()?.usd;
   const stakeUsd = stake && !stakeError ? usd(stake, solUsd) : '';
@@ -495,8 +495,8 @@ export function JackpotPage(props: {
               {stakeError
                 ? stakeError
                 : previewChance !== null
-                  ? `Your chance after this: ${previewChance}% · stakes 0.01–10.00 SOL`
-                  : 'Stakes 0.01–10.00 SOL'}
+                  ? `Your chance after this: ${previewChance}% · stakes 0.05–10.00 SOL`
+                  : 'Stakes 0.05–10.00 SOL'}
             </small>
             {canLeave && (
               <button
