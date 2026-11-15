@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 /** pump.fun page of the $WILD coin. Fill in once the coin exists; the banner then shows a Buy button. */
 export const WILD_PUMP_URL = '';
 
-/** Planned switch of the arena to mainnet: 20:20 Bern time (CET, UTC+1) on 15 Nov 2026. */
-export const MAINNET_SWITCH_AT = Date.parse('2026-11-15T19:20:00Z');
+/** Planned switch of the arena to mainnet: 16 Nov 2026, 19:00 UTC (20:00 Bern time). */
+export const MAINNET_SWITCH_AT = Date.parse('2026-11-16T19:00:00Z');
 
 const LOGO = `${import.meta.env.BASE_URL}pumpfun-logo.svg`;
 
