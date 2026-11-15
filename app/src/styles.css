@@ -500,6 +500,12 @@ dialog>*:not(.embers){position:relative;z-index:1}
 .launch-main{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
 .launch-main b{font-weight:800;letter-spacing:.01em}
 .launch-logo{width:22px;height:22px;filter:drop-shadow(0 0 6px #5fcb8855)}
+.launch-timer{display:flex;align-items:center}
+.launch-unit-wrap{display:flex;align-items:center}
+.launch-unit{display:flex;flex-direction:column;align-items:center;min-width:42px;padding:4px 6px 3px;border:1px solid #ff454d44;border-radius:7px;background:linear-gradient(180deg,#24090c,#120808);box-shadow:inset 0 1px 0 #ffffff0d,0 0 14px #ff202b22}
+.launch-digits{font:800 20px/1 'Barlow Condensed',Inter,sans-serif;color:#ff5a60;text-shadow:0 0 12px #ff202b88;font-variant-numeric:tabular-nums;letter-spacing:.03em}
+.launch-unit small{margin-top:2px;font-size:8px;font-weight:800;letter-spacing:.14em;color:var(--muted)}
+.launch-colon{margin:0 4px 10px;font:800 18px 'Barlow Condensed',sans-serif;color:#ff454d;animation:launch-blink 1s steps(1) infinite}
 .launch-live-tag{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border:1px solid #3ddc84;border-radius:5px;color:#3ddc84;font-size:10px;font-weight:800;letter-spacing:.1em}
 .launch-live-tag i{width:7px;height:7px;border-radius:50%;background:#3ddc84;box-shadow:0 0 8px #3ddc84;animation:launch-blink 1.2s steps(1) infinite}
 .launch-banner.is-live{border-color:#3ddc8466;background:radial-gradient(120% 160% at 0% 0%,#0d2a1a 0%,#0c140f 55%,#0a0d0b 100%)}
@@ -507,6 +513,6 @@ dialog>*:not(.embers){position:relative;z-index:1}
 .launch-cta:hover{filter:brightness(1.1)}
 .launch-note{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--muted);font-size:12px}
 .launch-devnet{padding:3px 8px;border:1px solid #f5b94266;border-radius:5px;color:#f5b942;font-size:10px;font-weight:800;letter-spacing:.1em}
-@media(max-width:760px){.launch-banner{padding:10px 12px}}
+@media(max-width:760px){.launch-banner{padding:10px 12px}.launch-unit{min-width:36px}.launch-digits{font-size:17px}}
 @keyframes launch-blink{50%{opacity:.25}}
-@media(prefers-reduced-motion:reduce){.launch-live-tag i{animation:none}}
+@media(prefers-reduced-motion:reduce){.launch-colon,.launch-live-tag i{animation:none}}
