@@ -149,7 +149,7 @@ export function BattleRow(props: {
         {action}
         {props.onReplay && (b.status === BattleStatus.Settled || rnd?.state === 'fulfilled') && (
           <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={props.onReplay}>
-            ▶
+            Replay <span aria-hidden="true">▶</span>
           </button>
         )}
       </div>

@@ -568,7 +568,7 @@ export function JackpotPage(props: {
                   </span>
                   <span className="recent-time">{timeAgo(r.blockTime)}</span>
                   <button className="replay-btn" title="Replay this jackpot" aria-label="Replay this jackpot" onClick={() => setReplaying(r)}>
-                    ▶
+                    Replay <span aria-hidden="true">▶</span>
                   </button>
                 </div>
               ))

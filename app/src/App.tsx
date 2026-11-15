@@ -830,7 +830,7 @@ export default function App() {
                           </span>
                           <span className="recent-time">{timeAgo(r.blockTime)}</span>
                           <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={() => replay(resultToBattle(r))}>
-                            ▶
+                            Replay <span aria-hidden="true">▶</span>
                           </button>
                         </div>
                       );

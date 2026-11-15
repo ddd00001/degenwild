@@ -729,3 +729,8 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 .jp-chance-tip b{color:#fff;font:900 18px/1.1 'Barlow Condensed',sans-serif}
 .jp-chance-tip em{font-style:normal;color:#9d8c8c;font-size:10px;font-weight:600}
 .jp-chance-pill:hover .jp-chance-tip,.jp-chance-pill:focus-visible .jp-chance-tip{opacity:1;transform:translate(-50%,0)}
+/* Replay buttons: text + icon */
+.replay-btn{flex:0 0 auto;width:auto;display:inline-flex;align-items:center;gap:6px;padding:0 11px;font:700 11px Inter,sans-serif;color:#ff8a8f;cursor:pointer;transition:border-color .15s,background .15s}
+.replay-btn span{font-size:10px}
+.replay-btn:hover{border-color:#ff3038;background:#2a0c0f}
+.recent-row,.jp-recent{grid-template-columns:30px minmax(0,1fr) auto auto}
