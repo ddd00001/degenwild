@@ -24,7 +24,10 @@ export function BattleRow(props: {
   const { b, me, slot, rnd, busy } = props;
   const opp = opponentOf(b);
   const winner = winnerOf(b);
-  const { pot, payout } = payoutFor(b.amount);
+  const { pot: fullPot, payout } = payoutFor(b.amount);
+  // Until someone joins, only the creator's stake is in the pot.
+  const open = b.status === BattleStatus.Open;
+  const pot = open ? b.amount : fullPot;
   const creatorSide = SIDE_NAME[b.creatorSide] ?? '?';
   const oppSide = SIDE_NAME[1 - b.creatorSide] ?? '?';
   const nameOf = (a: Address) => props.names.get(a);
@@ -124,9 +127,12 @@ export function BattleRow(props: {
           <small>{opp ? <>{oppSide} · <Amount lamports={b.amount} /></> : `${oppSide} available`}</small>
         </div>
       </div>
-      <div className="battle-meta">
-        <strong><Amount lamports={pot} /></strong>
-        <small>{meta}</small>
+      <div className={`battle-meta ${open ? 'pot-open' : 'pot-full'}`}>
+        <strong className="pot-chip" key={pot.toString()}>
+          <span className="pot-glyph" aria-hidden="true">◎</span>
+          <Amount lamports={pot} />
+        </strong>
+        <small>{open && meta === 'POT' ? 'POT · DOUBLES ON JOIN' : meta}</small>
       </div>
       <div className="battle-action">
         {/* Once the coin has landed, ▶ (replay) opens the same pop-up, so View is hidden. */}
