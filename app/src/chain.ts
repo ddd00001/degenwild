@@ -1,4 +1,5 @@
 import {
+  AccountRole,
   type Address,
   type Instruction,
   type TransactionSigner,
@@ -34,6 +35,17 @@ import {
   getProfileDecoder,
   getProfileDiscriminatorBytes,
   getInitializePlatformConfigInstructionAsync,
+  type JackpotRound,
+  type JackpotState,
+  fetchMaybeJackpotRound,
+  fetchMaybeJackpotState,
+  findJackpotStatePda,
+  getDrawJackpotInstructionAsync,
+  getEnterJackpotInstructionAsync,
+  getInitJackpotInstructionAsync,
+  getLeaveJackpotInstructionAsync,
+  getRefundJackpotInstructionAsync,
+  getSettleJackpotInstructionAsync,
 } from './generated';
 import { COINFLIP_FEE_BPS, ORAO_VRF_PROGRAM, REFUND_TIMEOUT_SLOTS } from './config';
 import type { AppClient } from './client';
@@ -397,4 +409,123 @@ export async function profileAddress(owner: Address) {
 /** Admin only: creates the platform config (treasury starts as the admin wallet). */
 export async function buildInitPlatform(admin: TransactionSigner) {
   return (await getInitializePlatformConfigInstructionAsync({ admin })) as Instruction;
+}
+
+// ---------------------------------------------------------------- jackpot
+
+export type JackpotView = {
+  state: JackpotState | null;
+  roundAddress: Address | null;
+  round: (JackpotRound & { address: Address }) | null;
+};
+
+export async function jackpotRoundAddress(roundId: bigint): Promise<Address> {
+  const [pda] = await getProgramDerivedAddress({
+    programAddress: DEGENWILD_PROGRAM_ADDRESS,
+    seeds: [utf8.encode('jackpot_round'), getU64Encoder().encode(roundId)],
+  });
+  return pda;
+}
+
+/** Jackpot state + the current round (null round = nobody has entered yet). */
+export async function fetchJackpot(rpc: Rpc): Promise<JackpotView> {
+  const [statePda] = await findJackpotStatePda();
+  const st = await fetchMaybeJackpotState(rpc, statePda, { commitment: 'confirmed' });
+  if (!st.exists) return { state: null, roundAddress: null, round: null };
+  const roundAddress = await jackpotRoundAddress(st.data.currentRound);
+  const r = await fetchMaybeJackpotRound(rpc, roundAddress, { commitment: 'confirmed' });
+  return {
+    state: st.data,
+    roundAddress,
+    round: r.exists && r.data.entries.length > 0 ? { ...r.data, address: roundAddress } : null,
+  };
+}
+
+/** Mirrors jackpot_seed() in jackpot.rs. */
+async function jackpotOraoSeed(round: Address, roundId: bigint): Promise<Uint8Array> {
+  const [seedAddr] = await getProgramDerivedAddress({
+    programAddress: DEGENWILD_PROGRAM_ADDRESS,
+    seeds: [utf8.encode('degenwild-jackpot-v1'), addrEnc.encode(round), getU64Encoder().encode(roundId)],
+  });
+  return new Uint8Array(addrEnc.encode(seedAddr));
+}
+
+export async function buildEnterJackpot(player: TransactionSigner, amount: bigint, roundId: bigint) {
+  return (await getEnterJackpotInstructionAsync({
+    player,
+    round: await jackpotRoundAddress(roundId),
+    amount,
+  })) as Instruction;
+}
+
+export async function buildLeaveJackpot(player: TransactionSigner, roundId: bigint) {
+  return (await getLeaveJackpotInstructionAsync({
+    player,
+    round: await jackpotRoundAddress(roundId),
+  })) as Instruction;
+}
+
+export async function buildDrawJackpot(rpc: Rpc, drawer: TransactionSigner, round: Address, roundId: bigint) {
+  const orao = await fetchOraoNetwork(rpc);
+  const seed = await jackpotOraoSeed(round, roundId);
+  const [randomnessRequest] = await getProgramDerivedAddress({
+    programAddress: ORAO_VRF_PROGRAM,
+    seeds: [utf8.encode('orao-vrf-randomness-request'), seed],
+  });
+  return (await getDrawJackpotInstructionAsync({
+    drawer,
+    round,
+    oraoTreasury: orao.treasury,
+    randomnessRequest,
+  })) as Instruction;
+}
+
+/** The 64 ORAO randomness bytes once fulfilled, else null. */
+export async function fetchRandomnessBytes(rpc: Rpc, account: Address): Promise<Uint8Array | null> {
+  const acc = await fetchEncodedAccount(rpc, account, { commitment: 'confirmed' });
+  if (!acc.exists || acc.programAddress !== ORAO_VRF_PROGRAM || acc.data[8] !== 1) return null;
+  return new Uint8Array(acc.data.slice(9 + 64, 9 + 64 + 64));
+}
+
+/** Mirrors jackpot_ticket() + jackpot_winner_index() in jackpot.rs. */
+export function jackpotWinner(entries: JackpotRound['entries'], total: bigint, randomness: Uint8Array) {
+  let n = 0n;
+  for (let i = 15; i >= 0; i--) n = (n << 8n) | BigInt(randomness[i]);
+  const ticket = n % total;
+  let cum = 0n;
+  for (let i = 0; i < entries.length; i++) {
+    cum += entries[i].amount;
+    if (ticket < cum) return { index: i, ticket };
+  }
+  return { index: entries.length - 1, ticket };
+}
+
+export async function buildSettleJackpot(rpc: Rpc, round: JackpotRound & { address: Address }) {
+  const treasury = await fetchTreasury(rpc);
+  if (!treasury) throw new Error('Platform config is not initialized yet.');
+  const randomness = await fetchRandomnessBytes(rpc, round.randomnessAccount);
+  if (!randomness) throw new Error('The fair result has not landed yet.');
+  const { index } = jackpotWinner(round.entries, round.total, randomness);
+  const winner = round.entries[index].player;
+  const first = round.entries[0].player;
+  const ix = (await getSettleJackpotInstructionAsync({
+    round: round.address,
+    randomnessRequest: round.randomnessAccount,
+    treasury,
+  })) as Instruction;
+  const extra = [...new Set([winner, first])].map((address) => ({ address, role: AccountRole.WRITABLE }));
+  return { ...ix, accounts: [...(ix.accounts ?? []), ...extra] } as Instruction;
+}
+
+export async function buildRefundJackpot(round: JackpotRound & { address: Address }) {
+  const ix = (await getRefundJackpotInstructionAsync({
+    round: round.address,
+    randomnessRequest: round.randomnessAccount,
+  })) as Instruction;
+  const extra = round.entries.map((e) => ({ address: e.player, role: AccountRole.WRITABLE }));
+  return { ...ix, accounts: [...(ix.accounts ?? []), ...extra] } as Instruction;
+}
+
+export async function buildInitJackpot(payer: TransactionSigner) {
+  return (await getInitJackpotInstructionAsync({ payer })) as Instruction;
 }

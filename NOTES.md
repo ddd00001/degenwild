@@ -62,3 +62,12 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - Faucet keeps a 3 SOL reserve for Degen Bot; house plays battles up to 1 SOL (HOUSE_MAX_SOL).
 - `app/vercel.json` sets anti-framing and basic security headers.
 
+## Jackpot (2026-11-15)
+- Program: `programs/degenwild/src/instructions/jackpot.rs` (init/enter/leave/draw/settle/refund), tests in `tests/test_jackpot.rs`.
+  Each lamport is a ticket; 0.01-10 SOL per player, max 30 players; 120 s countdown starts at the 2nd player; ORAO picks
+  the ticket; winner gets pot - 3.5%; first entrant gets the round's rent back. Upgraded on devnet 2026-11-15 (414,792-byte
+  program account after `solana program extend ... 100000`). Jackpot state initialized (round 1 played by `scripts/jackpot-e2e.mts`).
+- Keeper: `app/server/jackpot.ts` -> `app/api/jackpot.js` (bundled by `npm run build:api`). Draws after the countdown
+  (house wallet pays ORAO fee), settles, or refunds after timeout. The page pokes it while a round is due/drawing.
+- UI: `src/components/JackpotPage.tsx` (wheel) + `Avatar.tsx` (100 avatars = 10 symbols x 10 colors, from the wallet hash).
+

@@ -65,4 +65,28 @@ pub mod degenwild {
     pub fn admin_remove_username(ctx: Context<AdminRemoveUsername>) -> Result<()> {
         crate::instructions::username::handle_admin_remove_username(ctx)
     }
+
+    pub fn init_jackpot(ctx: Context<InitJackpot>) -> Result<()> {
+        crate::instructions::jackpot::handle_init_jackpot(ctx)
+    }
+
+    pub fn enter_jackpot(ctx: Context<EnterJackpot>, amount: u64) -> Result<()> {
+        crate::instructions::jackpot::handle_enter_jackpot(ctx, amount)
+    }
+
+    pub fn leave_jackpot(ctx: Context<LeaveJackpot>) -> Result<()> {
+        crate::instructions::jackpot::handle_leave_jackpot(ctx)
+    }
+
+    pub fn draw_jackpot(ctx: Context<DrawJackpot>) -> Result<()> {
+        crate::instructions::jackpot::handle_draw_jackpot(ctx)
+    }
+
+    pub fn settle_jackpot<'info>(ctx: Context<'info, SettleJackpot<'info>>) -> Result<()> {
+        crate::instructions::jackpot::handle_settle_jackpot(ctx)
+    }
+
+    pub fn refund_jackpot<'info>(ctx: Context<'info, RefundJackpot<'info>>) -> Result<()> {
+        crate::instructions::jackpot::handle_refund_jackpot(ctx)
+    }
 }

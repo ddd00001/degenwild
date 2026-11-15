@@ -51,6 +51,22 @@ export const DEGENWILD_ERROR__USERNAME_LENGTH = 0x177f; // 6015
 export const DEGENWILD_ERROR__USERNAME_INVALID_CHARS = 0x1780; // 6016
 /** UsernameReserved: That username is reserved */
 export const DEGENWILD_ERROR__USERNAME_RESERVED = 0x1781; // 6017
+/** JackpotClosed: Jackpot entries are closed for this round */
+export const DEGENWILD_ERROR__JACKPOT_CLOSED = 0x1782; // 6018
+/** JackpotFull: This jackpot round is full */
+export const DEGENWILD_ERROR__JACKPOT_FULL = 0x1783; // 6019
+/** JackpotNotOpen: Jackpot round is not open */
+export const DEGENWILD_ERROR__JACKPOT_NOT_OPEN = 0x1784; // 6020
+/** JackpotCountdownRunning: The jackpot countdown has not finished yet */
+export const DEGENWILD_ERROR__JACKPOT_COUNTDOWN_RUNNING = 0x1785; // 6021
+/** JackpotNotDrawing: Jackpot round is not drawing */
+export const DEGENWILD_ERROR__JACKPOT_NOT_DRAWING = 0x1786; // 6022
+/** JackpotWrongWinner: Winner account does not match the drawn ticket */
+export const DEGENWILD_ERROR__JACKPOT_WRONG_WINNER = 0x1787; // 6023
+/** JackpotCannotLeave: You can only leave a round you are alone in, before the countdown starts */
+export const DEGENWILD_ERROR__JACKPOT_CANNOT_LEAVE = 0x1788; // 6024
+/** JackpotRefundAccountsMismatch: Refund accounts do not match the round's players */
+export const DEGENWILD_ERROR__JACKPOT_REFUND_ACCOUNTS_MISMATCH = 0x1789; // 6025
 
 export type DegenwildError =
   | typeof DEGENWILD_ERROR__ARITHMETIC_OVERFLOW
@@ -62,6 +78,14 @@ export type DegenwildError =
   | typeof DEGENWILD_ERROR__INSUFFICIENT_ESCROW
   | typeof DEGENWILD_ERROR__INVALID_PLATFORM_FEE
   | typeof DEGENWILD_ERROR__INVALID_SIDE
+  | typeof DEGENWILD_ERROR__JACKPOT_CANNOT_LEAVE
+  | typeof DEGENWILD_ERROR__JACKPOT_CLOSED
+  | typeof DEGENWILD_ERROR__JACKPOT_COUNTDOWN_RUNNING
+  | typeof DEGENWILD_ERROR__JACKPOT_FULL
+  | typeof DEGENWILD_ERROR__JACKPOT_NOT_DRAWING
+  | typeof DEGENWILD_ERROR__JACKPOT_NOT_OPEN
+  | typeof DEGENWILD_ERROR__JACKPOT_REFUND_ACCOUNTS_MISMATCH
+  | typeof DEGENWILD_ERROR__JACKPOT_WRONG_WINNER
   | typeof DEGENWILD_ERROR__RANDOMNESS_ALREADY_FULFILLED
   | typeof DEGENWILD_ERROR__RANDOMNESS_NOT_FULFILLED
   | typeof DEGENWILD_ERROR__RANDOMNESS_REQUEST_MISMATCH
@@ -84,6 +108,14 @@ if (process.env["NODE_ENV"] !== "production") {
     [DEGENWILD_ERROR__INSUFFICIENT_ESCROW]: `Battle escrow does not contain the expected pot`,
     [DEGENWILD_ERROR__INVALID_PLATFORM_FEE]: `Platform fee configuration is invalid`,
     [DEGENWILD_ERROR__INVALID_SIDE]: `Side must be 0 (Heads) or 1 (Tails)`,
+    [DEGENWILD_ERROR__JACKPOT_CANNOT_LEAVE]: `You can only leave a round you are alone in, before the countdown starts`,
+    [DEGENWILD_ERROR__JACKPOT_CLOSED]: `Jackpot entries are closed for this round`,
+    [DEGENWILD_ERROR__JACKPOT_COUNTDOWN_RUNNING]: `The jackpot countdown has not finished yet`,
+    [DEGENWILD_ERROR__JACKPOT_FULL]: `This jackpot round is full`,
+    [DEGENWILD_ERROR__JACKPOT_NOT_DRAWING]: `Jackpot round is not drawing`,
+    [DEGENWILD_ERROR__JACKPOT_NOT_OPEN]: `Jackpot round is not open`,
+    [DEGENWILD_ERROR__JACKPOT_REFUND_ACCOUNTS_MISMATCH]: `Refund accounts do not match the round's players`,
+    [DEGENWILD_ERROR__JACKPOT_WRONG_WINNER]: `Winner account does not match the drawn ticket`,
     [DEGENWILD_ERROR__RANDOMNESS_ALREADY_FULFILLED]: `ORAO randomness is already fulfilled; settle instead of refunding`,
     [DEGENWILD_ERROR__RANDOMNESS_NOT_FULFILLED]: `ORAO randomness has not been fulfilled yet`,
     [DEGENWILD_ERROR__RANDOMNESS_REQUEST_MISMATCH]: `ORAO randomness request does not match this battle`,

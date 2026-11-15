@@ -21,7 +21,7 @@ custom-panic = []
 
 
 [dependencies]
-anchor-lang = "1.2.1"
+anchor-lang = { version = "1.2.1", features = ["init-if-needed"] }
 orao-solana-vrf = { version = "0.8.1", default-features = false, features = ["cpi", "solana-v3"] }
 
 

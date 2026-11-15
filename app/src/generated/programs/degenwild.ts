@@ -17,6 +17,7 @@ import {
   SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
   SolanaError,
   type Address,
+  type ClientWithPayer,
   type ClientWithRpc,
   type ClientWithTransactionPlanning,
   type ClientWithTransactionSending,
@@ -36,11 +37,17 @@ import {
 } from "@solana/program-client-core";
 import {
   getBattleCodec,
+  getJackpotRoundCodec,
+  getJackpotStateCodec,
   getPlatformConfigCodec,
   getProfileCodec,
   getUsernameClaimCodec,
   type Battle,
   type BattleArgs,
+  type JackpotRound,
+  type JackpotRoundArgs,
+  type JackpotState,
+  type JackpotStateArgs,
   type PlatformConfig,
   type PlatformConfigArgs,
   type Profile,
@@ -55,10 +62,16 @@ import {
   getCreateBattleInstructionAsync,
   getCreateProfileInstructionAsync,
   getDeleteProfileInstructionAsync,
+  getDrawJackpotInstructionAsync,
+  getEnterJackpotInstructionAsync,
   getInitializePlatformConfigInstructionAsync,
+  getInitJackpotInstructionAsync,
   getJoinBattleInstructionAsync,
+  getLeaveJackpotInstructionAsync,
   getRefundExpiredBattleInstruction,
+  getRefundJackpotInstructionAsync,
   getSettleBattleInstructionAsync,
+  getSettleJackpotInstructionAsync,
   getUpdateTreasuryInstructionAsync,
   parseAdminRemoveUsernameInstruction,
   parseCancelBattleInstruction,
@@ -66,10 +79,16 @@ import {
   parseCreateBattleInstruction,
   parseCreateProfileInstruction,
   parseDeleteProfileInstruction,
+  parseDrawJackpotInstruction,
+  parseEnterJackpotInstruction,
   parseInitializePlatformConfigInstruction,
+  parseInitJackpotInstruction,
   parseJoinBattleInstruction,
+  parseLeaveJackpotInstruction,
   parseRefundExpiredBattleInstruction,
+  parseRefundJackpotInstruction,
   parseSettleBattleInstruction,
+  parseSettleJackpotInstruction,
   parseUpdateTreasuryInstruction,
   type AdminRemoveUsernameInput,
   type CancelBattleInput,
@@ -77,25 +96,38 @@ import {
   type CreateBattleAsyncInput,
   type CreateProfileAsyncInput,
   type DeleteProfileAsyncInput,
+  type DrawJackpotAsyncInput,
+  type EnterJackpotAsyncInput,
   type InitializePlatformConfigAsyncInput,
+  type InitJackpotAsyncInput,
   type JoinBattleAsyncInput,
+  type LeaveJackpotAsyncInput,
   type ParsedAdminRemoveUsernameInstruction,
   type ParsedCancelBattleInstruction,
   type ParsedChangeUsernameInstruction,
   type ParsedCreateBattleInstruction,
   type ParsedCreateProfileInstruction,
   type ParsedDeleteProfileInstruction,
+  type ParsedDrawJackpotInstruction,
+  type ParsedEnterJackpotInstruction,
   type ParsedInitializePlatformConfigInstruction,
+  type ParsedInitJackpotInstruction,
   type ParsedJoinBattleInstruction,
+  type ParsedLeaveJackpotInstruction,
   type ParsedRefundExpiredBattleInstruction,
+  type ParsedRefundJackpotInstruction,
   type ParsedSettleBattleInstruction,
+  type ParsedSettleJackpotInstruction,
   type ParsedUpdateTreasuryInstruction,
   type RefundExpiredBattleInput,
+  type RefundJackpotAsyncInput,
   type SettleBattleAsyncInput,
+  type SettleJackpotAsyncInput,
   type UpdateTreasuryAsyncInput,
 } from "../instructions";
 import {
   findBattlePda,
+  findJackpotStatePda,
   findNewClaimPda,
   findPlatformConfigPda,
   findProfilePda,
@@ -107,6 +139,8 @@ export const DEGENWILD_PROGRAM_ADDRESS =
 
 export enum DegenwildAccount {
   Battle,
+  JackpotRound,
+  JackpotState,
   PlatformConfig,
   Profile,
   UsernameClaim,
@@ -126,6 +160,28 @@ export function identifyDegenwildAccount(
     )
   ) {
     return DegenwildAccount.Battle;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([19, 135, 98, 129, 147, 40, 135, 21]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildAccount.JackpotRound;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([216, 96, 162, 38, 24, 10, 130, 62]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildAccount.JackpotState;
   }
   if (
     containsBytes(
@@ -169,6 +225,8 @@ export function identifyDegenwildAccount(
 export enum DegenwildEvent {
   BattleRefunded,
   BattleSettled,
+  JackpotRefunded,
+  JackpotSettled,
 }
 
 export function identifyDegenwildEvent(
@@ -197,6 +255,28 @@ export function identifyDegenwildEvent(
   ) {
     return DegenwildEvent.BattleSettled;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([113, 216, 138, 4, 61, 147, 248, 239]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildEvent.JackpotRefunded;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([98, 10, 127, 84, 241, 3, 221, 224]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildEvent.JackpotSettled;
+  }
   throw new Error(
     "The provided event could not be identified as a degenwild event.",
   );
@@ -209,10 +289,16 @@ export enum DegenwildInstruction {
   CreateBattle,
   CreateProfile,
   DeleteProfile,
+  DrawJackpot,
+  EnterJackpot,
+  InitJackpot,
   InitializePlatformConfig,
   JoinBattle,
+  LeaveJackpot,
   RefundExpiredBattle,
+  RefundJackpot,
   SettleBattle,
+  SettleJackpot,
   UpdateTreasury,
 }
 
@@ -290,6 +376,39 @@ export function identifyDegenwildInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([65, 23, 76, 146, 117, 232, 236, 136]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.DrawJackpot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([74, 241, 109, 6, 202, 151, 119, 121]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.EnterJackpot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([157, 13, 202, 41, 170, 219, 207, 179]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.InitJackpot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([23, 52, 237, 53, 176, 235, 3, 187]),
       ),
       0,
@@ -312,6 +431,17 @@ export function identifyDegenwildInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([75, 139, 221, 220, 238, 62, 23, 115]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.LeaveJackpot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([128, 178, 0, 206, 82, 239, 250, 241]),
       ),
       0,
@@ -323,12 +453,34 @@ export function identifyDegenwildInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([172, 199, 147, 137, 209, 200, 184, 119]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.RefundJackpot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([4, 146, 32, 157, 82, 216, 214, 28]),
       ),
       0,
     )
   ) {
     return DegenwildInstruction.SettleBattle;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([212, 129, 67, 88, 67, 249, 199, 239]),
+      ),
+      0,
+    )
+  ) {
+    return DegenwildInstruction.SettleJackpot;
   }
   if (
     containsBytes(
@@ -369,17 +521,35 @@ export type ParsedDegenwildInstruction<
       instructionType: DegenwildInstruction.DeleteProfile;
     } & ParsedDeleteProfileInstruction<TProgram>)
   | ({
+      instructionType: DegenwildInstruction.DrawJackpot;
+    } & ParsedDrawJackpotInstruction<TProgram>)
+  | ({
+      instructionType: DegenwildInstruction.EnterJackpot;
+    } & ParsedEnterJackpotInstruction<TProgram>)
+  | ({
+      instructionType: DegenwildInstruction.InitJackpot;
+    } & ParsedInitJackpotInstruction<TProgram>)
+  | ({
       instructionType: DegenwildInstruction.InitializePlatformConfig;
     } & ParsedInitializePlatformConfigInstruction<TProgram>)
   | ({
       instructionType: DegenwildInstruction.JoinBattle;
     } & ParsedJoinBattleInstruction<TProgram>)
   | ({
+      instructionType: DegenwildInstruction.LeaveJackpot;
+    } & ParsedLeaveJackpotInstruction<TProgram>)
+  | ({
       instructionType: DegenwildInstruction.RefundExpiredBattle;
     } & ParsedRefundExpiredBattleInstruction<TProgram>)
   | ({
+      instructionType: DegenwildInstruction.RefundJackpot;
+    } & ParsedRefundJackpotInstruction<TProgram>)
+  | ({
       instructionType: DegenwildInstruction.SettleBattle;
     } & ParsedSettleBattleInstruction<TProgram>)
+  | ({
+      instructionType: DegenwildInstruction.SettleJackpot;
+    } & ParsedSettleJackpotInstruction<TProgram>)
   | ({
       instructionType: DegenwildInstruction.UpdateTreasury;
     } & ParsedUpdateTreasuryInstruction<TProgram>);
@@ -431,6 +601,27 @@ export function parseDegenwildInstruction<TProgram extends string>(
         ...parseDeleteProfileInstruction(instruction),
       };
     }
+    case DegenwildInstruction.DrawJackpot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.DrawJackpot,
+        ...parseDrawJackpotInstruction(instruction),
+      };
+    }
+    case DegenwildInstruction.EnterJackpot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.EnterJackpot,
+        ...parseEnterJackpotInstruction(instruction),
+      };
+    }
+    case DegenwildInstruction.InitJackpot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.InitJackpot,
+        ...parseInitJackpotInstruction(instruction),
+      };
+    }
     case DegenwildInstruction.InitializePlatformConfig: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -445,6 +636,13 @@ export function parseDegenwildInstruction<TProgram extends string>(
         ...parseJoinBattleInstruction(instruction),
       };
     }
+    case DegenwildInstruction.LeaveJackpot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.LeaveJackpot,
+        ...parseLeaveJackpotInstruction(instruction),
+      };
+    }
     case DegenwildInstruction.RefundExpiredBattle: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -452,11 +650,25 @@ export function parseDegenwildInstruction<TProgram extends string>(
         ...parseRefundExpiredBattleInstruction(instruction),
       };
     }
+    case DegenwildInstruction.RefundJackpot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.RefundJackpot,
+        ...parseRefundJackpotInstruction(instruction),
+      };
+    }
     case DegenwildInstruction.SettleBattle: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: DegenwildInstruction.SettleBattle,
         ...parseSettleBattleInstruction(instruction),
+      };
+    }
+    case DegenwildInstruction.SettleJackpot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DegenwildInstruction.SettleJackpot,
+        ...parseSettleJackpotInstruction(instruction),
       };
     }
     case DegenwildInstruction.UpdateTreasury: {
@@ -489,6 +701,10 @@ export type DegenwildPlugin = {
 export type DegenwildPluginAccounts = {
   battle: ReturnType<typeof getBattleCodec> &
     SelfFetchFunctions<BattleArgs, Battle>;
+  jackpotRound: ReturnType<typeof getJackpotRoundCodec> &
+    SelfFetchFunctions<JackpotRoundArgs, JackpotRound>;
+  jackpotState: ReturnType<typeof getJackpotStateCodec> &
+    SelfFetchFunctions<JackpotStateArgs, JackpotState>;
   platformConfig: ReturnType<typeof getPlatformConfigCodec> &
     SelfFetchFunctions<PlatformConfigArgs, PlatformConfig>;
   profile: ReturnType<typeof getProfileCodec> &
@@ -527,6 +743,21 @@ export type DegenwildPluginInstructions = {
     config?: { programAddress?: Address | HasAddress },
   ) => ReturnType<typeof getDeleteProfileInstructionAsync> &
     SelfPlanAndSendFunctions;
+  drawJackpot: (
+    input: DrawJackpotAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getDrawJackpotInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  enterJackpot: (
+    input: EnterJackpotAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getEnterJackpotInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  initJackpot: (
+    input: MakeOptional<InitJackpotAsyncInput, "payer">,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getInitJackpotInstructionAsync> &
+    SelfPlanAndSendFunctions;
   initializePlatformConfig: (
     input: InitializePlatformConfigAsyncInput,
     config?: { programAddress?: Address | HasAddress },
@@ -537,15 +768,30 @@ export type DegenwildPluginInstructions = {
     config?: { programAddress?: Address | HasAddress },
   ) => ReturnType<typeof getJoinBattleInstructionAsync> &
     SelfPlanAndSendFunctions;
+  leaveJackpot: (
+    input: LeaveJackpotAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getLeaveJackpotInstructionAsync> &
+    SelfPlanAndSendFunctions;
   refundExpiredBattle: (
     input: RefundExpiredBattleInput,
     config?: { programAddress?: Address | HasAddress },
   ) => ReturnType<typeof getRefundExpiredBattleInstruction> &
     SelfPlanAndSendFunctions;
+  refundJackpot: (
+    input: RefundJackpotAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getRefundJackpotInstructionAsync> &
+    SelfPlanAndSendFunctions;
   settleBattle: (
     input: SettleBattleAsyncInput,
     config?: { programAddress?: Address | HasAddress },
   ) => ReturnType<typeof getSettleBattleInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  settleJackpot: (
+    input: SettleJackpotAsyncInput,
+    config?: { programAddress?: Address | HasAddress },
+  ) => ReturnType<typeof getSettleJackpotInstructionAsync> &
     SelfPlanAndSendFunctions;
   updateTreasury: (
     input: UpdateTreasuryAsyncInput,
@@ -559,12 +805,14 @@ export type DegenwildPluginPdas = {
   newClaim: typeof findNewClaimPda;
   battle: typeof findBattlePda;
   usernameClaim: typeof findUsernameClaimPda;
+  jackpotState: typeof findJackpotStatePda;
   platformConfig: typeof findPlatformConfigPda;
 };
 
 export type DegenwildPluginRequirements = ClientWithRpc<
   GetAccountInfoApi & GetMultipleAccountsApi
 > &
+  ClientWithPayer &
   ClientWithTransactionPlanning &
   ClientWithTransactionSending;
 
@@ -578,6 +826,8 @@ export function degenwildProgram(
       degenwild: <DegenwildPlugin>{
         accounts: {
           battle: addSelfFetchFunctions(client, getBattleCodec()),
+          jackpotRound: addSelfFetchFunctions(client, getJackpotRoundCodec()),
+          jackpotState: addSelfFetchFunctions(client, getJackpotStateCodec()),
           platformConfig: addSelfFetchFunctions(
             client,
             getPlatformConfigCodec(),
@@ -634,6 +884,33 @@ export function degenwildProgram(
                   instructionConfig?.programAddress ?? config.programAddress,
               }),
             ),
+          drawJackpot: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getDrawJackpotInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
+          enterJackpot: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getEnterJackpotInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
+          initJackpot: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getInitJackpotInstructionAsync(
+                { ...input, payer: input.payer ?? client.payer },
+                {
+                  programAddress:
+                    instructionConfig?.programAddress ?? config.programAddress,
+                },
+              ),
+            ),
           initializePlatformConfig: (input, instructionConfig) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -650,6 +927,14 @@ export function degenwildProgram(
                   instructionConfig?.programAddress ?? config.programAddress,
               }),
             ),
+          leaveJackpot: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getLeaveJackpotInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
           refundExpiredBattle: (input, instructionConfig) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -658,10 +943,26 @@ export function degenwildProgram(
                   instructionConfig?.programAddress ?? config.programAddress,
               }),
             ),
+          refundJackpot: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getRefundJackpotInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
           settleBattle: (input, instructionConfig) =>
             addSelfPlanAndSendFunctions(
               client,
               getSettleBattleInstructionAsync(input, {
+                programAddress:
+                  instructionConfig?.programAddress ?? config.programAddress,
+              }),
+            ),
+          settleJackpot: (input, instructionConfig) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getSettleJackpotInstructionAsync(input, {
                 programAddress:
                   instructionConfig?.programAddress ?? config.programAddress,
               }),
@@ -696,6 +997,11 @@ export function degenwildProgram(
               programAddress:
                 pdaConfig?.programAddress ?? config.programAddress,
             }),
+          jackpotState: (pdaConfig) =>
+            findJackpotStatePda({
+              programAddress:
+                pdaConfig?.programAddress ?? config.programAddress,
+            }),
           platformConfig: (pdaConfig) =>
             findPlatformConfigPda({
               programAddress:
@@ -709,3 +1015,5 @@ export function degenwildProgram(
     });
   };
 }
+
+type MakeOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

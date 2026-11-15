@@ -7,6 +7,8 @@
  */
 
 export * from "./battle";
+export * from "./jackpotRound";
+export * from "./jackpotState";
 export * from "./platformConfig";
 export * from "./profile";
 export * from "./usernameClaim";

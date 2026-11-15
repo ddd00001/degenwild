@@ -38,3 +38,26 @@ pub const RESERVED_USERNAMES: &[&str] = &[
 ];
 /// Fragments that may not appear anywhere in a name.
 pub const RESERVED_FRAGMENTS: &[&str] = &["degenwild", "degen_wild", "admin"];
+
+// ---------------------------------------------------------------- jackpot
+
+/// Singleton jackpot state PDA: [JACKPOT_STATE_SEED].
+pub const JACKPOT_STATE_SEED: &[u8] = b"jackpot_state";
+
+/// Jackpot round PDA: [JACKPOT_ROUND_SEED, round_id (u64 LE)].
+pub const JACKPOT_ROUND_SEED: &[u8] = b"jackpot_round";
+
+/// Smallest single jackpot entry: 0.01 SOL.
+pub const JACKPOT_MIN_ENTRY_LAMPORTS: u64 = 10_000_000;
+
+/// Largest single jackpot entry: 10 SOL.
+pub const JACKPOT_MAX_ENTRY_LAMPORTS: u64 = 10_000_000_000;
+
+/// Most distinct players in one round (keeps the account and the payout loop small).
+pub const JACKPOT_MAX_PLAYERS: usize = 30;
+
+/// Distinct players needed before the countdown starts.
+pub const JACKPOT_MIN_PLAYERS: usize = 2;
+
+/// Countdown length once enough players joined.
+pub const JACKPOT_COUNTDOWN_SECS: i64 = 120;

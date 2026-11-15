@@ -8,6 +8,8 @@
 
 export * from "./battleStatus";
 export * from "./fulfilledRequest";
+export * from "./jackpotEntry";
+export * from "./jackpotStatus";
 export * from "./networkConfiguration";
 export * from "./networkState";
 export * from "./oraoTokenFeeConfig";

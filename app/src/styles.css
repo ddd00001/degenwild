@@ -558,3 +558,72 @@ dialog>*:not(.embers){position:relative;z-index:1}
 .battle-action{gap:6px;align-items:center}
 .battle-action .join-small{width:auto;flex:0 0 104px;padding:0 10px;white-space:nowrap}
 @media(min-width:1051px){.battle-row{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr) 150px 240px}}
+/* ---------------------------------------------------------------- Jackpot */
+.new-tag{margin-left:auto;padding:2px 6px;border-radius:4px;background:linear-gradient(105deg,#e92330,#a90f19);color:#fff;font-size:8px;font-weight:900;letter-spacing:.1em;box-shadow:0 0 10px #ff202b66}
+.jp-page{margin:22px 0;display:grid;gap:16px}
+.jp-hero{padding:24px 30px;background:radial-gradient(ellipse at 85% 50%,#3a1216 0%,#171010 45%,#0d0c0c 100%)}
+.jp-hero h1{font:900 clamp(36px,4.6vw,56px)/1 'Barlow Condensed';color:#fff;margin:10px 0 10px;text-transform:uppercase}
+.jp-hero h1 span{color:var(--red)}
+.jp-hero p{max-width:760px;margin:0;color:#d8c6c6;font-size:14px;line-height:1.6}
+.jp-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.9fr);gap:16px;align-items:start}
+.jp-stage{position:relative;padding:26px;display:flex;flex-direction:column;align-items:center;overflow:hidden;background:radial-gradient(circle at 50% 45%,#2a0c0f 0%,#140b0c 55%,#0d0a0a 100%)}
+.jp-stage::before{content:"";position:absolute;inset:-30%;background:conic-gradient(from 0deg,transparent 0 20%,#ff202b14 25%,transparent 30% 70%,#ff202b14 75%,transparent 80%);animation:jp-sweep 14s linear infinite;pointer-events:none}
+.jp-stage.spinning::before,.jp-stage.landing::before{animation-duration:2.5s}
+@keyframes jp-sweep{to{transform:rotate(360deg)}}
+.jp-wheel-wrap{position:relative;width:min(100%,460px)}
+.jp-wheel{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 18px 40px #000a)}
+.jp-rim{fill:#120a0b;stroke:#ff3038;stroke-width:2.5;filter:drop-shadow(0 0 14px #ff202b88)}
+.jp-stage.spinning .jp-rim,.jp-stage.landing .jp-rim{animation:jp-rim-pulse .5s ease-in-out infinite alternate}
+@keyframes jp-rim-pulse{to{stroke:#ffd166;filter:drop-shadow(0 0 22px #ff9f1c)}}
+.jp-tick{stroke:#ff303866;stroke-width:2;stroke-linecap:round}
+.jp-empty{fill:none;stroke:#221617;stroke-dasharray:6 10}
+.jp-seg{stroke:#0d0909;stroke-width:3;transition:opacity .4s,filter .4s}
+.jp-seg.mine{filter:brightness(1.12) drop-shadow(0 0 8px #fff6)}
+.jp-seg.dim{opacity:.28}
+.jp-hub{stroke:#ff303855;stroke-width:2}
+.jp-ring-bg{fill:none;stroke:#2a1a1b;stroke-width:7}
+.jp-ring{fill:none;stroke:#ff3038;stroke-width:7;stroke-linecap:round;filter:drop-shadow(0 0 6px #ff202b);transition:stroke-dashoffset .25s linear}
+.jp-hub-label{fill:#9d8c8c;font:800 11px Inter,sans-serif;letter-spacing:.24em;text-anchor:middle}
+.jp-hub-pot{fill:#fff;font:900 38px 'Barlow Condensed',sans-serif;text-anchor:middle;dominant-baseline:middle}
+.jp-hub-sol{fill:#ff5a60;font:800 12px Inter,sans-serif;letter-spacing:.2em;text-anchor:middle}
+.jp-hub-timer{fill:#f5f1f1;font:800 22px 'Barlow Condensed',sans-serif;text-anchor:middle;font-variant-numeric:tabular-nums}
+.jp-hub-timer.hot{fill:#ff3038;animation:jp-blink .5s steps(1) infinite}
+@keyframes jp-blink{50%{opacity:.35}}
+.jp-pointer{fill:#ff3038;stroke:#fff;stroke-width:2;stroke-linejoin:round}
+.jp-stage.spinning .jp-pointer{animation:jp-nudge .12s ease-in-out infinite alternate;transform-origin:200px 2px}
+@keyframes jp-nudge{to{transform:rotate(7deg)}}
+.jp-status{margin-top:12px;text-align:center;font:900 22px 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#f5f1f1}
+.jp-stage.result .jp-status{color:#ffd166;text-shadow:0 0 18px #ff9f1c}
+.jp-winner{position:relative;z-index:1;display:flex;align-items:center;gap:16px;margin-top:16px;padding:14px 20px;border:1px solid #ffd16688;border-radius:12px;background:linear-gradient(105deg,#3a2a08,#1a1206);box-shadow:0 0 34px #ff9f1c44;animation:jp-pop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes jp-pop{from{transform:scale(.6);opacity:0}}
+.jp-winner small{display:block;color:#d9b45a;font-size:10px;font-weight:800;letter-spacing:.16em}
+.jp-winner b{display:block;font:900 26px 'Barlow Condensed',sans-serif;color:#fff}
+.jp-winner span{color:#f0deb0;font-size:13px}
+.jp-side{display:grid;gap:16px}
+.jp-enter{padding:20px}
+.jp-enter h2,.jp-players h2{margin:6px 0 14px;font:900 26px 'Barlow Condensed';text-transform:uppercase}
+.jp-enter .quick-amounts{margin:8px 0 12px}
+.jp-enter .quick-amounts button{flex:1}
+.jp-enter-btn{width:100%}
+.jp-hint{display:block;margin-top:8px;color:var(--muted);font-size:11px}
+.jp-enter .link-btn{margin-top:10px}
+.jp-players{padding:18px 20px}
+.jp-players-head{display:flex;align-items:center;justify-content:space-between}
+.jp-players-head h2{margin:0 0 10px}
+.jp-mychance{color:#3ddc84;font-weight:800;font-size:12px}
+.jp-players ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:420px;overflow:auto}
+.jp-players li{display:grid;grid-template-columns:4px 30px minmax(0,1fr) auto 62px;align-items:center;gap:10px;padding:8px 10px;border:1px solid #241a1a;border-radius:8px;background:#110d0d;font-size:13px;animation:jp-in .35s ease-out}
+@keyframes jp-in{from{transform:translateX(12px);opacity:0}}
+.jp-players li i{width:4px;height:26px;border-radius:2px}
+.jp-players li.mine{border-color:#3ddc8466;background:linear-gradient(90deg,#3ddc8414,#110d0d 60%)}
+.jp-players li.won{border-color:#ffd166;background:linear-gradient(90deg,#ffd16622,#110d0d 70%)}
+.jp-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jp-amt{color:#e9dede;font-variant-numeric:tabular-nums}
+.jp-chance{text-align:right;color:#ff737a;font-weight:800;font-variant-numeric:tabular-nums}
+.jp-empty-text{margin:6px 0;color:var(--muted);font-size:13px}
+.jp-last{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;color:var(--muted);font-size:12px}
+.jp-last b{color:var(--text)}
+.avatar-svg{display:inline-block;vertical-align:middle;flex:none}
+@media(max-width:1050px){.jp-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.jp-hero{padding:20px 18px}.jp-stage{padding:16px}.jp-players li{grid-template-columns:4px 26px minmax(0,1fr) auto 52px;gap:7px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.jp-stage::before,.jp-rim,.jp-pointer,.jp-hub-timer.hot{animation:none!important}}

@@ -16,5 +16,13 @@
   "6014": "Refund timeout has not passed yet",
   "6015": "Username must be 3-16 characters",
   "6016": "Username may only contain letters, numbers and underscores",
-  "6017": "That username is reserved"
+  "6017": "That username is reserved",
+  "6018": "Jackpot entries are closed for this round",
+  "6019": "This jackpot round is full",
+  "6020": "Jackpot round is not open",
+  "6021": "The jackpot countdown has not finished yet",
+  "6022": "Jackpot round is not drawing",
+  "6023": "Winner account does not match the drawn ticket",
+  "6024": "You can only leave a round you are alone in, before the countdown starts",
+  "6025": "Refund accounts do not match the round's players"
 }

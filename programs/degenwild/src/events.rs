@@ -24,3 +24,25 @@ pub struct BattleRefunded {
     pub opponent: Pubkey,
     pub amount: u64,
 }
+
+/// Emitted when a jackpot round pays out. The round account is closed in the same instruction.
+#[event]
+pub struct JackpotSettled {
+    pub round: Pubkey,
+    pub round_id: u64,
+    pub winner: Pubkey,
+    pub total: u64,
+    pub payout: u64,
+    pub fee: u64,
+    /// Lamport index in [0, total) picked by the randomness.
+    pub ticket: u64,
+    pub players: u8,
+}
+
+/// Emitted when a jackpot round is refunded after the ORAO timeout.
+#[event]
+pub struct JackpotRefunded {
+    pub round: Pubkey,
+    pub round_id: u64,
+    pub total: u64,
+}

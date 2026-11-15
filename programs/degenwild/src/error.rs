@@ -55,4 +55,28 @@ pub enum ErrorCode {
 
     #[msg("That username is reserved")]
     UsernameReserved,
+
+    #[msg("Jackpot entries are closed for this round")]
+    JackpotClosed,
+
+    #[msg("This jackpot round is full")]
+    JackpotFull,
+
+    #[msg("Jackpot round is not open")]
+    JackpotNotOpen,
+
+    #[msg("The jackpot countdown has not finished yet")]
+    JackpotCountdownRunning,
+
+    #[msg("Jackpot round is not drawing")]
+    JackpotNotDrawing,
+
+    #[msg("Winner account does not match the drawn ticket")]
+    JackpotWrongWinner,
+
+    #[msg("You can only leave a round you are alone in, before the countdown starts")]
+    JackpotCannotLeave,
+
+    #[msg("Refund accounts do not match the round's players")]
+    JackpotRefundAccountsMismatch,
 }

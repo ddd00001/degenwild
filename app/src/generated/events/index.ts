@@ -8,3 +8,5 @@
 
 export * from "./battleRefunded";
 export * from "./battleSettled";
+export * from "./jackpotRefunded";
+export * from "./jackpotSettled";

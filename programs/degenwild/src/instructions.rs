@@ -14,3 +14,5 @@ pub mod refund_expired_battle;
 pub use refund_expired_battle::*;
 pub mod username;
 pub use username::*;
+pub mod jackpot;
+pub use jackpot::*;

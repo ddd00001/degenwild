@@ -3,11 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConnectedWallet } from '@solana/kit-plugin-wallet/react';
 import { client, clientV0 } from './client';
 import { CLUSTER, HOUSE_NAME, HOUSE_WALLET, MAX_STAKE_LAMPORTS, MIN_STAKE_LAMPORTS, PLATFORM_ADMIN, POLL_MS, explorerTx } from './config';
-import { type BattleView, type Randomness, buildCancel, buildChangeUsername, buildCreate, buildCreateProfile, buildDeleteProfile, buildInitPlatform, buildJoin, buildRefund, buildSettle, describeError, isExpiredError, fetchAllBattles, fetchAllUsernames, fetchRandomness, fetchTreasury, opponentOf, payoutFor, winnerOf } from './chain';
+import { type BattleView, type Randomness, buildCancel, buildChangeUsername, buildCreate, buildCreateProfile, buildDeleteProfile, buildEnterJackpot, buildInitPlatform, buildJoin, buildLeaveJackpot, buildRefund, buildSettle, describeError, isExpiredError, fetchAllBattles, fetchAllUsernames, fetchRandomness, fetchTreasury, opponentOf, payoutFor, winnerOf } from './chain';
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
 import { RoadmapPage } from './components/RoadmapPage';
 import { LeaderboardPage } from './components/LeaderboardPage';
+import { JackpotPage } from './components/JackpotPage';
 import { Welcome, shouldShowWelcome } from './components/Welcome';
 import { Coin } from './components/Coin';
 import { Amount } from './components/Amount';
@@ -55,9 +56,15 @@ function useToast() {
 // ------------------------------------------------------------ app
 
 export default function App() {
-  type View = 'coinflip' | 'roadmap' | 'leaderboard';
+  type View = 'coinflip' | 'roadmap' | 'leaderboard' | 'jackpot';
   const viewFromHash = (): View =>
-    window.location.hash === '#roadmap' ? 'roadmap' : window.location.hash === '#leaderboard' ? 'leaderboard' : 'coinflip';
+    window.location.hash === '#roadmap'
+      ? 'roadmap'
+      : window.location.hash === '#leaderboard'
+        ? 'leaderboard'
+        : window.location.hash === '#jackpot'
+          ? 'jackpot'
+          : 'coinflip';
   const [view, setViewState] = useState<View>(viewFromHash);
   // #roadmap and #leaderboard are shareable links; the coinflip page has no hash.
   const setView = (v: View) => {
@@ -458,14 +465,10 @@ export default function App() {
           <button className={`nav-link ${view === 'coinflip' ? 'active' : ''}`} onClick={() => setView('coinflip')}>
             <span className="nav-icon">◉</span>Coinflip
           </button>
-          <div className="nav-link soon" tabIndex={0} aria-disabled="true" aria-describedby="jackpot-tip">
+          <button className={`nav-link ${view === 'jackpot' ? 'active' : ''}`} onClick={() => setView('jackpot')}>
             <span className="nav-icon">♜</span>Jackpot
-            <span className="soon-tag">SOON</span>
-            <span className="nav-tip" role="tooltip" id="jackpot-tip">
-              <b>Jackpot is coming soon.</b> Everyone adds to one pot and a single provably fair draw picks the winner,
-              on-chain like coinflip.
-            </span>
-          </div>
+            <span className="new-tag">NEW</span>
+          </button>
           <div className="nav-link soon" tabIndex={0} aria-disabled="true" aria-describedby="rewards-tip">
             <span className="nav-icon">★</span>Rewards
             <span className="soon-tag">SOON</span>
@@ -509,6 +512,10 @@ export default function App() {
               <>
                 $WILD <span>/</span> LEADERBOARD
               </>
+            ) : view === 'jackpot' ? (
+              <>
+                PVP ARENA <span>/</span> JACKPOT
+              </>
             ) : (
               <>
                 PVP ARENA <span>/</span> COINFLIP
@@ -534,12 +541,8 @@ export default function App() {
           <button className={view === 'coinflip' ? 'active' : ''} onClick={() => setView('coinflip')}>
             ◉ Coinflip
           </button>
-          <button
-            className={`soon ${soonTip === 'jackpot' ? 'open' : ''}`}
-            onClick={() => setSoonTip((v) => (v === 'jackpot' ? null : 'jackpot'))}
-            aria-expanded={soonTip === 'jackpot'}
-          >
-            ♜ Jackpot <span className="soon-tag">SOON</span>
+          <button className={view === 'jackpot' ? 'active' : ''} onClick={() => setView('jackpot')}>
+            ♜ Jackpot
           </button>
           <button
             className={`soon ${soonTip === 'rewards' ? 'open' : ''}`}
@@ -560,16 +563,7 @@ export default function App() {
         </nav>
         {soonTip && (
           <div className="mobile-tip" role="status" onClick={() => setSoonTip(null)}>
-            {soonTip === 'jackpot' ? (
-              <>
-                <b>Jackpot is coming soon.</b> Everyone adds to one pot and a single provably fair draw picks the winner,
-                on-chain like coinflip.
-              </>
-            ) : (
-              <>
-                <b>Rewards are coming soon.</b> Earn perks just for playing on DegenWild.
-              </>
-            )}
+            <b>Rewards are coming soon.</b> Earn perks just for playing on DegenWild.
           </div>
         )}
 
@@ -842,6 +836,20 @@ export default function App() {
         ) : view === 'leaderboard' ? (
           <section className="view active">
             <LeaderboardPage names={names} me={me} />
+          </section>
+        ) : view === 'jackpot' ? (
+          <section className="view active">
+            <JackpotPage
+              me={me}
+              names={names}
+              busy={busy}
+              canPlay={!!signer}
+              onConnect={() => setWalletOpen(true)}
+              onEnter={(amount, roundId) =>
+                send('jackpot', () => buildEnterJackpot(signer!, amount, roundId), `You're in the pot with ${fmtSol(amount)} SOL. Good luck!`)
+              }
+              onLeave={(roundId) => send('jackpot', () => buildLeaveJackpot(signer!, roundId), 'You left the pot: SOL refunded.')}
+            />
           </section>
         ) : (
           <section className="view active">
