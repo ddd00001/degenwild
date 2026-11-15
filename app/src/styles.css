@@ -554,3 +554,7 @@ dialog>*:not(.embers){position:relative;z-index:1}
 @media(max-width:760px){.lb-hero{padding:22px 18px}.lb-row{grid-template-columns:34px minmax(0,1fr) 84px 70px;padding:10px 12px;gap:8px;font-size:12px}.lb-pct i{display:none}}
 @media(prefers-reduced-motion:reduce){.lb-skeleton i{animation:none}}
 .nav-link.nav-tight{white-space:nowrap;letter-spacing:-.01em}
+/* Equal-size Join buttons, aligned in one column */
+.battle-action{gap:6px;align-items:center}
+.battle-action .join-small{width:auto;flex:0 0 104px;padding:0 10px;white-space:nowrap}
+@media(min-width:1051px){.battle-row{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr) 150px 240px}}
