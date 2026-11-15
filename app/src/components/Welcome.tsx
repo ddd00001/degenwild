@@ -77,9 +77,9 @@ export function Welcome({ onClose }: { onClose: () => void }) {
             </div>
             <div className="welcome-kicker">WELCOME TO DEGENWILD</div>
             <h2>
-              The first <em>100% on-chain</em> Solana PvP arena
+              A <em>provably fair</em> Solana PvP arena
             </h2>
-            <p>Every stake, every flip and every payout is a Solana transaction anyone can check. No house. No hidden server.</p>
+            <p>Every stake, every flip and every payout is a Solana transaction anyone can check. No hidden odds.</p>
           </>
         )}
 
@@ -92,7 +92,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
             <h2>
               Call your flip. <em>Beat a real player.</em>
             </h2>
-            <p>Join an open battle from the lobby or create your own. The coin flips live and the winner takes the pot.</p>
+            <p>Join an open battle from the lobby or create your own, and play Degen Bot when the lobby is quiet. The coin flips live and the winner takes the pot.</p>
           </>
         )}
 
@@ -120,7 +120,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
             <h2>
               Fair by design. <em>Paid in seconds.</em>
             </h2>
-            <p>Connect your wallet, pick a name and start your first battle.</p>
+            <p>Connect your wallet or try it free with a demo wallet, pick a name and start your first battle.</p>
           </>
         )}
       </div>

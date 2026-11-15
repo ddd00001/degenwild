@@ -41,7 +41,7 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - Leaderboard / points for a devnet "play-money season", stats panel, waitlist.
 - Admin pause switch, lower max stake for any future mainnet, multisig for keys.
 - Hosting the bot on a server; admin page to remove usernames; restricted Helius key per domain.
-- Replace "The first 100% on-chain..." claim in the intro if it can't be verified.
+- (done) "The first 100% on-chain" claim replaced with "provably fair".
 
 ## Demo mode (live on master since 2026-11-15)
 - "Try it free" in the Connect wallet dialog: in-browser demo wallet (`src/burner.ts`, key in localStorage, devnet only).
