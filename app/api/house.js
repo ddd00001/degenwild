@@ -2943,9 +2943,9 @@ var require_websocket = __commonJS({
         emitErrorAndClose(websocket, err);
       });
       req.on("response", (res) => {
-        const location = res.headers.location;
+        const location2 = res.headers.location;
         const statusCode = res.statusCode;
-        if (location && opts.followRedirects && statusCode >= 300 && statusCode < 400) {
+        if (location2 && opts.followRedirects && statusCode >= 300 && statusCode < 400) {
           if (++websocket._redirects > opts.maxRedirects) {
             abortHandshake(websocket, req, "Maximum redirects exceeded");
             return;
@@ -2953,9 +2953,9 @@ var require_websocket = __commonJS({
           req.abort();
           let addr;
           try {
-            addr = new URL(location, address2);
+            addr = new URL(location2, address2);
           } catch (e7) {
-            const err = new SyntaxError(`Invalid URL: ${location}`);
+            const err = new SyntaxError(`Invalid URL: ${location2}`);
             emitErrorAndClose(websocket, err);
             return;
           }
@@ -11931,7 +11931,8 @@ var DEFAULT_RPC = {
   localnet: "http://127.0.0.1:8899",
   mainnet: "https://api.mainnet-beta.solana.com"
 };
-var RPC_URL = import.meta.env?.VITE_RPC_URL ?? DEFAULT_RPC[CLUSTER];
+var useProxy = CLUSTER === "devnet" && !import.meta.env?.VITE_RPC_URL && !import.meta.env?.VITE_PAGES && typeof location !== "undefined" && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+var RPC_URL = useProxy ? `${location.origin}/api/rpc` : import.meta.env?.VITE_RPC_URL ?? DEFAULT_RPC[CLUSTER];
 var CHAIN = import.meta.env?.VITE_WALLET_CHAIN ?? `solana:${CLUSTER}`;
 var PLATFORM_ADMIN = address("4VUJ1pCqT1TWQhKFSyDC7EP9HkEAUSGrcaBpYhCEfx7b");
 var HOUSE_WALLET = address("CMSsRH5GeVceA6Ck3nhi63C8o6ZgJQR3mujypXHF7sqo");
@@ -12085,6 +12086,7 @@ var C = {
   WALLET_NO_SIGNER: 8900001,
   WALLET_VERSION_UNSUPPORTED: 8900007,
   CANNOT_SIGN: 5508012,
+  RPC_HTTP_ERROR: 8100002,
   USER_REJECTED: 4001
   // EIP-1193 / wallet-standard convention
 };
@@ -12108,7 +12110,7 @@ function describeError(err) {
   if (has(C.WALLET_VERSION_UNSUPPORTED)) return "Your wallet version can\u2019t sign this transaction \u2014 update the wallet app.";
   if (has(C.WALLET_NOT_CONNECTED) || has(C.WALLET_NO_SIGNER) || has(C.CANNOT_SIGN))
     return "Your wallet isn\u2019t connected for signing \u2014 reconnect it and try again.";
-  if (/\b429\b|too many requests|rate.?limit/i.test(text))
+  if (has(C.RPC_HTTP_ERROR) || /\b429\b|too many requests|rate.?limit/i.test(text))
     return "The network is busy right now (rate-limited) \u2014 retrying automatically.";
   const readable = text.split(" | ").find((t) => t && !/^Solana error #\d+/.test(t));
   const code = codes.find((c) => c > 0);

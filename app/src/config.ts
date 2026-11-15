@@ -11,7 +11,23 @@ const DEFAULT_RPC: Record<Cluster, string> = {
   mainnet: 'https://api.mainnet-beta.solana.com',
 };
 
-export const RPC_URL: string = import.meta.env?.VITE_RPC_URL ?? DEFAULT_RPC[CLUSTER];
+/**
+ * Deployed devnet site (Vercel): go through our /api/rpc proxy, which uses a private RPC server-side.
+ * Local dev, scripts and the GitHub Pages copy (no functions there) use VITE_RPC_URL or the public RPC.
+ */
+const useProxy =
+  CLUSTER === 'devnet' &&
+  !import.meta.env?.VITE_RPC_URL &&
+  !import.meta.env?.VITE_PAGES &&
+  typeof location !== 'undefined' &&
+  !/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+
+export const RPC_URL: string = useProxy
+  ? `${location.origin}/api/rpc`
+  : (import.meta.env?.VITE_RPC_URL ?? DEFAULT_RPC[CLUSTER]);
+
+/** WebSocket for confirmations. The proxy is HTTP-only, so it uses the public devnet socket (per-visitor limits). */
+export const RPC_WS_URL: string | undefined = useProxy ? 'wss://api.devnet.solana.com' : undefined;
 
 /** Wallet Standard chain. Wallets rarely advertise solana:localnet, so override with VITE_WALLET_CHAIN=solana:devnet when testing locally. */
 export const CHAIN = (import.meta.env?.VITE_WALLET_CHAIN ?? `solana:${CLUSTER}`) as `solana:${string}`;

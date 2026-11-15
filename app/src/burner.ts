@@ -3,7 +3,7 @@
 import { type KeyPairSigner, createClient, createKeyPairSignerFromPrivateKeyBytes } from '@solana/kit';
 import { solanaRpc } from '@solana/kit-plugin-rpc';
 import { signer } from '@solana/kit-plugin-signer';
-import { CLUSTER, RPC_URL } from './config';
+import { CLUSTER, RPC_URL, RPC_WS_URL } from './config';
 
 const KEY = 'degenwild:demo-wallet';
 
@@ -49,7 +49,7 @@ export function forgetBurner() {
 }
 
 export async function burnerClient(kp: KeyPairSigner) {
-  return await createClient().use(signer(kp)).use(solanaRpc({ rpcUrl: RPC_URL, transactionConfig: { version: 0 } }));
+  return await createClient().use(signer(kp)).use(solanaRpc({ rpcUrl: RPC_URL, rpcSubscriptionsUrl: RPC_WS_URL, transactionConfig: { version: 0 } }));
 }
 export type BurnerClient = Awaited<ReturnType<typeof burnerClient>>;
 

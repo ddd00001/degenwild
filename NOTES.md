@@ -51,4 +51,5 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - Faucet `app/api/faucet.ts`: sends FAUCET_DRIP_SOL (default 0.4) to near-empty wallets, or what it can spare (min 0.2).
   1 per IP per 10 min, 60/h per instance.
 - House `app/server/house.ts` (bundled to `app/api/house.js` by `npm run build:api`, commit both): "Play house" button on your own open battle; the house joins and settles right away (no PC needed).
+- RPC: the deployed site calls `app/api/rpc.ts`, which forwards to Vercel env `FAUCET_RPC_URL` (Helius devnet URL; also used by faucet + house). Websockets use public devnet.
 - Bot: `npm run bot` also auto-joins open battles <= 5 SOL after 10 s as the house (HOUSE=0 to disable).

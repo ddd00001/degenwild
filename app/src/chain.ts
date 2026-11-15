@@ -302,6 +302,7 @@ const C = {
   WALLET_NO_SIGNER: 8900001,
   WALLET_VERSION_UNSUPPORTED: 8900007,
   CANNOT_SIGN: 5508012,
+  RPC_HTTP_ERROR: 8100002,
   USER_REJECTED: 4001, // EIP-1193 / wallet-standard convention
 };
 
@@ -337,7 +338,7 @@ export function describeError(err: unknown): string {
   if (has(C.WALLET_VERSION_UNSUPPORTED)) return 'Your wallet version can’t sign this transaction — update the wallet app.';
   if (has(C.WALLET_NOT_CONNECTED) || has(C.WALLET_NO_SIGNER) || has(C.CANNOT_SIGN))
     return 'Your wallet isn’t connected for signing — reconnect it and try again.';
-  if (/\b429\b|too many requests|rate.?limit/i.test(text))
+  if (has(C.RPC_HTTP_ERROR) || /\b429\b|too many requests|rate.?limit/i.test(text))
     return 'The network is busy right now (rate-limited) — retrying automatically.';
   // Fall back to the most specific readable text we have, plus the code for support.
   const readable = text.split(' | ').find((t) => t && !/^Solana error #\d+/.test(t));
