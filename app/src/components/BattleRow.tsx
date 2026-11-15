@@ -44,11 +44,6 @@ export function BattleRow(props: {
         meta = 'WAITING FOR PLAYER';
         action = (
           <>
-            {props.onHouse && (
-              <button className="join-small" disabled={busy !== null} onClick={props.onHouse} title="Play against the house now">
-                {isBusy('house') ? 'Calling…' : 'Play house'}
-              </button>
-            )}
             <button className="join-small ghost" disabled={busy !== null} onClick={props.onCancel}>
               {isBusy('cancel') ? 'Confirm…' : 'Cancel'}
             </button>
