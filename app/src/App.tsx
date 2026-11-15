@@ -849,6 +849,25 @@ export default function App() {
           </section>
         ) : view === 'jackpot' ? (
           <section className="view active">
+            <section className="hero slim">
+              <h1>
+                ONE POT. <em>ONE WINNER.</em>
+              </h1>
+              <p>Throw SOL in the pot. The bigger your stake, the bigger your slice of the wheel.</p>
+              <div className="trust-badges">
+                <span>
+                  <b>⏱ 2-minute countdown</b> — starts when the second player joins
+                </span>
+                <span>
+                  <b>✓ Provably fair</b> — on-chain randomness spins the wheel
+                </span>
+                <span>
+                  <b>⚡ Auto payouts</b> — winner gets the pot minus 3.5%
+                </span>
+              </div>
+            </section>
+            <div className="lobby-split">
+            <div className="lobby-main">
             <JackpotPage
               me={me}
               names={names}
@@ -861,6 +880,9 @@ export default function App() {
               onLeave={(roundId) => send('jackpot', () => buildLeaveJackpot(signer!, roundId), 'You left the pot: SOL refunded.')}
               recent={jackpotResults}
             />
+            </div>
+            <ChatPanel me={me} signer={signer} names={names} onConnect={() => setWalletOpen(true)} />
+            </div>
           </section>
         ) : (
           <section className="view active">

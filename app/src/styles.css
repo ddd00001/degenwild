@@ -560,7 +560,7 @@ dialog>*:not(.embers){position:relative;z-index:1}
 @media(min-width:1051px){.battle-row{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr) 150px 240px}}
 /* ---------------------------------------------------------------- Jackpot */
 .new-tag{margin-left:auto;padding:2px 6px;border-radius:4px;background:linear-gradient(105deg,#e92330,#a90f19);color:#fff;font-size:8px;font-weight:900;letter-spacing:.1em;box-shadow:0 0 10px #ff202b66}
-.jp-page{margin:22px 0;display:grid;gap:16px}
+.jp-page{margin:0;display:grid;gap:16px}
 .jp-hero{padding:24px 30px;background:radial-gradient(ellipse at 85% 50%,#3a1216 0%,#171010 45%,#0d0c0c 100%)}
 .jp-hero h1{font:900 clamp(36px,4.6vw,56px)/1 'Barlow Condensed';color:#fff;margin:10px 0 10px;text-transform:uppercase}
 .jp-hero h1 span{color:var(--red)}
@@ -702,3 +702,4 @@ dialog>*:not(.embers){position:relative;z-index:1}
 .jp-recent-meta{color:#7d7070}
 a.replay-btn{display:grid;place-items:center;text-decoration:none}
 @media(max-width:600px){.jp-recent-meta{display:none}}
+@media(max-width:1400px){.jp-grid{grid-template-columns:1fr}}

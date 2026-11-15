@@ -247,20 +247,6 @@ export function JackpotPage(props: {
 
   return (
     <div className="jp-page">
-      <header className="jp-hero panel">
-        <div className="eyebrow">
-          <span className="red-line" /> JACKPOT
-        </div>
-        <h1>
-          One pot. <span>One winner.</span>
-        </h1>
-        <p>
-          Throw SOL in the pot: the more you put in, the bigger your slice of the wheel. When the second player joins, a
-          2-minute countdown starts. Then the wheel spins and provably fair randomness picks the winner, who takes the pot
-          minus a 3.5% fee.
-        </p>
-      </header>
-
       <div className="jp-grid">
         <section className={`jp-stage panel ${phase}`}>
           <div className="jp-wheel-wrap" ref={wrapRef} onMouseLeave={() => setHover(null)}>
