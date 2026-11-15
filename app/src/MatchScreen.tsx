@@ -172,7 +172,7 @@ export function MatchScreen(props: {
             {iWon && props.claimed && !props.replay && (
               <div className="match-claimed">✓ Winnings sent to your wallet</div>
             )}
-            {props.replay && winner && (
+            {winner && (
               <div className="match-receipt">
                 <span>
                   <b>{winner === me ? 'You' : props.nameOf(winner)}</b> won the <b>{props.fmtSol(pot)} SOL</b> pot
@@ -182,7 +182,7 @@ export function MatchScreen(props: {
                     tx {props.payoutTx.slice(0, 6)}…{props.payoutTx.slice(-6)} ↗
                   </a>
                 ) : (
-                  <span className="match-receipt-muted">payout tx not in recent history</span>
+                  <span className="match-receipt-muted">{props.replay ? 'payout tx not in recent history' : 'payout tx confirming…'}</span>
                 )}
               </div>
             )}

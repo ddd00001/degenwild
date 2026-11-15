@@ -94,7 +94,7 @@ export default function App() {
   const firstSeen = useRef(new Map<string, number>());
   const historyLoaded = useRef(false);
   const [feedTick, setFeedTick] = useState(0);
-  const FEED_DELAY_MS = 9000;
+  const FEED_DELAY_MS = 15000;
   const stamp = (sigs: string[]) => {
     const now = historyLoaded.current ? Date.now() : 0;
     let fresh = false;
@@ -470,12 +470,14 @@ export default function App() {
             .concat(
               results
                 .filter((r) => r.creator === me || r.opponent === me)
+                .filter((r) => released(r.signature) && r.battle !== match?.address)
                 .filter((r) => !battles.some((b) => b.address === r.battle))
                 .map(resultToBattle),
             )
             .slice(0, 100)
         : [],
-    [battles, results, me],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [battles, results, me, feedTick, match?.address],
   );
   const myOpen = open.filter((b) => b.creator === me);
   const isDone = (b: BattleView) => b.status === BattleStatus.Settled || b.status === BattleStatus.Refunded;
@@ -841,11 +843,11 @@ export default function App() {
                 </div>
               </div>
               <div className="recent-list">
-                {results.filter((r) => r.kind === 'settled' && released(r.signature)).length === 0 ? (
+                {results.filter((r) => r.kind === 'settled' && released(r.signature) && r.battle !== match?.address).length === 0 ? (
                   <div className="empty-state">No finished games yet.</div>
                 ) : (
                   results
-                    .filter((r): r is Extract<GameResult, { kind: 'settled' }> => r.kind === 'settled' && released(r.signature))
+                    .filter((r): r is Extract<GameResult, { kind: 'settled' }> => r.kind === 'settled' && released(r.signature) && r.battle !== match?.address)
                     .slice(0, 10)
                     .map((r) => {
                       const loser = r.winner === r.creator ? r.opponent : r.creator;
