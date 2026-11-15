@@ -184,7 +184,7 @@ export function MatchScreen(props: {
         )}
         {phase === 'open' && props.open?.onHouse && (
           <button className="primary-btn" disabled={props.open.housing} onClick={props.open.onHouse}>
-            {props.open.housing ? 'Calling the house…' : '⚡ Play the house now'}
+            {props.open.housing ? 'Calling the house…' : 'Play the house now'}
           </button>
         )}
         {phase === 'open' && props.open?.onCancel && (
