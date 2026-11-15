@@ -9,7 +9,6 @@ import { fetchJackpotEntries } from '../jackpotReplay';
 import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
-import { Amount } from './Amount';
 import { fmtUsd, useSolPrice } from '../price';
 
 /** Keep in sync with programs/degenwild/src/constants.rs. */
