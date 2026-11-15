@@ -558,7 +558,7 @@ export function JackpotPage(props: {
                     )}
                     <span className="jp-recent-meta">
                       {' '}
-                      · {r.players} players · pot {fmtSol(r.total)} SOL
+                      · {r.players} players
                     </span>
                   </span>
                   <span className="recent-time">{timeAgo(r.blockTime)}</span>
