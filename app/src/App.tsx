@@ -479,7 +479,7 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-status">
-            <i className={loadError ? 'down' : ''}></i>
+            <i className={loadError ? 'down' : CLUSTER}></i>
             <span>{loadError ? 'RPC UNREACHABLE' : `${CLUSTER.toUpperCase()} · SLOT ${slot.toString()}`}</span>
           </div>
         </div>

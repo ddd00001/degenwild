@@ -84,8 +84,8 @@ dialog{background:#171111;color:#eee;border:1px solid #693037;border-radius:11px
 .brand-logo.small{width:96px}
 .hero-logo{width:min(300px,30vw);height:auto;filter:drop-shadow(0 0 30px #ff202b40);transform:rotate(-4deg)}
 button:disabled{opacity:.5;cursor:not-allowed;filter:none}
-.network-label.devnet i,.network-label.localnet i{background:#f0a23b;box-shadow:0 0 10px #f0a23b}
-.network-label.mainnet i{background:#3bf07a;box-shadow:0 0 10px #3bf07a}
+.network-label.devnet i,.network-label.localnet i,.sidebar-status i.devnet,.sidebar-status i.localnet{background:#f0a23b;box-shadow:0 0 10px #f0a23b}
+.network-label.mainnet i,.sidebar-status i.mainnet{background:#3bf07a;box-shadow:0 0 10px #3bf07a}
 .sidebar-status i.down{background:#666;box-shadow:none}
 .balance{font-size:12px;font-weight:700;color:#e9dede}
 .amount-input.invalid{border-color:#8f2a30}
