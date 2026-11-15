@@ -351,14 +351,14 @@ export function JackpotPage(props: {
                 {phase === 'result' ? 'WON' : 'POT'}
               </text>
               <text x={C} y={C - 4} className="jp-hub-pot">
-                {fmtSol(phase === 'result' && result ? result.payout : (shown?.total ?? 0n))}
+                {fmtSol(phase === 'result' && result ? result.total : (shown?.total ?? 0n))}
               </text>
               <text x={C} y={C + 26} className="jp-hub-sol">
                 SOL
                 {solUsd ? (
                   <tspan className="jp-hub-usd">
                     {' '}
-                    ≈ {usd(phase === 'result' && result ? result.payout : (shown?.total ?? 0n), solUsd)}
+                    ≈ {usd(phase === 'result' && result ? result.total : (shown?.total ?? 0n), solUsd)}
                   </tspan>
                 ) : null}
               </text>
@@ -378,7 +378,7 @@ export function JackpotPage(props: {
               (() => {
                 const s = segments.find((g) => g.player === hover.player);
                 if (!s) return null;
-                const winPot = (shown.total * 9650n) / 10000n;
+                const winPot = shown.total;
                 return (
                   <div
                     className={`jp-tip ${hover.x > (wrapRef.current?.clientWidth ?? 460) / 2 ? 'left' : ''}`}
@@ -423,8 +423,8 @@ export function JackpotPage(props: {
                 <small>ROUND #{result.roundId.toString()} WINNER</small>
                 <b>{nameOf(result.winner)}</b>
                 <span>
-                  won <Amount lamports={result.payout} />
-                  {solUsd ? <span className="jp-usd"> ({usd(result.payout, solUsd)})</span> : null} with a {pct(
+                  won <Amount lamports={result.total} />
+                  {solUsd ? <span className="jp-usd"> ({usd(result.total, solUsd)})</span> : null} with a {pct(
                     result.entries.find((e) => e.player === result.winner)?.amount ?? 0n,
                     result.total,
                   )}% chance
@@ -550,9 +550,9 @@ export function JackpotPage(props: {
                   <span className="recent-text">
                     <span className="jp-round">#{r.roundId.toString()}</span> <b>{nameOf(r.winner)}</b> won{' '}
                     <b>
-                      <Amount lamports={r.payout} />
+                      <Amount lamports={r.total} />
                     </b>
-                    {solUsd ? <span className="jp-usd"> ({usd(r.payout, solUsd)})</span> : null}
+                    {solUsd ? <span className="jp-usd"> ({usd(r.total, solUsd)})</span> : null}
                     {chances[r.signature] !== undefined && (
                       <span className="jp-chance-pill" title="Winner's chance to win this round">
                         {chances[r.signature].toFixed(2)}% chance

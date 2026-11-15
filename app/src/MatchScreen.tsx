@@ -88,7 +88,7 @@ export function MatchScreen(props: {
   const winner = coin === null ? null : creatorWins ? b.creator : opp;
   const iWon = !!me && winner === me;
   const playing = !!me && (b.creator === me || opp === me);
-  const { pot, payout } = payoutFor(b.amount);
+  const { pot } = payoutFor(b.amount);
   const mySide = b.creator === me ? b.creatorSide : 1 - b.creatorSide;
 
   const player = (a: Address | null, side: number) => (
@@ -155,7 +155,7 @@ export function MatchScreen(props: {
           <>
             <div className="match-landed">LANDED {SIDE[coin]}</div>
             <div className={`match-outcome ${iWon || !playing ? 'win' : 'loss'}`}>
-              {iWon ? `YOU WON ${props.fmtSol(payout)} SOL` : playing ? 'YOU LOST' : `${winner ? props.nameOf(winner) : '?'} WON ${props.fmtSol(payout)} SOL`}
+              {iWon ? `YOU WON ${props.fmtSol(pot)} SOL` : playing ? 'YOU LOST' : `${winner ? props.nameOf(winner) : '?'} WON ${props.fmtSol(pot)} SOL`}
             </div>
             {iWon && props.claimed && !props.replay && (
               <div className="match-claimed">✓ Winnings sent to your wallet</div>
@@ -163,7 +163,7 @@ export function MatchScreen(props: {
             {props.replay && winner && (
               <div className="match-receipt">
                 <span>
-                  <b>{winner === me ? 'You' : props.nameOf(winner)}</b> got paid <b>{props.fmtSol(payout)} SOL</b>
+                  <b>{winner === me ? 'You' : props.nameOf(winner)}</b> won the <b>{props.fmtSol(pot)} SOL</b> pot
                 </span>
                 {props.payoutTx ? (
                   <a href={explorerTx(props.payoutTx)} target="_blank" rel="noreferrer" title={props.payoutTx}>
@@ -199,7 +199,7 @@ export function MatchScreen(props: {
         )}
         {phase === 'result' && iWon && !props.claimed && !props.autoPay && (
           <button className="primary-btn" disabled={props.claiming} onClick={props.onClaim}>
-            {props.claiming ? 'Confirm in wallet…' : `Claim ${props.fmtSol(payout)} SOL`}
+            {props.claiming ? 'Confirm in wallet…' : 'Claim winnings'}
           </button>
         )}
         {phase === 'result' && iWon && !props.replay && props.doubleDown && (

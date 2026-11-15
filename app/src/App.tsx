@@ -677,7 +677,7 @@ export default function App() {
                 <span className="info-dot">i</span>
                 {stakeError ??
                   (stake !== null &&
-                    `Win ${fmtSol(payoutFor(stake).payout)} SOL · 3.5% fee · stakes ${fmtSol(MIN_STAKE_LAMPORTS)}–${fmtSol(MAX_STAKE_LAMPORTS, 0)} SOL`)}
+                    `Win the ${fmtSol(payoutFor(stake).pot)} SOL pot · stakes ${fmtSol(MIN_STAKE_LAMPORTS)}–${fmtSol(MAX_STAKE_LAMPORTS, 0)} SOL`)}
               </div>
             </section>
 
@@ -708,7 +708,7 @@ export default function App() {
                       }
                       onHouse={DEMO_ENABLED ? () => void playHouse(b) : undefined}
                       onSettle={() =>
-                        void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), `You won ${fmtSol(payoutFor(b.amount).payout)} SOL — paid to your wallet.`)
+                        void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), `You won the ${fmtSol(payoutFor(b.amount).pot)} SOL pot — paid to your wallet.`)
                       }
                       onRefund={() =>
                         void send(`refund:${b.address}`, () => buildRefund(b), `Refunded — ${fmtSol(b.amount)} SOL back to each player.`)
@@ -747,7 +747,7 @@ export default function App() {
                       }
                       onHouse={DEMO_ENABLED ? () => void playHouse(b) : undefined}
                       onSettle={() =>
-                        void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), `You won ${fmtSol(payoutFor(b.amount).payout)} SOL — paid to your wallet.`)
+                        void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), `You won the ${fmtSol(payoutFor(b.amount).pot)} SOL pot — paid to your wallet.`)
                       }
                       onRefund={() =>
                         void send(`refund:${b.address}`, () => buildRefund(b), `Refunded — ${fmtSol(b.amount)} SOL back to each player.`)
@@ -827,7 +827,7 @@ export default function App() {
                         <div key={r.signature} className={`recent-row ${r.winner === me ? 'mine-win' : ''}`}>
                           <span className="recent-coin" aria-label={r.coin ? 'Tails' : 'Heads'}><Coin side={r.coin} /></span>
                           <span className="recent-text">
-                            <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b><Amount lamports={r.payout} /></b>
+                            <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b><Amount lamports={r.payout + r.fee} /></b>
                           </span>
                           <span className="recent-time">{timeAgo(r.blockTime)}</span>
                           <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={() => replay(resultToBattle(r))}>
@@ -862,7 +862,7 @@ export default function App() {
                   <b>✓ Provably fair</b> — on-chain randomness spins the wheel
                 </span>
                 <span>
-                  <b>⚡ Auto payouts</b> — winner gets the pot minus 3.5%
+                  <b>⚡ Auto payouts</b> — the winner takes the whole pot
                 </span>
               </div>
             </section>
@@ -971,7 +971,7 @@ export default function App() {
             const ok = await send(
               `settle:${match.address}`,
               () => buildSettle(client.rpc, match),
-              `You won ${fmtSol(payoutFor(match.amount).payout)} SOL — paid to your wallet.`,
+              `You won the ${fmtSol(payoutFor(match.amount).pot)} SOL pot — paid to your wallet.`,
             );
             if (ok) setMatchClaimed(true);
           }}

@@ -112,11 +112,11 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
             {done ? 'WON' : 'POT'}
           </text>
           <text x={C} y={C} className="jp-hub-pot">
-            {fmtSol(done ? r.payout : r.total)}
+            {fmtSol(r.total)}
           </text>
           <text x={C} y={C + 28} className="jp-hub-sol">
             SOL
-            {solUsd ? <tspan className="jp-hub-usd"> ≈ {usd(done ? r.payout : r.total, solUsd)}</tspan> : null}
+            {solUsd ? <tspan className="jp-hub-usd"> ≈ {usd(r.total, solUsd)}</tspan> : null}
           </text>
           <path d={`M${C - 15} 2 L${C + 15} 2 L${C} 34 Z`} className="jp-pointer" />
         </svg>
@@ -129,7 +129,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
         <div>
           <b>{label(r.winner)} won</b>
           <span>
-            {fmtSol(r.payout)} SOL{solUsd ? ` (≈ ${usd(r.payout, solUsd)})` : ''} with a {win ? win.chance.toFixed(2) : '?'}% chance
+            the {fmtSol(r.total)} SOL pot{solUsd ? ` (≈ ${usd(r.total, solUsd)})` : ''} with a {win ? win.chance.toFixed(2) : '?'}% chance
           </span>
         </div>
       </div>
@@ -160,8 +160,6 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
         </dd>
         <dt>Round account</dt>
         <dd>{short(r.round)}</dd>
-        <dt>Fee</dt>
-        <dd>{fmtSol(r.fee)} SOL</dd>
       </dl>
 
       <div className="match-actions">

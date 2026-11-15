@@ -24,7 +24,7 @@ export function BattleRow(props: {
   const { b, me, slot, rnd, busy } = props;
   const opp = opponentOf(b);
   const winner = winnerOf(b);
-  const { pot: fullPot, payout } = payoutFor(b.amount);
+  const { pot: fullPot } = payoutFor(b.amount);
   // Until someone joins, only the creator's stake is in the pot.
   const open = b.status === BattleStatus.Open;
   const pot = open ? b.amount : fullPot;
@@ -73,7 +73,7 @@ export function BattleRow(props: {
           rowClass = 'ready';
           action = (
             <button className="join-small hot" disabled={busy !== null} onClick={props.onSettle}>
-              {isBusy('settle') ? 'Confirm…' : `Claim ${fmtSol(payout)}`}
+              {isBusy('settle') ? 'Confirm…' : 'Claim winnings'}
             </button>
           );
         } else {
@@ -98,7 +98,7 @@ export function BattleRow(props: {
       break;
     }
     case BattleStatus.Settled:
-      meta = winner === me ? `YOU WON ${fmtSol(payout)}` : winner ? `${label(winner)} WON` : 'SETTLED';
+      meta = winner === me ? `YOU WON ${fmtSol(fullPot)}` : winner ? `${label(winner)} WON` : 'SETTLED';
       rowClass = winner === me ? 'won' : 'lost';
       action = <span className={`result-tag ${winner === me ? 'won' : ''}`}>{winner === me ? 'WIN' : 'LOSS'}</span>;
       break;
