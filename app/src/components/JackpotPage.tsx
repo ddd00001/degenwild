@@ -4,7 +4,7 @@ import { client } from '../client';
 import { type JackpotView, fetchJackpot } from '../chain';
 import { JackpotStatus } from '../generated';
 import { fmtSol, parseSol, short, type Names } from '../format';
-import { Avatar } from './Avatar';
+import { Avatar, avatarName } from './Avatar';
 import { Amount } from './Amount';
 import { fmtUsd, useSolPrice } from '../price';
 
@@ -64,6 +64,12 @@ export function JackpotPage(props: {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [stakeInput, setStakeInput] = useState('0.1');
+  const [hover, setHover] = useState<{ player: Address; x: number; y: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const hoverAt = (player: Address) => (e: React.MouseEvent) => {
+    const r = wrapRef.current?.getBoundingClientRect();
+    if (r) setHover({ player, x: e.clientX - r.left, y: e.clientY - r.top });
+  };
   const [rot, setRot] = useState(0);
   const [phase, setPhase] = useState<'live' | 'spinning' | 'landing' | 'result'>('live');
   const [result, setResult] = useState<Result | null>(null);
@@ -254,7 +260,7 @@ export function JackpotPage(props: {
 
       <div className="jp-grid">
         <section className={`jp-stage panel ${phase}`}>
-          <div className="jp-wheel-wrap">
+          <div className="jp-wheel-wrap" ref={wrapRef} onMouseLeave={() => setHover(null)}>
             <svg className="jp-wheel" viewBox="0 0 400 400" role="img" aria-label="Jackpot wheel">
               <defs>
                 <radialGradient id="jp-hub" cx="50%" cy="40%" r="70%">
@@ -287,7 +293,9 @@ export function JackpotPage(props: {
                       key={s.player}
                       d={arc(s.start, s.end)}
                       fill={s.color}
-                      className={`jp-seg ${s.player === me ? 'mine' : ''} ${winnerSeg && winnerSeg.player !== s.player ? 'dim' : ''}`}
+                      className={`jp-seg ${s.player === me ? 'mine' : ''} ${winnerSeg && winnerSeg.player !== s.player ? 'dim' : ''} ${hover?.player === s.player ? 'hot' : ''}`}
+                      onMouseMove={hoverAt(s.player)}
+                      onClick={hoverAt(s.player)}
                     />
                   ))
                 )}
@@ -297,7 +305,13 @@ export function JackpotPage(props: {
                   const size = Math.max(22, Math.min(46, span * 0.9));
                   const [x, y] = polar((R_OUT + R_IN) / 2, (s.start + s.end) / 2);
                   return (
-                    <g key={`a-${s.player}`} transform={`rotate(${-rot} ${x} ${y})`}>
+                    <g
+                      key={`a-${s.player}`}
+                      transform={`rotate(${-rot} ${x} ${y})`}
+                      className="jp-av"
+                      onMouseMove={hoverAt(s.player)}
+                      onClick={hoverAt(s.player)}
+                    >
                       <Avatar address={s.player} size={size} x={x - size / 2} y={y - size / 2} ring={s.color} />
                     </g>
                   );
@@ -347,6 +361,46 @@ export function JackpotPage(props: {
                 <path d={`M${C - 15} 2 L${C + 15} 2 L${C} 34 Z`} className="jp-pointer" />
               </g>
             </svg>
+            {hover &&
+              shown &&
+              (() => {
+                const s = segments.find((g) => g.player === hover.player);
+                if (!s) return null;
+                const winPot = (shown.total * 9650n) / 10000n;
+                return (
+                  <div
+                    className={`jp-tip ${hover.x > (wrapRef.current?.clientWidth ?? 460) / 2 ? 'left' : ''}`}
+                    style={{ left: hover.x, top: hover.y, borderColor: s.color }}
+                    role="tooltip"
+                  >
+                    <div className="jp-tip-head">
+                      <Avatar address={s.player} size={36} ring={s.color} />
+                      <div>
+                        <b>{nameOf(s.player)}</b>
+                        <small>{avatarName(s.player)} · {short(s.player)}</small>
+                      </div>
+                    </div>
+                    <div className="jp-tip-chance" style={{ color: s.color }}>
+                      {s.chance.toFixed(2)}%<span>chance to win</span>
+                    </div>
+                    <div className="jp-tip-bar">
+                      <i style={{ width: `${Math.max(2, s.chance)}%`, background: s.color }} />
+                    </div>
+                    <dl>
+                      <dt>Stake</dt>
+                      <dd>
+                        {fmtSol(s.amount)} SOL{solUsd ? <em> ≈ {usd(s.amount, solUsd)}</em> : null}
+                      </dd>
+                      <dt>Wins if picked</dt>
+                      <dd>
+                        {fmtSol(winPot)} SOL{solUsd ? <em> ≈ {usd(winPot, solUsd)}</em> : null}
+                      </dd>
+                      <dt>Multiplier</dt>
+                      <dd>{s.amount > 0n ? (Number(winPot) / Number(s.amount)).toFixed(2) : '0'}x</dd>
+                    </dl>
+                  </div>
+                );
+              })()}
             <div className="jp-status">{status}</div>
           </div>
 

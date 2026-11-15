@@ -7,6 +7,7 @@ import { type BattleView, type Randomness, buildCancel, buildChangeUsername, bui
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
 import { RoadmapPage } from './components/RoadmapPage';
+import { ChatPanel, OnlinePill } from './components/ChatPanel';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { JackpotPage } from './components/JackpotPage';
 import { Welcome, shouldShowWelcome } from './components/Welcome';
@@ -523,6 +524,7 @@ export default function App() {
             )}
           </div>
           <div className="top-actions">
+            <OnlinePill />
             <span className={`network-label ${CLUSTER}`}>
               <i></i> {CLUSTER.toUpperCase()}
             </span>
@@ -754,50 +756,53 @@ export default function App() {
               </details>
             )}
 
-            <section className="lobby-section">
-              <div className="lobby-heading">
-                <div>
-                  <div className="eyebrow">FIND YOUR OPPONENT</div>
-                  <h2>
-                    Open battles <span className="count-pill">{String(othersOpen.length).padStart(2, '0')}</span>
-                  </h2>
+            <div className="lobby-split">
+              <section className="lobby-section">
+                <div className="lobby-heading">
+                  <div>
+                    <div className="eyebrow">FIND YOUR OPPONENT</div>
+                    <h2>
+                      Open battles <span className="count-pill">{String(othersOpen.length).padStart(2, '0')}</span>
+                    </h2>
+                  </div>
+                  <button
+                    className="refresh-btn"
+                    onClick={() => {
+                      void refresh();
+                      toast.show('Lobby refreshed.');
+                    }}
+                  >
+                    ↻ <span>Refresh</span>
+                  </button>
                 </div>
-                <button
-                  className="refresh-btn"
-                  onClick={() => {
-                    void refresh();
-                    toast.show('Lobby refreshed.');
-                  }}
-                >
-                  ↻ <span>Refresh</span>
-                </button>
-              </div>
-              <div className="battle-list">
-                {othersOpen.length === 0 ? (
-                  <div className="empty-state">No open battles right now. Create one and start the lobby.</div>
-                ) : (
-                  othersOpen.map((b) => (
-                    <BattleRow
-                      names={names}
-                      key={b.address}
-                      b={b}
-                      me={me}
-                      slot={slot}
-                      busy={busy}
-                      onView={() => watch(b)}
-                      onJoin={() => {
-                        if (!signer) return setWalletOpen(true);
-                        void send(
-                          `join:${b.address}`,
-                          () => buildJoin(client.rpc, signer, b),
-                          `Joined for ${fmtSol(b.amount)} SOL on ${SIDE_NAME[1 - b.creatorSide]}. Flipping…`,
-                        );
-                      }}
-                    />
-                  ))
-                )}
-              </div>
-            </section>
+                <div className="battle-list">
+                  {othersOpen.length === 0 ? (
+                    <div className="empty-state">No open battles right now. Create one and start the lobby.</div>
+                  ) : (
+                    othersOpen.map((b) => (
+                      <BattleRow
+                        names={names}
+                        key={b.address}
+                        b={b}
+                        me={me}
+                        slot={slot}
+                        busy={busy}
+                        onView={() => watch(b)}
+                        onJoin={() => {
+                          if (!signer) return setWalletOpen(true);
+                          void send(
+                            `join:${b.address}`,
+                            () => buildJoin(client.rpc, signer, b),
+                            `Joined for ${fmtSol(b.amount)} SOL on ${SIDE_NAME[1 - b.creatorSide]}. Flipping…`,
+                          );
+                        }}
+                      />
+                    ))
+                  )}
+                </div>
+              </section>
+              <ChatPanel me={me} signer={signer} names={names} onConnect={() => setWalletOpen(true)} />
+            </div>
 
             <section className="lobby-section">
               <div className="lobby-heading">

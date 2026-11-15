@@ -128,11 +128,16 @@ export function BattleRow(props: {
         </div>
       </div>
       <div className={`battle-meta ${open ? 'pot-open' : 'pot-full'}`}>
-        <strong className="pot-chip" key={pot.toString()}>
-          <span className="pot-glyph" aria-hidden="true">◎</span>
-          <Amount lamports={pot} />
-        </strong>
-        <small>{open && meta === 'POT' ? 'POT · DOUBLES ON JOIN' : meta}</small>
+        <div className="pot-badge" key={pot.toString()}>
+          <span className="pot-tag">POT</span>
+          <span className="pot-val">
+            <Amount lamports={pot} />
+          </span>
+          <i className="pot-ember e1" />
+          <i className="pot-ember e2" />
+          <i className="pot-ember e3" />
+        </div>
+        {meta !== 'POT' && <small>{meta}</small>}
       </div>
       <div className="battle-action">
         {/* Once the coin has landed, ▶ (replay) opens the same pop-up, so View is hidden. */}
