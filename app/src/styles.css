@@ -627,3 +627,7 @@ dialog>*:not(.embers){position:relative;z-index:1}
 @media(max-width:1050px){.jp-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.jp-hero{padding:20px 18px}.jp-stage{padding:16px}.jp-players li{grid-template-columns:4px 26px minmax(0,1fr) auto 52px;gap:7px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.jp-stage::before,.jp-rim,.jp-pointer,.jp-hub-timer.hot{animation:none!important}}
+.jp-amt{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}
+.jp-amt b{font-weight:700;white-space:nowrap}
+.jp-amt small,.jp-usd{color:#8e8181;font-size:11px;white-space:nowrap}
+.jp-hub-usd{fill:#c9b8b8;letter-spacing:.04em}

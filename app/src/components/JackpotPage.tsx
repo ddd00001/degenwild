@@ -6,6 +6,7 @@ import { JackpotStatus } from '../generated';
 import { fmtSol, parseSol, short, type Names } from '../format';
 import { Avatar } from './Avatar';
 import { Amount } from './Amount';
+import { fmtUsd, useSolPrice } from '../price';
 
 /** Keep in sync with programs/degenwild/src/constants.rs. */
 const MIN_ENTRY = 10_000_000n; // 0.01 SOL
@@ -18,6 +19,11 @@ const KEEPER_URL: string = import.meta.env?.VITE_JACKPOT_URL ?? '/api/jackpot';
 const SEGMENTS = ['#ff3038', '#f5c542', '#3ddc84', '#4f7cff', '#ff8a1f', '#a855f7', '#22d3ee', '#ff4fb4', '#14b8a6', '#e5e7eb', '#b91c1c', '#84cc16'];
 
 type Entry = { player: Address; amount: bigint };
+
+/** "$12.34" for an amount in lamports, or '' until the SOL price has loaded. */
+function usd(lamports: bigint, solUsd: number | undefined): string {
+  return solUsd ? fmtUsd((Number(lamports) / 1e9) * solUsd) : '';
+}
 type Snapshot = { roundId: bigint; total: bigint; entries: Entry[] };
 type Result = { roundId: bigint; winner: Address; total: bigint; payout: bigint; ticket: bigint; entries: Entry[] };
 
@@ -206,6 +212,8 @@ export function JackpotPage(props: {
   const stakeError =
     stake === null ? 'Enter an amount' : stake < MIN_ENTRY ? 'Minimum is 0.01 SOL' : stake > MAX_ENTRY ? 'Maximum is 10 SOL' : null;
   const total = round?.total ?? 0n;
+  const solUsd = useSolPrice()?.usd;
+  const stakeUsd = stake && !stakeError ? usd(stake, solUsd) : '';
   const myAmount = round?.entries.find((e) => e.player === me)?.amount ?? 0n;
   const previewChance = stake && !stakeError ? pct(myAmount + stake, total + stake) : null;
   const entriesClosed = drawing || due || phase === 'landing' || phase === 'result';
@@ -319,7 +327,15 @@ export function JackpotPage(props: {
               <text x={C} y={C - 4} className="jp-hub-pot">
                 {fmtSol(phase === 'result' && result ? result.payout : (shown?.total ?? 0n))}
               </text>
-              <text x={C} y={C + 26} className="jp-hub-sol">SOL</text>
+              <text x={C} y={C + 26} className="jp-hub-sol">
+                SOL
+                {solUsd ? (
+                  <tspan className="jp-hub-usd">
+                    {' '}
+                    ≈ {usd(phase === 'result' && result ? result.payout : (shown?.total ?? 0n), solUsd)}
+                  </tspan>
+                ) : null}
+              </text>
               <text x={C} y={C + 54} className={`jp-hub-timer ${secondsLeft !== null && secondsLeft <= 10 && !entriesClosed ? 'hot' : ''}`}>
                 {secondsLeft !== null && !entriesClosed
                   ? `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
@@ -341,7 +357,8 @@ export function JackpotPage(props: {
                 <small>ROUND #{result.roundId.toString()} WINNER</small>
                 <b>{nameOf(result.winner)}</b>
                 <span>
-                  won <Amount lamports={result.payout} /> with a {pct(
+                  won <Amount lamports={result.payout} />
+                  {solUsd ? <span className="jp-usd"> ({usd(result.payout, solUsd)})</span> : null} with a {pct(
                     result.entries.find((e) => e.player === result.winner)?.amount ?? 0n,
                     result.total,
                   )}% chance
@@ -389,8 +406,8 @@ export function JackpotPage(props: {
                   : !props.canPlay
                     ? 'Connect to enter'
                     : myAmount > 0n
-                      ? `Add ${stakeInput || '0'} SOL`
-                      : `Enter with ${stakeInput || '0'} SOL`}
+                      ? `Add ${stakeInput || '0'} SOL${stakeUsd ? ` (≈ ${stakeUsd})` : ''}`
+                      : `Enter with ${stakeInput || '0'} SOL${stakeUsd ? ` (≈ ${stakeUsd})` : ''}`}
             </button>
             <small className="jp-hint">
               {stakeError
@@ -432,7 +449,8 @@ export function JackpotPage(props: {
                       <Avatar address={s.player} size={30} ring={s.color} />
                       <span className="jp-name">{nameOf(s.player)}</span>
                       <span className="jp-amt">
-                        <Amount lamports={s.amount} />
+                        <b>{fmtSol(s.amount)} SOL</b>
+                        {solUsd ? <small>≈ {usd(s.amount, solUsd)}</small> : null}
                       </span>
                       <span className="jp-chance">{s.chance.toFixed(2)}%</span>
                     </li>
@@ -445,6 +463,7 @@ export function JackpotPage(props: {
             <p className="jp-last">
               Last pot #{view.state.lastRound.toString()}: <Avatar address={view.state.lastWinner} size={18} />{' '}
               <b>{nameOf(view.state.lastWinner)}</b> won <Amount lamports={view.state.lastPayout} />
+              {solUsd ? <span className="jp-usd"> ({usd(view.state.lastPayout, solUsd)})</span> : null}
             </p>
           )}
         </aside>
