@@ -1,4 +1,4 @@
-import { type Address, type Instruction } from '@solana/kit';
+import { type Address, type Instruction, type KeyPairSigner } from '@solana/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConnectedWallet } from '@solana/kit-plugin-wallet/react';
 import { client, clientV0 } from './client';
@@ -15,6 +15,10 @@ import { SIDE_NAME, type Side, fmtSol, parseSol, short, timeAgo, type Names } fr
 import { BattleRow } from './components/BattleRow';
 import { WalletWaitPill, WalletButton, ProfileDialog, WalletDialog } from './components/wallet';
 import { HowDialog } from './components/Modal';
+import { type BurnerClient, DEMO_ENABLED, burnerClient, forgetBurner, loadBurner, requestDemoSol } from './burner';
+
+/** Below this the demo wallet can't cover a minimum stake plus fees. */
+const DEMO_LOW = 60_000_000n;
 
 const skipKey = (a: string) => `dw-skip-username:${a}`;
 function skippedUsername(a: string): boolean {
@@ -92,8 +96,17 @@ export default function App() {
   const toast = useToast();
 
   const connected = useConnectedWallet(client);
-  const me = connected?.account.address as Address | undefined;
-  const signer = connected?.signer ?? null;
+  // Demo wallet (devnet only): used whenever no real wallet is connected.
+  const [burner, setBurner] = useState<{ kp: KeyPairSigner; client: BurnerClient } | null>(null);
+  const [funding, setFunding] = useState(false);
+  const demo = !connected ? burner : null;
+  const me = (connected?.account.address ?? demo?.kp.address) as Address | undefined;
+  const signer = connected?.signer ?? demo?.kp ?? null;
+
+  useEffect(() => {
+    // Restore a demo wallet from an earlier visit.
+    void loadBurner(false).then(async (kp) => kp && setBurner({ kp, client: await burnerClient(kp) }));
+  }, []);
 
   // -------------------------------------------------------- polling chain state
   const refresh = useCallback(async () => {
@@ -160,16 +173,16 @@ export default function App() {
   // -------------------------------------------------------- sending
   const send = useCallback(
     async (label: string, build: () => Promise<Instruction> | Instruction, success: string): Promise<boolean> => {
-      if (!connected) {
+      if (!connected && !demo) {
         setWalletOpen(true);
         return false;
       }
-      if (!connected.signer) {
+      if (connected && !connected.signer) {
         toast.show('This wallet account cannot sign transactions on this network.');
         return false;
       }
       setBusy(label);
-      const sender = connected.supportedTransactionVersions.has(1) ? client : clientV0;
+      const sender = !connected ? demo!.client : connected.supportedTransactionVersions.has(1) ? client : clientV0;
       try {
         for (let attempt = 1; ; attempt++) {
           setBusySince(Date.now());
@@ -197,8 +210,46 @@ export default function App() {
         setBusySince(null);
       }
     },
-    [connected, refresh, refreshBalance, toast],
+    [connected, demo, refresh, refreshBalance, toast],
   );
+
+  // -------------------------------------------------------- demo wallet
+  const fundDemo = useCallback(
+    async (address: Address) => {
+      setFunding(true);
+      try {
+        const r = await requestDemoSol(address);
+        toast.show(r.message);
+        if (r.ok) {
+          // The airdrop is confirmed server-side; poll until the balance shows it.
+          for (let i = 0; i < 5; i++) {
+            const { value } = await client.rpc.getBalance(address, { commitment: 'confirmed' }).send();
+            setBalance(value);
+            if (value >= DEMO_LOW) break;
+            await new Promise((res) => setTimeout(res, 1500));
+          }
+        }
+      } finally {
+        setFunding(false);
+      }
+    },
+    [toast],
+  );
+
+  const startDemo = useCallback(async () => {
+    setWalletOpen(false);
+    const kp = (await loadBurner(true))!;
+    setBurner({ kp, client: await burnerClient(kp) });
+    const { value } = await client.rpc.getBalance(kp.address, { commitment: 'confirmed' }).send();
+    if (value < DEMO_LOW) await fundDemo(kp.address);
+    else toast.show('Demo wallet ready — pick a side and flip!');
+  }, [fundDemo, toast]);
+
+  const exitDemo = useCallback(() => {
+    forgetBurner();
+    setBurner(null);
+    setProfileOpen(null);
+  }, []);
 
   // First connect: ask for a username once names have loaded, unless they chose "later" this session.
   const myName = me ? names.get(me) : undefined;
@@ -421,7 +472,12 @@ export default function App() {
               <i></i> {CLUSTER.toUpperCase()}
             </span>
             {me && balance !== null && <span className="balance">◎ <Amount lamports={balance} max={3} /></span>}
-            <WalletButton me={me} name={myName} onOpen={() => setWalletOpen(true)} onAccount={() => setProfileOpen('edit')} />
+            {demo && balance !== null && balance < DEMO_LOW && (
+              <button className="wallet-btn demo-topup" disabled={funding} onClick={() => void fundDemo(demo.kp.address)}>
+                {funding ? 'Sending…' : '+ Free SOL'}
+              </button>
+            )}
+            <WalletButton me={me} name={myName} demo={!!demo} onOpen={() => setWalletOpen(true)} onAccount={() => setProfileOpen('edit')} />
           </div>
         </header>
 
@@ -756,7 +812,7 @@ export default function App() {
       </div>
 
       {welcomeOpen && <Welcome onClose={() => setWelcomeOpen(false)} />}
-      {walletOpen && <WalletDialog onClose={() => setWalletOpen(false)} />}
+      {walletOpen && <WalletDialog onClose={() => setWalletOpen(false)} onDemo={DEMO_ENABLED ? () => void startDemo() : undefined} />}
       {match && (
         <MatchScreen
           battle={match}
@@ -827,6 +883,7 @@ export default function App() {
           me={me}
           current={myName}
           busy={busy}
+          onExitDemo={demo ? exitDemo : undefined}
           onClose={() => {
             if (profileOpen === 'first') skipUsername(me);
             setProfileOpen(null);

@@ -42,3 +42,11 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - Admin pause switch, lower max stake for any future mainnet, multisig for keys.
 - Hosting the bot on a server; admin page to remove usernames; restricted Helius key per domain.
 - Replace "The first 100% on-chain..." claim in the intro if it can't be verified.
+
+## Demo mode (branch `demo-mode`, 2026-11-15)
+- "Try it free" in the Connect wallet dialog: in-browser demo wallet (`src/burner.ts`, key in localStorage, devnet only).
+- Faucet: Vercel function `app/api/faucet.ts` sends 0.2 devnet SOL to near-empty wallets (1 per IP per 10 min, 60/h per instance).
+  Needs Vercel env `FAUCET_SECRET_KEY` = contents of `~/.config/solana/degenwild-faucet.json`
+  (faucet wallet `CMSs…7sqo`, devnet only, top it up from the CLI wallet). Test: `scripts/test-faucet.mts`.
+- House opponent: `npm run bot` now joins open battles ≤ 0.5 SOL after 10 s with the CLI wallet (HOUSE=0 to disable).
+  Only works while the bot runs.

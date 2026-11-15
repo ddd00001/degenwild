@@ -490,3 +490,8 @@ dialog{position:fixed}
 .embers{border-radius:inherit;z-index:0}
 dialog>*:not(.embers){position:relative;z-index:1}
 .match-dialog>.match-close,.welcome-dialog>.match-close{position:absolute;z-index:2}
+/* Demo wallet */
+.demo-offer{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.demo-offer .primary-btn{width:100%}.demo-offer small{color:var(--muted);font-size:11px;line-height:1.4}
+.demo-tag{margin-right:6px;padding:1px 5px;border:1px solid var(--red);border-radius:4px;color:var(--red);font-size:9px;font-weight:800;letter-spacing:.06em}
+.demo-topup{border-color:var(--red)!important;color:var(--red)}

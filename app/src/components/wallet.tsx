@@ -22,12 +22,13 @@ export function WalletWaitPill({ since }: { since: number }) {
   );
 }
 
-export function WalletButton(props: { me?: Address; name?: string; onOpen: () => void; onAccount: () => void }) {
+export function WalletButton(props: { me?: Address; name?: string; demo?: boolean; onOpen: () => void; onAccount: () => void }) {
   const status = useWalletStatus(client);
   if (props.me) {
     return (
-      <button className="wallet-btn" onClick={props.onAccount} title="Account">
+      <button className="wallet-btn" onClick={props.onAccount} title={props.demo ? 'Demo wallet' : 'Account'}>
         <span className="wallet-symbol">◈</span>
+        {props.demo && <span className="demo-tag">DEMO</span>}
         {props.name ?? short(props.me)}
       </button>
     );
@@ -48,6 +49,8 @@ export function ProfileDialog(props: {
   onClose: () => void;
   onSave: (name: string) => void;
   onDelete: () => void;
+  /** Set when playing with the in-browser demo wallet. */
+  onExitDemo?: () => void;
 }) {
   const [name, setName] = useState(props.current ?? '');
   const [taken, setTaken] = useState<boolean | null>(null);
@@ -115,7 +118,11 @@ export function ProfileDialog(props: {
             {props.current && (
               <button className="link-btn" disabled={saving} onClick={props.onDelete}>Delete username</button>
             )}
-            <button className="link-btn" onClick={() => { disconnect(); props.onClose(); }}>Disconnect wallet</button>
+            {props.onExitDemo ? (
+              <button className="link-btn" onClick={props.onExitDemo}>Leave demo (deletes this demo wallet)</button>
+            ) : (
+              <button className="link-btn" onClick={() => { disconnect(); props.onClose(); }}>Disconnect wallet</button>
+            )}
           </>
         )}
       </div>
@@ -123,7 +130,7 @@ export function ProfileDialog(props: {
   );
 }
 
-export function WalletDialog({ onClose }: { onClose: () => void }) {
+export function WalletDialog({ onClose, onDemo }: { onClose: () => void; onDemo?: () => void }) {
   const wallets = useWallets(client);
   const connected = useConnectedWallet(client);
   const { dispatch: connect, isRunning, error } = useConnect(client);
@@ -132,6 +139,12 @@ export function WalletDialog({ onClose }: { onClose: () => void }) {
   }, [connected, onClose]);
   return (
     <Modal title="Connect wallet" onClose={onClose}>
+      {onDemo && (
+        <div className="demo-offer">
+          <button className="primary-btn" onClick={onDemo}>Try it free — no wallet needed</button>
+          <small>We create a demo wallet in your browser and fill it with free devnet SOL (play money).</small>
+        </div>
+      )}
       {wallets.length === 0 ? (
         <p>
           No Solana wallet found. Install <a href="https://phantom.com" target="_blank" rel="noreferrer">Phantom</a>,{' '}
