@@ -9,8 +9,8 @@ import { Amount } from './components/Amount';
 type Phase = 'open' | 'waiting' | 'countdown' | 'flip' | 'result';
 
 const SIDE = ['HEADS', 'TAILS'] as const;
-const FLIP_MS = 2600;
-const SPINS = 6;
+const FLIP_MS = 3400;
+const SPINS = 5;
 
 /**
  * Full-screen battle pop-up. Works for players and spectators:
@@ -110,8 +110,14 @@ export function MatchScreen(props: {
       <div className="match-kicker">
         {props.replay ? 'REPLAY' : phase === 'open' ? 'WAITING FOR OPPONENT' : phase === 'result' ? 'RESULT' : playing ? 'MATCH FOUND' : 'LIVE'}
       </div>
-      <div className="match-pot">
-        <Amount lamports={phase === 'open' ? b.amount : pot} /> POT
+      <div className={`match-pot battle-meta ${phase === 'open' ? 'pot-open' : 'pot-full'}`}>
+        <div className="pot-badge">
+          <span className="pot-tag">POT</span>
+          <span className="pot-val">
+            <i className="pot-sol" aria-hidden="true">◎</i>
+            <Amount lamports={phase === 'open' ? b.amount : pot} />
+          </span>
+        </div>
       </div>
 
       <div className="match-versus">
@@ -122,7 +128,13 @@ export function MatchScreen(props: {
 
       <div className="match-stage">
         {phase === 'countdown' && count > 0 ? (
-          <div key={count} className="match-count">{count}</div>
+          <div className="match-count-wrap" key={count}>
+            <svg className="match-count-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="52" className="track" />
+              <circle cx="60" cy="60" r="52" className="bar" />
+            </svg>
+            <div className="match-count">{count}</div>
+          </div>
         ) : (
           <div className={`coin3d-wrap ${phase === 'waiting' || phase === 'open' ? 'idle' : ''}`}>
             <div
