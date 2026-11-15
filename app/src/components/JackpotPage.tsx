@@ -549,9 +549,7 @@ export function JackpotPage(props: {
                   <Avatar address={r.winner} size={28} />
                   <span className="recent-text">
                     <span className="jp-round">#{r.roundId.toString()}</span> <b>{nameOf(r.winner)}</b> won{' '}
-                    <b>
-                      <Amount lamports={r.total} />
-                    </b>
+                    <b>{fmtSol(r.total)} SOL</b>
                     {solUsd ? <span className="jp-usd"> ({usd(r.total, solUsd)})</span> : null}
                     {chances[r.signature] !== undefined && (
                       <span className="jp-chance-pill" title="Winner's chance to win this round">
