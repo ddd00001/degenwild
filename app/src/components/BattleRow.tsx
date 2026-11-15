@@ -129,7 +129,8 @@ export function BattleRow(props: {
         <small>{meta}</small>
       </div>
       <div className="battle-action">
-        {props.onView && b.status !== BattleStatus.Settled && b.status !== BattleStatus.Refunded && (
+        {/* Once the coin has landed, ▶ (replay) opens the same pop-up, so View is hidden. */}
+        {props.onView && b.status !== BattleStatus.Settled && b.status !== BattleStatus.Refunded && rnd?.state !== 'fulfilled' && (
           <button className="view-btn" onClick={props.onView} title="Open the battle pop-up">
             View
           </button>
