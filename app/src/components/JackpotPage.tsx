@@ -223,7 +223,7 @@ export function JackpotPage(props: {
       setPhase('live');
       rotRef.current %= 360;
       setRot(rotRef.current);
-    }, 10_000);
+    }, 18_000);
     return () => window.clearTimeout(id);
   }, [phase]);
 
