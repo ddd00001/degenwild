@@ -764,3 +764,9 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 .jp-replay-count{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
 .jp-replay-count .match-count-wrap{width:42%;height:auto;aspect-ratio:1;border-radius:50%;background:#0f0a0b}
 .jp-replay-count .match-count{font-size:64px}
+/* Pot number: gold, plain text (no tooltip) */
+.pot-val .pot-num{background:linear-gradient(100deg,#fff6d6 0%,#ffe08a 30%,#fffbe8 45%,#ffd166 60%,#e8a317 100%);background-size:220% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;animation:pot-shine 4.5s ease-in-out infinite}
+.pot-val{filter:drop-shadow(0 0 14px #f5c54240)}
+.battle-row:hover .pot-val{filter:drop-shadow(0 0 20px #f5c54266)}
+@media(prefers-reduced-motion:reduce){.pot-val .pot-num{animation:none}}
+.pot-val .amount,.pot-full .pot-val .amount{background-image:linear-gradient(100deg,#fff6d6 0%,#ffe08a 30%,#fffbe8 45%,#ffd166 60%,#e8a317 100%)}

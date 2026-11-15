@@ -132,7 +132,7 @@ export function BattleRow(props: {
           <span className="pot-tag">POT</span>
           <span className="pot-val">
             <i className="pot-sol" aria-hidden="true">◎</i>
-            <Amount lamports={pot} />
+            <span className="pot-num">{fmtSol(pot)} SOL</span>
           </span>
         </div>
         {meta !== 'POT' && <small>{meta}</small>}
