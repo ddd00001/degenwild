@@ -826,7 +826,7 @@ export default function App() {
                         <div key={r.signature} className={`recent-row ${r.winner === me ? 'mine-win' : ''}`}>
                           <span className="recent-coin" aria-label={r.coin ? 'Tails' : 'Heads'}><Coin side={r.coin} /></span>
                           <span className="recent-text">
-                            <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b><Amount lamports={r.payout + r.fee} /></b>
+                            <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b>{fmtSol(r.payout + r.fee)} SOL</b>
                           </span>
                           <span className="recent-time">{timeAgo(r.blockTime)}</span>
                           <button className="replay-btn" title="Replay the flip" aria-label="Replay the flip" onClick={() => replay(resultToBattle(r))}>
