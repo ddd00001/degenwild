@@ -895,7 +895,7 @@ export default function App() {
                     const ok = await send(
                       'double',
                       async () => (await buildCreate(signer, amount, s)).ix,
-                      `Double Down: ${fmtSol(amount)} SOL on ${SIDE_NAME[s]} is open — waiting for a challenger.`,
+                      `${amount > match.amount ? 'Double Down: ' : ''}${fmtSol(amount)} SOL on ${SIDE_NAME[s]} is open — waiting for a challenger.`,
                     );
                     if (ok) setMatch(null);
                   },

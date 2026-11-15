@@ -209,6 +209,18 @@ export function MatchScreen(props: {
         {phase === 'result' && iWon && !props.replay && props.doubleDown && (
           <small className="match-optional">Optional — bet again at double the stake, or close with ×</small>
         )}
+        {phase === 'result' && !iWon && !props.replay && props.doubleDown && !!me && (b.creator === me || opponentOf(b) === me) && (
+          <button
+            className="primary-btn"
+            disabled={props.doubleDown.busy}
+            onClick={() => props.doubleDown!.onClick(b.amount, mySide as 0 | 1)}
+          >
+            {props.doubleDown.busy ? 'Creating…' : `Play again · ${props.fmtSol(b.amount)} SOL on ${SIDE[mySide]}`}
+          </button>
+        )}
+        {phase === 'result' && (
+          <button className="link-btn" onClick={props.onClose}>Back to the lobby</button>
+        )}
       </div>
     </dialog>
   );
