@@ -67,6 +67,10 @@ export default function App() {
           ? 'jackpot'
           : 'coinflip';
   const [view, setViewState] = useState<View>(viewFromHash);
+  useEffect(() => {
+    const names: Record<View, string> = { coinflip: 'Coinflip', jackpot: 'Jackpot', leaderboard: '$WILD Leaderboard', roadmap: 'Roadmap' };
+    document.title = `DegenWild — ${names[view]}`;
+  }, [view]);
   // #roadmap and #leaderboard are shareable links; the coinflip page has no hash.
   const setView = (v: View) => {
     setViewState(v);

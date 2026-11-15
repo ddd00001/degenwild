@@ -8,7 +8,7 @@ import { type ReplayEntry, fetchJackpotEntries } from '../jackpotReplay';
 import { useSolPrice } from '../price';
 import { Avatar } from './Avatar';
 import { Embers } from './Embers';
-import { C, R_IN, R_OUT, SEGMENTS, arc, pct, polar, usd } from './JackpotPage';
+import { C, R_IN, R_OUT, SEGMENTS, arc, pct, polar, ring, usd } from './JackpotPage';
 
 const SPIN_MS = 6500;
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
@@ -92,7 +92,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
               <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-empty" strokeWidth={R_OUT - R_IN} />
             ) : (
               segs.map((s) => (
-                <path key={s.player} d={arc(s.start, s.end)} fill={s.color} className={`jp-seg ${done && s.player !== r.winner ? 'dim' : ''}`} />
+                <path key={s.player} d={s.end - s.start >= 359.9 ? ring() : arc(s.start, s.end)} fill={s.color} className={`jp-seg ${done && s.player !== r.winner ? 'dim' : ''}`} />
               ))
             )}
             {segs.map((s) => {

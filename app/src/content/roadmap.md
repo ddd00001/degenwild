@@ -36,6 +36,9 @@ What the fee pays for:
 ### [LIVE] Coinflip on devnet
 PvP coinflip with on-chain escrow, provably fair randomness, automatic payouts, usernames, live match pop-ups, replays and Double Down.
 
+### [LIVE] Jackpot on devnet
+One pot, one winner. Stake more for a bigger slice of the wheel; a provably fair draw picks the winner and the payout is automatic.
+
 ### [BUILDING] $WILD token
 The DegenWild community token. $WILD is planned as a second way to bet in the arena next to SOL, and as the way DegenWild rewards its holders.
 
@@ -44,9 +47,6 @@ Security review of the program, a dedicated RPC and a hosted auto-payout bot bef
 
 ### [PLANNED] Bet with WILD or SOL
 Choose your currency when you create a battle: **SOL** or **$WILD**. Both players stake the same token, and the winner is paid in that token.
-
-### [PLANNED] Jackpot
-One pot, one winner. Everyone adds to a shared pot and a single provably fair draw picks the winner.
 
 ### [PLANNED] Rewards
 Perks for the people who show up: rewards for active players and $WILD holders, plus a holder leaderboard.

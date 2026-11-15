@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Coin } from './Coin';
 import { Embers } from './Embers';
+import { Avatar } from './Avatar';
+import { C, R_IN, R_OUT, SEGMENTS, arc, polar } from './JackpotPage';
 
 const SEEN_KEY = 'dw-welcome-seen';
-const SLIDES = 3;
-// Slide 2 plays a full demo loop, so it stays up longer.
-const AUTO_MS = [6500, 12500, 6500];
+const SLIDES = 4;
+// Slides 2 and 3 play full demo loops, so they stay up longer.
+const AUTO_MS = [6500, 12500, 9000, 6500];
 
 /** True on a visitor's first visit (or with ?welcome=1..3, which also picks the starting slide). */
 export function shouldShowWelcome(): boolean {
@@ -97,6 +99,19 @@ export function Welcome({ onClose }: { onClose: () => void }) {
         )}
 
         {slide === 2 && (
+          <>
+            <div className="welcome-art">
+              <JackpotTeaser />
+            </div>
+            <div className="welcome-kicker">NEW: JACKPOT</div>
+            <h2>
+              One pot. <em>One winner.</em>
+            </h2>
+            <p>Everyone throws SOL into one pot. The bigger your stake, the bigger your slice of the wheel. It spins, and the winner takes the whole pot.</p>
+          </>
+        )}
+
+        {slide === 3 && (
           <>
             <div className="welcome-art">
               <ul className="feature-grid">
@@ -268,6 +283,89 @@ function DemoReel() {
           <div className="reel-result">{stage === 'win' ? 'YOU WON 0.193 SOL' : stage === 'flip' ? 'Flipping…' : '\u00a0'}</div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- jackpot teaser
+
+const TEASER = [
+  { player: 'teaser-solking', sol: 1.0 },
+  { player: 'teaser-flipqueen', sol: 2.0 },
+  { player: 'teaser-moonboi', sol: 0.5 },
+  { player: 'teaser-wagmi', sol: 0.8 },
+];
+const TEASER_TOTAL = TEASER.reduce((a, e) => a + e.sol, 0);
+const TEASER_WIN = 1; // flipqueen
+const LOOP_MS = 8800;
+const JOIN_END = 1800;
+const SPIN_END = 6300;
+const ease = (t: number) => 1 - Math.pow(1 - t, 4);
+
+/** A looping mock round: players join, the wheel spins and lands on the winner. Purely illustrative. */
+function JackpotTeaser() {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      setT((now - t0) % LOOP_MS);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const joined = Math.min(TEASER.length, 1 + Math.floor((t / JOIN_END) * TEASER.length));
+  const entries = TEASER.slice(0, joined);
+  const total = entries.reduce((a, e) => a + e.sol, 0);
+  let acc = 0;
+  const segs = entries.map((e, i) => {
+    const start = (acc / total) * 360;
+    acc += e.sol;
+    return { ...e, start, end: (acc / total) * 360, color: SEGMENTS[i] };
+  });
+  // Land in the middle of the winner's slice.
+  const w = segs[TEASER_WIN];
+  const target = w ? 360 * 4 + (360 - (w.start + w.end) / 2) : 0;
+  const k = t < JOIN_END ? 0 : Math.min(1, (t - JOIN_END) / (SPIN_END - JOIN_END));
+  const rot = target * ease(k);
+  const done = t >= SPIN_END;
+
+  return (
+    <div className="teaser" aria-hidden="true">
+      <svg viewBox="0 0 400 400" className="jp-wheel">
+        <circle cx={C} cy={C} r={R_OUT + 12} className="jp-rim" />
+        {Array.from({ length: 60 }, (_, i) => {
+          const [x1, y1] = polar(R_OUT + 5, i * 6);
+          const [x2, y2] = polar(R_OUT + (i % 5 === 0 ? 14 : 10), i * 6);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="jp-tick" />;
+        })}
+        <g transform={`rotate(${rot} ${C} ${C})`}>
+          {segs.map((s, i) => (
+            <path key={s.player} d={arc(s.start, s.end)} fill={s.color} className={`jp-seg ${done && i !== TEASER_WIN ? 'dim' : ''}`} />
+          ))}
+          {segs.map((s) => {
+            const [x, y] = polar((R_OUT + R_IN) / 2, (s.start + s.end) / 2);
+            return (
+              <g key={`a-${s.player}`} transform={`rotate(${-rot} ${x} ${y})`}>
+                <Avatar address={s.player} size={40} x={x - 20} y={y - 20} ring={s.color} />
+              </g>
+            );
+          })}
+        </g>
+        <circle cx={C} cy={C} r={R_IN - 4} fill="#0f0a0b" className="jp-hub" />
+        <text x={C} y={C - 26} className="jp-hub-label">
+          {done ? 'WON' : t < JOIN_END ? 'PLAYERS JOINING' : 'SPINNING'}
+        </text>
+        <text x={C} y={C + 2} className="jp-hub-pot">
+          {(done ? TEASER_TOTAL : total).toFixed(2)}
+        </text>
+        <text x={C} y={C + 30} className="jp-hub-sol">
+          SOL
+        </text>
+        <path d={`M${C - 15} 2 L${C + 15} 2 L${C} 34 Z`} className="jp-pointer" />
+      </svg>
     </div>
   );
 }

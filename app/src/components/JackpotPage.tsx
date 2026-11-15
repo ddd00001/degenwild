@@ -50,6 +50,11 @@ export function arc(start: number, end: number) {
   return `M${x1} ${y1}A${R_OUT} ${R_OUT} 0 ${large} 1 ${x2} ${y2}L${x3} ${y3}A${R_IN} ${R_IN} 0 ${large} 0 ${x4} ${y4}Z`;
 }
 
+/** A full donut (one player owns the whole wheel): two half arcs, so there's no seam. */
+export function ring() {
+  return `M${C} ${C - R_OUT}A${R_OUT} ${R_OUT} 0 1 1 ${C} ${C + R_OUT}A${R_OUT} ${R_OUT} 0 1 1 ${C} ${C - R_OUT}ZM${C} ${C - R_IN}A${R_IN} ${R_IN} 0 1 0 ${C} ${C + R_IN}A${R_IN} ${R_IN} 0 1 0 ${C} ${C - R_IN}Z`;
+}
+
 export const pct = (part: bigint, total: bigint) => (total > 0n ? Number((part * 10_000n) / total) / 100 : 0);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
 
@@ -303,7 +308,7 @@ export function JackpotPage(props: {
                   segments.map((s) => (
                     <path
                       key={s.player}
-                      d={arc(s.start, s.end)}
+                      d={s.end - s.start >= 359.9 ? ring() : arc(s.start, s.end)}
                       fill={s.color}
                       className={`jp-seg ${s.player === me ? 'mine' : ''} ${winnerSeg && winnerSeg.player !== s.player ? 'dim' : ''} ${hover?.player === s.player ? 'hot' : ''}`}
                       onMouseMove={hoverAt(s.player)}

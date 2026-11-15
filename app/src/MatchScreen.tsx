@@ -96,7 +96,7 @@ export function MatchScreen(props: {
       <span className={`match-coin ${side === 1 ? 'tails' : 'heads'}`} aria-label={SIDE[side] ?? 'Unknown side'}>
         {side === 0 || side === 1 ? <Coin side={side as 0 | 1} /> : '?'}
       </span>
-      <b>{a === me ? 'You' : a ? props.nameOf(a) : '…'}</b>
+      <b>{a === me ? 'You' : a ? props.nameOf(a) : 'Open seat'}</b>
       <small>{SIDE[side]}</small>
     </div>
   );
@@ -111,7 +111,7 @@ export function MatchScreen(props: {
         {props.replay ? 'REPLAY' : phase === 'open' ? 'WAITING FOR OPPONENT' : phase === 'result' ? 'RESULT' : playing ? 'MATCH FOUND' : 'LIVE'}
       </div>
       <div className="match-pot">
-        <Amount lamports={pot} /> POT
+        <Amount lamports={phase === 'open' ? b.amount : pot} /> POT
       </div>
 
       <div className="match-versus">

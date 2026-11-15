@@ -631,21 +631,25 @@ dialog>*:not(.embers){position:relative;z-index:1}
 .jp-amt b{font-weight:700;white-space:nowrap}
 .jp-amt small,.jp-usd{color:#8e8181;font-size:11px;white-space:nowrap}
 .jp-hub-usd{fill:#c9b8b8;letter-spacing:.04em}
-/* Battle pot: label + number, same type as the rest of the lobby */
+/* Battle pot: the eye-catcher of each row */
 .battle-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
-.pot-badge{display:flex;flex-direction:column;align-items:flex-end;gap:3px;animation:pot-in .3s ease-out}
-.pot-tag{color:#8e8181;font:800 9px/1 Inter,sans-serif;letter-spacing:.2em}
-.pot-val{display:flex;align-items:center;gap:6px;color:#fff;font:800 22px/1 'Barlow Condensed',sans-serif;letter-spacing:.01em}
-.pot-val .amount{border-bottom:0}
-.pot-val .amount-tip{font-family:Inter,sans-serif}
-.pot-sol{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#2a0c0f;border:1px solid #ff303866;color:#ff5a60;font-style:normal;font-size:11px}
-.pot-full .pot-val{color:#ffd166}
-.pot-full .pot-sol{border-color:#f5c54266;background:#2a2108;color:#f5c542}
+.pot-badge{display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:pot-in .35s ease-out}
+.pot-tag{color:#ff5a60;font:800 9px/1 Inter,sans-serif;letter-spacing:.26em;text-shadow:0 0 8px #ff303880}
+.pot-val{display:flex;align-items:center;gap:8px;font:900 32px/1 'Barlow Condensed',sans-serif;letter-spacing:.01em;filter:drop-shadow(0 0 14px #ff203045)}
+.pot-val .amount{border-bottom:0;background:linear-gradient(100deg,#fff 0%,#ffe1e2 35%,#fff 45%,#ff6a70 60%,#ff3038 100%);background-size:220% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;animation:pot-shine 4.5s ease-in-out infinite}
+.pot-val .amount-tip{-webkit-text-fill-color:initial;color:#cdbdbd;font-family:Inter,sans-serif;filter:none}
+.pot-sol{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff5a60,#8f0d14);color:#fff;font-style:normal;font-size:13px;box-shadow:0 0 12px #ff303899,inset 0 -2px 0 #0004}
+.pot-full .pot-tag{color:#ffd166;text-shadow:0 0 8px #f5c54280}
+.pot-full .pot-val{filter:drop-shadow(0 0 14px #f5c54245)}
+.pot-full .pot-val .amount{background-image:linear-gradient(100deg,#fff 0%,#fff3c4 35%,#fff 45%,#ffd166 60%,#f5a623 100%)}
+.pot-full .pot-sol{background:radial-gradient(circle at 35% 30%,#ffe08a,#9c6f0c);box-shadow:0 0 12px #f5c54299,inset 0 -2px 0 #0004}
+.battle-row:hover .pot-val{filter:drop-shadow(0 0 20px #ff203070)}
 .battle-meta small{letter-spacing:.12em}
-@keyframes pot-in{from{opacity:0;transform:translateY(3px)}}
-@media(max-width:760px){.battle-meta{flex-direction:row;align-items:center}.pot-badge{flex-direction:row;align-items:center;gap:6px}}
-@media(max-width:500px){.pot-val{font-size:17px}.pot-sol{width:15px;height:15px;font-size:9px}}
-@media(prefers-reduced-motion:reduce){.pot-badge{animation:none}}
+@keyframes pot-in{from{opacity:0;transform:translateY(4px)}}
+@keyframes pot-shine{0%,60%{background-position:100% 0}100%{background-position:-20% 0}}
+@media(max-width:760px){.battle-meta{flex-direction:row;align-items:center}.pot-badge{flex-direction:row;align-items:center;gap:8px}.pot-val{font-size:26px}}
+@media(max-width:500px){.pot-val{font-size:22px}.pot-sol{width:18px;height:18px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.pot-badge,.pot-val .amount{animation:none}}
 /* Lobby: battles + chat */
 .lobby-split{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
 .lobby-main{min-width:0}
@@ -686,7 +690,7 @@ dialog>*:not(.embers){position:relative;z-index:1}
 .jp-tip-head b{display:block;font-size:14px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .jp-tip-head small{color:#8e8181;font-size:10px}
 .jp-tip-chance{margin-top:10px;font:900 32px/1 'Barlow Condensed',sans-serif}
-.jp-tip-chance span{margin-left:6px;color:#9d8c8c;font:700 10px Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.jp-tip-chance span{display:block;margin-top:4px;color:#9d8c8c;font:700 9px Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
 .jp-tip-bar{height:6px;margin:8px 0 10px;border-radius:3px;background:#2b2020;overflow:hidden}
 .jp-tip-bar i{display:block;height:100%;border-radius:3px;box-shadow:0 0 10px currentColor}
 .jp-tip dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0;font-size:11px}
@@ -732,3 +736,12 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 .replay-btn span{font-size:10px}
 .replay-btn:hover{border-color:#ff3038;background:#2a0c0f}
 .recent-row,.jp-recent{grid-template-columns:30px minmax(0,1fr) auto auto}
+
+/* Create panel: both labels on one line, button level with the inputs */
+@media(min-width:1051px){.create-controls{align-items:start}.create-btn{margin:22px 0 0;height:47px}}
+.hero.slim .hero-intro p{margin:0;font-size:12px;color:#a79b9b;letter-spacing:.3px;max-width:760px;line-height:1.5}
+.hero.slim .hero-intro blockquote{margin:0}
+/* Welcome: jackpot teaser */
+.teaser{width:220px;height:220px}
+.teaser .jp-wheel{width:100%;height:100%}
+@media(max-width:500px){.teaser{width:180px;height:180px}}

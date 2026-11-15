@@ -65,12 +65,11 @@ export function RoadmapPage() {
 
   return (
     <div className="roadmap-page">
-      <header className="rm-hero panel">
-        <div className="eyebrow">
-          <span className="red-line" /> DEGENWILD
-        </div>
-        <h1>{title}</h1>
-        <div className="rm-intro" dangerouslySetInnerHTML={{ __html: introHtml }} />
+      <header className="hero slim">
+        <h1>
+          {title.includes(' ') ? title.split(' ').slice(0, -1).join(' ') : 'The'} <em>{title.split(' ').slice(-1)[0]}.</em>
+        </h1>
+        <div className="hero-intro" dangerouslySetInnerHTML={{ __html: introHtml }} />
       </header>
 
       {textSections.length > 0 && (

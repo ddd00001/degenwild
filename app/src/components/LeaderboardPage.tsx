@@ -45,30 +45,24 @@ export function LeaderboardPage({ names, me }: { names: Names; me?: Address }) {
 
   return (
     <div className="lb-page">
-      <header className="lb-hero panel">
-        <div className="eyebrow">
-          <span className="red-line" /> $WILD
-        </div>
+      <header className="hero slim">
         <h1>
-          $WILD <span>Leaderboard</span>
+          $WILD <em>LEADERBOARD.</em>
         </h1>
-        <p className="lb-intro">
+        <p>
           The top 100 $WILD holders, live from Solana. $WILD is getting playable features in the arena, and holders will be
           able to earn rewards. Climb the board.
         </p>
-        <div className="lb-stats">
-          <div>
-            <small>HOLDERS</small>
-            <b>{data ? data.holderCount.toLocaleString() : '—'}</b>
-          </div>
-          <div>
-            <small>SHOWING</small>
-            <b>TOP 100</b>
-          </div>
-          <div>
-            <small>UPDATED</small>
-            <b>{data ? new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</b>
-          </div>
+        <div className="trust-badges">
+          <span>
+            <b>Holders</b> — {data ? data.holderCount.toLocaleString() : 'after launch'}
+          </span>
+          <span>
+            <b>Showing</b> — top 100
+          </span>
+          <span>
+            <b>Updated</b> — {data ? new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'every minute'}
+          </span>
         </div>
       </header>
 
