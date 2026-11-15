@@ -15,6 +15,7 @@ import { SIDE_NAME, type Side, fmtSol, parseSol, short, timeAgo, type Names } fr
 import { BattleRow } from './components/BattleRow';
 import { WalletWaitPill, WalletButton, ProfileDialog, WalletDialog } from './components/wallet';
 import { HowDialog } from './components/Modal';
+import { LaunchBanner } from './components/LaunchBanner';
 import { type BurnerClient, DEMO_ENABLED, burnerClient, callHouse, forgetBurner, loadBurner, requestDemoSol } from './burner';
 
 /** Below this the demo wallet can't cover a minimum stake plus fees. */
@@ -488,6 +489,7 @@ export default function App() {
       </aside>
 
       <main className="main-area">
+        <LaunchBanner />
         <header className="topbar">
           <div className="mobile-brand">
             <img className="brand-logo small" src={`${import.meta.env.BASE_URL}degenwild-logo-t.png`} alt="DegenWild" />

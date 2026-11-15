@@ -16,9 +16,9 @@
 
 ## Vision
 
-TODO: Say in your own words why DegenWild exists and who it's for.
+DegenWild is a coinflip arena built for degens who want a fair game they can actually check. No hidden odds and no trust me bro: every stake sits in on-chain escrow, every flip comes from provably fair randomness, and the program pays the winner automatically.
 
-DegenWild is a player-versus-player arena. You never play against the house: you play against another player, the coin is flipped by provably fair randomness, and the program pays the winner automatically.
+Challenge another player, or take on **Degen Bot** when the lobby is quiet. Right now the arena runs on devnet with free play money, so anyone can try it in seconds without risking a thing.
 
 ## Fees
 
@@ -26,21 +26,21 @@ Every coinflip pot has a **3.5% platform fee**. The winner gets the other 96.5%.
 
 What the fee pays for:
 
-- TODO: e.g. running costs (RPC, servers, the auto-payout bot)
-- TODO: e.g. security audits
-- TODO: e.g. development of new games
-- TODO: e.g. community rewards
+- Running costs (RPC, servers, automatic payouts)
+- Security audits
+- Development of new games
+- Community rewards
 
 ## Milestones
 
 ### [LIVE] Coinflip on devnet
 PvP coinflip with on-chain escrow, provably fair randomness, automatic payouts, usernames, live match pop-ups, replays and Double Down.
 
-### [BUILDING] Mainnet launch
-Security review of the program, a dedicated RPC and a hosted auto-payout bot before real SOL is at stake.
+### [BUILDING] $WILD token
+The DegenWild community token. $WILD is planned as a second way to bet in the arena next to SOL, and as the way DegenWild rewards its holders.
 
-### [NEXT] $WILD token
-TODO: Describe what the WILD token is and what it's used for on DegenWild. Don't make promises about price or returns.
+### [NEXT] Mainnet launch
+Security review of the program, a dedicated RPC and a hosted auto-payout bot before real SOL is at stake.
 
 ### [PLANNED] Bet with WILD or SOL
 Choose your currency when you create a battle: **SOL** or **$WILD**. Both players stake the same token, and the winner is paid in that token.
@@ -49,4 +49,4 @@ Choose your currency when you create a battle: **SOL** or **$WILD**. Both player
 One pot, one winner. Everyone adds to a shared pot and a single provably fair draw picks the winner.
 
 ### [PLANNED] Rewards
-TODO: Describe the rewards program.
+Perks for the people who show up: rewards for active players and $WILD holders, plus a holder leaderboard.
