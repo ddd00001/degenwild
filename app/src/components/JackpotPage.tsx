@@ -430,7 +430,7 @@ export function JackpotPage(props: {
                 <small>ROUND #{result.roundId.toString()} WINNER</small>
                 <b>{nameOf(result.winner)}</b>
                 <span>
-                  won <Amount lamports={result.total} />
+                  won <b>{fmtSol(result.total)} SOL</b>
                   {solUsd ? <span className="jp-usd"> ({usd(result.total, solUsd)})</span> : null} with a {pct(
                     result.entries.find((e) => e.player === result.winner)?.amount ?? 0n,
                     result.total,
