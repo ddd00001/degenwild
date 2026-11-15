@@ -850,8 +850,8 @@ export default function App() {
         )}
 
         <footer>
-          DEGENWILD <span>·</span> EVERYTHING ON-CHAIN <span>·</span> {CLUSTER.toUpperCase()} <span>·</span>{' '}
-          {CLUSTER === 'mainnet' ? 'PLAY RESPONSIBLY' : 'TEST NETWORK — NO REAL FUNDS'}
+          DEGENWILD <span>·</span> EVERYTHING ON-CHAIN
+          {CLUSTER === 'mainnet' && <> <span>·</span> PLAY RESPONSIBLY</>}
         </footer>
       </main>
 
