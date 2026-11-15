@@ -39,6 +39,9 @@ export const PLATFORM_ADMIN = address('4VUJ1pCqT1TWQhKFSyDC7EP9HkEAUSGrcaBpYhCEf
 export const HOUSE_WALLET = address('CMSsRH5GeVceA6Ck3nhi63C8o6ZgJQR3mujypXHF7sqo');
 export const HOUSE_NAME = 'Degen Bot';
 
+/** $WILD mint address on mainnet (pump.fun). Empty until the coin exists; the leaderboard shows a placeholder until then. */
+export const WILD_MINT = '';
+
 export const ORAO_VRF_PROGRAM = address('VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y');
 
 /** Mirrors programs/degenwild/src/constants.rs */

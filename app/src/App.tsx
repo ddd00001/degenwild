@@ -7,6 +7,7 @@ import { type BattleView, type Randomness, buildCancel, buildChangeUsername, bui
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
 import { RoadmapPage } from './components/RoadmapPage';
+import { LeaderboardPage } from './components/LeaderboardPage';
 import { Welcome, shouldShowWelcome } from './components/Welcome';
 import { Coin } from './components/Coin';
 import { Amount } from './components/Amount';
@@ -54,16 +55,18 @@ function useToast() {
 // ------------------------------------------------------------ app
 
 export default function App() {
-  type View = 'coinflip' | 'roadmap';
-  const [view, setViewState] = useState<View>(() => (window.location.hash === '#roadmap' ? 'roadmap' : 'coinflip'));
-  // #roadmap is a shareable link; the coinflip page has no hash.
+  type View = 'coinflip' | 'roadmap' | 'leaderboard';
+  const viewFromHash = (): View =>
+    window.location.hash === '#roadmap' ? 'roadmap' : window.location.hash === '#leaderboard' ? 'leaderboard' : 'coinflip';
+  const [view, setViewState] = useState<View>(viewFromHash);
+  // #roadmap and #leaderboard are shareable links; the coinflip page has no hash.
   const setView = (v: View) => {
     setViewState(v);
-    window.history.replaceState(null, '', v === 'roadmap' ? '#roadmap' : window.location.pathname + window.location.search);
+    window.history.replaceState(null, '', v === 'coinflip' ? window.location.pathname + window.location.search : `#${v}`);
     window.scrollTo({ top: 0 });
   };
   useEffect(() => {
-    const onHash = () => setViewState(window.location.hash === '#roadmap' ? 'roadmap' : 'coinflip');
+    const onHash = () => setViewState(viewFromHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -470,6 +473,9 @@ export default function App() {
               <b>Rewards are coming soon.</b> Earn perks just for playing on DegenWild.
             </span>
           </div>
+          <button className={`nav-link ${view === 'leaderboard' ? 'active' : ''}`} onClick={() => setView('leaderboard')}>
+            <span className="nav-icon">♛</span>$WILD Leaderboard
+          </button>
           <button className={`nav-link ${view === 'roadmap' ? 'active' : ''}`} onClick={() => setView('roadmap')}>
             <span className="nav-icon">➜</span>Roadmap
           </button>
@@ -498,6 +504,10 @@ export default function App() {
             {view === 'roadmap' ? (
               <>
                 DEGENWILD <span>/</span> ROADMAP
+              </>
+            ) : view === 'leaderboard' ? (
+              <>
+                $WILD <span>/</span> LEADERBOARD
               </>
             ) : (
               <>
@@ -537,6 +547,9 @@ export default function App() {
             aria-expanded={soonTip === 'rewards'}
           >
             ★ Rewards <span className="soon-tag">SOON</span>
+          </button>
+          <button className={view === 'leaderboard' ? 'active' : ''} onClick={() => setView('leaderboard')}>
+            ♛ $WILD
           </button>
           <button className={view === 'roadmap' ? 'active' : ''} onClick={() => setView('roadmap')}>
             ➜ Roadmap
@@ -825,6 +838,10 @@ export default function App() {
                 )}
               </div>
             </section>
+          </section>
+        ) : view === 'leaderboard' ? (
+          <section className="view active">
+            <LeaderboardPage names={names} me={me} />
           </section>
         ) : (
           <section className="view active">

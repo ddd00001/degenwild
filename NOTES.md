@@ -39,6 +39,7 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 
 ## Ideas not built yet
 - Leaderboard / points for a devnet "play-money season", stats panel, waitlist.
+- $WILD holder leaderboard: built (`app/api/holders.ts`, `src/components/LeaderboardPage.tsx`). Set `WILD_MINT` in `src/config.ts` once the coin exists.
 - Admin pause switch, lower max stake for any future mainnet, multisig for keys.
 - Hosting the bot on a server; admin page to remove usernames; restricted Helius key per domain.
 - (done) "The first 100% on-chain" claim replaced with "provably fair".
