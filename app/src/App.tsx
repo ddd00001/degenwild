@@ -482,9 +482,6 @@ export default function App() {
             <i className={loadError ? 'down' : ''}></i>
             <span>{loadError ? 'RPC UNREACHABLE' : `${CLUSTER.toUpperCase()} · SLOT ${slot.toString()}`}</span>
           </div>
-          <div className="sidebar-tag">
-            PLAY <b>·</b> FLIP <b>·</b> WIN
-          </div>
         </div>
       </aside>
 

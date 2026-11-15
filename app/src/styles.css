@@ -58,7 +58,7 @@ button{cursor:pointer}
 .quick-amounts{display:flex;gap:6px;margin-top:7px}.quick-amounts button{flex:1;border:1px solid #302424;background:#171212;color:#a99c9c;border-radius:5px;padding:6px 2px;font-size:10px}.quick-amounts button:hover{border-color:#9b2930;color:#fff}
 .primary-btn{height:47px;border:1px solid #ff454d;border-radius:7px;background:linear-gradient(105deg,#e92330,#a90f19);color:white;font-size:12px;font-weight:800;box-shadow:0 5px 22px #ec202b25;text-shadow:0 1px #790b12}
 .primary-btn:hover{filter:brightness(1.13);box-shadow:0 5px 25px #ec202b48}.create-btn{width:100%;margin-bottom:23px}.create-btn span{float:right;margin-right:14px;font-size:16px}
-.panel-foot{border-top:1px solid #292020;padding-top:12px;color:#817777;font-size:10px}.info-dot{display:inline-grid;place-items:center;width:14px;height:14px;border:1px solid #a13a40;color:#ed4a52;border-radius:50%;font-size:9px;margin-right:6px}
+.panel-foot{border-top:1px solid #292020;margin-top:18px;padding-top:12px;color:#817777;font-size:10px}.info-dot{display:inline-grid;place-items:center;width:14px;height:14px;border:1px solid #a13a40;color:#ed4a52;border-radius:50%;font-size:9px;margin-right:6px}
 .lobby-section{margin-top:31px}.lobby-heading h2{font-size:27px}.count-pill{display:inline-grid;place-items:center;vertical-align:middle;margin-left:7px;min-width:23px;height:21px;padding:0 6px;border-radius:20px;background:#351316;color:#ff6269;font:800 11px Inter}
 .refresh-btn{border:1px solid #332626;background:#151111;color:#b9aaaa;border-radius:6px;padding:9px 12px;font-size:12px}.refresh-btn:hover{color:#fff;border-color:#8c2b32}.refresh-btn:first-letter{color:var(--red)}
 .battle-list{display:grid;gap:9px;margin-top:16px}
