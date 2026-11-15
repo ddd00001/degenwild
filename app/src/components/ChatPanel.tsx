@@ -34,34 +34,24 @@ export function ChatPanel(props: {
 
   useEffect(() => setToken(me ? savedToken(me) : null), [me]);
 
-  // Fill the screen from wherever the panel starts down to the bottom of the window, then stay pinned while scrolling.
+  // Size the panel once so it ends at the bottom of the window on landing, then pin it in that
+  // same spot while scrolling. Only a window resize changes it, never scrolling.
   const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = panelRef.current;
     if (!el) return;
-    let raf = 0;
     const fit = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        if (getComputedStyle(el).position !== 'sticky') return void (el.style.height = '');
-        // Visible part of the chat's column: from max(its top, 16px) to min(its bottom, window bottom - 16px).
-        const col = el.parentElement!.getBoundingClientRect();
-        const top = Math.max(16, col.top);
-        const bottom = Math.min(window.innerHeight - 16, col.bottom);
-        el.style.height = `${Math.max(320, bottom - top)}px`;
-      });
+      el.style.height = '';
+      el.style.top = '';
+      if (getComputedStyle(el).position !== 'sticky') return;
+      const startTop = el.parentElement!.getBoundingClientRect().top + window.scrollY;
+      const height = Math.max(360, window.innerHeight - startTop - 16);
+      el.style.height = `${height}px`;
+      el.style.top = `${Math.max(16, window.innerHeight - height - 16)}px`;
     };
     fit();
-    window.addEventListener('scroll', fit, { passive: true });
     window.addEventListener('resize', fit);
-    const ro = new ResizeObserver(fit); // lists loading in change the column height without a scroll
-    ro.observe(el.parentElement!);
-    return () => {
-      ro.disconnect();
-      cancelAnimationFrame(raf);
-      window.removeEventListener('scroll', fit);
-      window.removeEventListener('resize', fit);
-    };
+    return () => window.removeEventListener('resize', fit);
   }, []);
 
   // Keep the newest message in view unless the reader scrolled up.
