@@ -43,7 +43,7 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - Hosting the bot on a server; admin page to remove usernames; restricted Helius key per domain.
 - Replace "The first 100% on-chain..." claim in the intro if it can't be verified.
 
-## Demo mode (branch `demo-mode`, 2026-11-15)
+## Demo mode (live on master since 2026-11-15)
 - "Try it free" in the Connect wallet dialog: in-browser demo wallet (`src/burner.ts`, key in localStorage, devnet only).
 - House wallet `CMSs…7sqo` (`~/.config/solana/degenwild-faucet.json`, devnet only) is both the faucet and the house
   opponent, shown on the site as "Degen Bot" (`HOUSE_WALLET` in `src/config.ts`). Vercel env `FAUCET_SECRET_KEY`
