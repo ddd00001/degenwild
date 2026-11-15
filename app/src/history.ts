@@ -6,6 +6,8 @@ import {
   DEGENWILD_PROGRAM_ADDRESS,
   getBattleRefundedEventDecoder,
   getBattleSettledEventDecoder,
+  getJackpotSettledEventDecoder,
+  JACKPOT_SETTLED_EVENT_DISCRIMINATOR,
 } from './generated';
 import type { AppClient } from './client';
 import type { BattleView } from './chain';
@@ -37,6 +39,22 @@ export type GameResult =
       amount: bigint;
     };
 
+/** A finished jackpot round, from its JackpotSettled event. */
+export type JackpotResult = {
+  signature: Signature;
+  blockTime: number | null;
+  round: Address;
+  roundId: bigint;
+  winner: Address;
+  total: bigint;
+  payout: bigint;
+  fee: bigint;
+  ticket: bigint;
+  players: number;
+};
+
+export type HistoryBatch = { games: GameResult[]; jackpots: JackpotResult[] };
+
 const b64 = getBase64Encoder();
 const startsWith = (data: Uint8Array, prefix: ArrayLike<number>) => {
   if (data.length < prefix.length) return false;
@@ -48,9 +66,10 @@ const startsWith = (data: Uint8Array, prefix: ArrayLike<number>) => {
  * Pulls our program's events out of a transaction's logs. Only "Program data:" lines emitted
  * while our program is at the top of the invoke stack count, so another program can't forge a result.
  */
-export function parseEvents(logs: readonly string[], signature: Signature, blockTime: number | null): GameResult[] {
+export function parseEvents(logs: readonly string[], signature: Signature, blockTime: number | null): HistoryBatch {
   const stack: string[] = [];
   const out: GameResult[] = [];
+  const jackpots: JackpotResult[] = [];
   for (const line of logs) {
     const invoke = line.match(/^Program (\w+) invoke \[\d+\]$/);
     if (invoke) {
@@ -76,12 +95,14 @@ export function parseEvents(logs: readonly string[], signature: Signature, block
       } else if (startsWith(data, BATTLE_REFUNDED_EVENT_DISCRIMINATOR)) {
         const e = getBattleRefundedEventDecoder().decode(data);
         out.push({ kind: 'refunded', signature, blockTime, ...e });
+      } else if (startsWith(data, JACKPOT_SETTLED_EVENT_DISCRIMINATOR)) {
+        jackpots.push({ signature, blockTime, ...getJackpotSettledEventDecoder().decode(data) });
       }
     } catch {
       /* malformed: ignore */
     }
   }
-  return out;
+  return { games: out, jackpots };
 }
 
 /**
@@ -90,47 +111,70 @@ export function parseEvents(logs: readonly string[], signature: Signature, block
  */
 export class GameHistory {
   private newest: Signature | undefined;
-  private inFlight: Promise<GameResult[]> | null = null;
+  private inFlight: Promise<HistoryBatch> | null = null;
 
+  /** On the first load, page back through history until this many coinflips and jackpots are found. */
   constructor(
     private readonly rpc: Rpc,
-    private readonly initial = 25,
+    private readonly want = 10,
+    private readonly maxPages = 6,
   ) {}
 
-  poll(): Promise<GameResult[]> {
+  poll(): Promise<HistoryBatch> {
     this.inFlight ??= this.fetchNew().finally(() => (this.inFlight = null));
     return this.inFlight;
   }
 
-  private async fetchNew(): Promise<GameResult[]> {
-    const sigs = await this.rpc
-      .getSignaturesForAddress(DEGENWILD_PROGRAM_ADDRESS, {
-        limit: this.newest ? 50 : this.initial,
-        until: this.newest,
-        commitment: 'confirmed',
-      })
-      .send();
-    if (sigs.length) this.newest = sigs[0].signature;
+  private async fetchNew(): Promise<HistoryBatch> {
+    const all: HistoryBatch = { games: [], jackpots: [] };
+    if (this.newest) {
+      const sigs = await this.page({ limit: 50, until: this.newest });
+      if (sigs.length) this.newest = sigs[0].signature;
+      return this.read(sigs);
+    }
+    // First load: backfill so "recent" lists are full even when the lobby has been quiet.
+    let before: Signature | undefined;
+    for (let p = 0; p < this.maxPages; p++) {
+      const sigs = await this.page({ limit: 100, before });
+      if (!sigs.length) break;
+      if (p === 0) this.newest = sigs[0].signature;
+      before = sigs[sigs.length - 1].signature;
+      const got = await this.read(sigs);
+      all.games.push(...got.games);
+      all.jackpots.push(...got.jackpots);
+      const flips = all.games.filter((g) => g.kind === 'settled').length;
+      if ((flips >= this.want && all.jackpots.length >= this.want) || sigs.length < 100) break;
+    }
+    return all;
+  }
 
+  private page(opts: { limit: number; until?: Signature; before?: Signature }) {
+    return this.rpc.getSignaturesForAddress(DEGENWILD_PROGRAM_ADDRESS, { ...opts, commitment: 'confirmed' }).send();
+  }
+
+  private async read(sigs: readonly { signature: Signature; err: unknown; blockTime: bigint | number | null }[]): Promise<HistoryBatch> {
     const ok = sigs.filter((s) => s.err === null);
-    const results: GameResult[] = [];
-    // A few at a time so a public RPC doesn't rate-limit us.
-    for (let i = 0; i < ok.length; i += 4) {
+    const out: HistoryBatch = { games: [], jackpots: [] };
+    // A few at a time so the RPC doesn't rate-limit us.
+    for (let i = 0; i < ok.length; i += 6) {
       const batch = await Promise.all(
-        ok.slice(i, i + 4).map(async (s) => {
+        ok.slice(i, i + 6).map(async (s) => {
           try {
             const tx = await this.rpc
               .getTransaction(s.signature, { maxSupportedTransactionVersion: 1, encoding: 'json', commitment: 'confirmed' })
               .send();
             return parseEvents(tx?.meta?.logMessages ?? [], s.signature, s.blockTime === null ? null : Number(s.blockTime));
           } catch {
-            return [];
+            return { games: [], jackpots: [] };
           }
         }),
       );
-      results.push(...batch.flat());
+      for (const b of batch) {
+        out.games.push(...b.games);
+        out.jackpots.push(...b.jackpots);
+      }
     }
-    return results; // newest first
+    return out; // newest first
   }
 }
 

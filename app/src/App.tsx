@@ -13,7 +13,7 @@ import { JackpotPage } from './components/JackpotPage';
 import { Welcome, shouldShowWelcome } from './components/Welcome';
 import { Coin } from './components/Coin';
 import { Amount } from './components/Amount';
-import { type GameResult, GameHistory, resultToBattle } from './history';
+import { type GameResult, type JackpotResult, GameHistory, resultToBattle } from './history';
 import { SIDE_NAME, type Side, fmtSol, parseSol, short, timeAgo, type Names } from './format';
 import { BattleRow } from './components/BattleRow';
 import { WalletWaitPill, WalletButton, ProfileDialog, WalletDialog } from './components/wallet';
@@ -84,6 +84,7 @@ export default function App() {
   const [randomness, setRandomness] = useState<Record<string, Randomness>>({});
   // Finished games, read from the program's BattleSettled / BattleRefunded events (newest first).
   const [results, setResults] = useState<GameResult[]>([]);
+  const [jackpotResults, setJackpotResults] = useState<JackpotResult[]>([]);
   const history = useRef(new GameHistory(client.rpc));
   const pollTick = useRef(0);
   const [slot, setSlot] = useState<bigint>(0n);
@@ -146,9 +147,11 @@ export default function App() {
 
       // Settled/refunded battles close their accounts; their outcome lives on in the event log.
       try {
-        const fresh = await history.current.poll();
+        const { games: fresh, jackpots } = await history.current.poll();
         if (fresh.length)
           setResults((r) => [...fresh, ...r.filter((x) => !fresh.some((f) => f.signature === x.signature))].slice(0, 60));
+        if (jackpots.length)
+          setJackpotResults((r) => [...jackpots, ...r.filter((x) => !jackpots.some((f) => f.signature === x.signature))].slice(0, 20));
       } catch {
         /* history is best-effort */
       }
@@ -856,6 +859,7 @@ export default function App() {
                 send('jackpot', () => buildEnterJackpot(signer!, amount, roundId), `You're in the pot with ${fmtSol(amount)} SOL. Good luck!`)
               }
               onLeave={(roundId) => send('jackpot', () => buildLeaveJackpot(signer!, roundId), 'You left the pot: SOL refunded.')}
+              recent={jackpotResults}
             />
           </section>
         ) : (

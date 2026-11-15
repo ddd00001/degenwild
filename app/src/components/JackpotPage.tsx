@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { client } from '../client';
 import { type JackpotView, fetchJackpot } from '../chain';
 import { JackpotStatus } from '../generated';
-import { fmtSol, parseSol, short, type Names } from '../format';
+import { fmtSol, parseSol, short, timeAgo, type Names } from '../format';
+import { explorerTx } from '../config';
+import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
 import { Amount } from './Amount';
 import { fmtUsd, useSolPrice } from '../price';
@@ -58,6 +60,7 @@ export function JackpotPage(props: {
   onConnect: () => void;
   onEnter: (amount: bigint, roundId: bigint) => Promise<boolean>;
   onLeave: (roundId: bigint) => Promise<boolean>;
+  recent: JackpotResult[];
 }) {
   const { me, names } = props;
   const [view, setView] = useState<JackpotView | null>(null);
@@ -513,15 +516,48 @@ export function JackpotPage(props: {
             )}
           </section>
 
-          {view?.state && view.state.lastRound > 0n && phase !== 'result' && (
-            <p className="jp-last">
-              Last pot #{view.state.lastRound.toString()}: <Avatar address={view.state.lastWinner} size={18} />{' '}
-              <b>{nameOf(view.state.lastWinner)}</b> won <Amount lamports={view.state.lastPayout} />
-              {solUsd ? <span className="jp-usd"> ({usd(view.state.lastPayout, solUsd)})</span> : null}
-            </p>
-          )}
         </aside>
       </div>
+
+      <section className="lobby-section jp-history">
+        <div className="lobby-heading">
+          <div>
+            <div className="eyebrow">LIVE FEED</div>
+            <h2>
+              Recent jackpots <span className="count-pill">{String(Math.min(10, props.recent.length)).padStart(2, '0')}</span>
+            </h2>
+          </div>
+        </div>
+        <div className="recent-list">
+          {props.recent.length === 0 ? (
+            <div className="empty-state">No finished jackpots yet.</div>
+          ) : (
+            [...props.recent]
+              .sort((a, b) => (b.roundId > a.roundId ? 1 : -1))
+              .slice(0, 10)
+              .map((r) => (
+                <div key={r.signature} className={`recent-row jp-recent ${r.winner === me ? 'mine-win' : ''}`}>
+                  <Avatar address={r.winner} size={28} />
+                  <span className="recent-text">
+                    <span className="jp-round">#{r.roundId.toString()}</span> <b>{nameOf(r.winner)}</b> won{' '}
+                    <b>
+                      <Amount lamports={r.payout} />
+                    </b>
+                    {solUsd ? <span className="jp-usd"> ({usd(r.payout, solUsd)})</span> : null}
+                    <span className="jp-recent-meta">
+                      {' '}
+                      · {r.players} players · pot {fmtSol(r.total)} SOL
+                    </span>
+                  </span>
+                  <span className="recent-time">{timeAgo(r.blockTime)}</span>
+                  <a className="replay-btn" href={explorerTx(r.signature)} target="_blank" rel="noreferrer" title="View payout on Solana Explorer" aria-label="View payout on Solana Explorer">
+                    ↗
+                  </a>
+                </div>
+              ))
+          )}
+        </div>
+      </section>
     </div>
   );
 }
