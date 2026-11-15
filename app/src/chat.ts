@@ -6,8 +6,8 @@ import { type RealtimeChannel, type SupabaseClient, createClient } from '@supaba
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
 /** Public project URL + publishable key (safe in the browser: the table is read-only for it). */
-export const SUPABASE_URL = '';
-export const SUPABASE_KEY = '';
+export const SUPABASE_URL = 'https://qotqwwthqdkarnvymxfy.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_h_Lw-h0OKGHDLhu9LvpVSA_VOX4jurl';
 export const CHAT_ENABLED = !!SUPABASE_URL && !!SUPABASE_KEY;
 
 export type ChatMessage = { id: number; wallet: Address; body: string; created_at: string };
