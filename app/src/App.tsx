@@ -617,7 +617,7 @@ export default function App() {
                   </div>
                 </div>
                 <button className="primary-btn create-btn" onClick={onCreate} disabled={busy !== null || !!stakeError}>
-                  {busy === 'create' ? 'Confirm in wallet…' : connected ? 'Create coinflip' : 'Connect to create'}{' '}
+                  {busy === 'create' ? (demo ? 'Creating…' : 'Confirm in wallet…') : me ? 'Create coinflip' : 'Connect to create'}{' '}
                   <span>↗</span>
                 </button>
               </div>
@@ -798,7 +798,7 @@ export default function App() {
         </footer>
       </main>
 
-      {busySince !== null && <WalletWaitPill since={busySince} />}
+      {busySince !== null && !demo && <WalletWaitPill since={busySince} />}
       <div className={`toast ${toast.msg ? 'show' : ''}`} role="status" aria-live="polite">
         {toast.msg?.text}
         {toast.msg?.link && (
