@@ -631,37 +631,27 @@ dialog>*:not(.embers){position:relative;z-index:1}
 .jp-amt b{font-weight:700;white-space:nowrap}
 .jp-amt small,.jp-usd{color:#8e8181;font-size:11px;white-space:nowrap}
 .jp-hub-usd{fill:#c9b8b8;letter-spacing:.04em}
-/* Battle pot badge: a burning ticket */
+/* Battle pot badge */
 .battle-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
-.pot-badge{position:relative;display:inline-flex;align-items:stretch;border-radius:8px;isolation:isolate;cursor:default;transition:transform .2s ease;animation:pot-pop .5s cubic-bezier(.2,1.6,.4,1)}
-.pot-badge::before{content:"";position:absolute;inset:-2px;border-radius:10px;z-index:-1;background:conic-gradient(from var(--pot-a,0deg),#ff3038,#ff8a1f,#f5c542,#ff8a1f,#ff3038);animation:pot-rot 3s linear infinite;filter:blur(.3px)}
-.pot-badge::after{content:"";position:absolute;inset:-2px;border-radius:10px;z-index:-2;background:inherit;box-shadow:0 0 18px #ff4a1f88,0 0 40px #ff30381f;animation:pot-breathe 2.4s ease-in-out infinite}
-.pot-tag{display:grid;place-items:center;padding:0 7px;border-radius:7px 0 0 7px;background:linear-gradient(180deg,#ff3038,#9a0f17);color:#fff;font:900 10px/1 Inter,sans-serif;letter-spacing:.18em;writing-mode:vertical-rl;transform:rotate(180deg);border-radius:0 7px 7px 0}
-.pot-val{display:flex;align-items:center;padding:7px 12px 7px 10px;border-radius:0 7px 7px 0;background:radial-gradient(ellipse at 50% 120%,#5a1a0a 0%,#1a0b0b 60%,#120909 100%);font:900 23px/1 'Barlow Condensed',sans-serif;letter-spacing:.02em}
-.pot-val .amount{border-bottom:0;background:linear-gradient(90deg,#fff 0%,#ffd27a 25%,#ff8a1f 50%,#ffd27a 75%,#fff 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:pot-flow 2.8s linear infinite;text-shadow:none}
-.pot-val .amount-tip{-webkit-text-fill-color:initial;color:#cdbdbd;font-family:Inter,sans-serif}
-.pot-ember{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:#ffb347;box-shadow:0 0 6px #ff8a1f;opacity:0;pointer-events:none;animation:pot-ember 2.2s ease-out infinite}
-.pot-ember.e1{left:38%}.pot-ember.e2{left:62%;animation-delay:.7s}.pot-ember.e3{left:82%;animation-delay:1.4s}
-.pot-badge:hover{transform:translateY(-2px) scale(1.07) rotate(-1.5deg)}
-.pot-badge:hover::before{animation-duration:.9s}
-.pot-badge:hover .pot-ember{animation-duration:1s}
-.pot-full .pot-badge::before{background:conic-gradient(from var(--pot-a,0deg),#f5c542,#fff3c4,#3ddc84,#fff3c4,#f5c542)}
-.pot-full .pot-tag{background:linear-gradient(180deg,#f5c542,#9c6f0c);color:#1a1205}
-.pot-full .pot-badge::after{box-shadow:0 0 22px #f5c54288}
+.pot-badge{display:inline-flex;align-items:stretch;overflow:visible;border:1px solid #ff303877;border-radius:8px;background:#1a0d0e;box-shadow:0 0 16px #ff20301f;cursor:default;transition:border-color .18s,box-shadow .18s,transform .18s;animation:pot-in .3s ease-out}
+.pot-tag{display:grid;place-items:center;padding:0 6px;border-radius:7px 0 0 7px;background:#ff3038;color:#fff;font:800 9px/1 Inter,sans-serif;letter-spacing:.16em;writing-mode:vertical-rl;transform:rotate(180deg);border-radius:0 7px 7px 0}
+.pot-val{display:flex;align-items:center;padding:7px 12px 7px 10px;color:#fff;font:900 22px/1 'Barlow Condensed',sans-serif;letter-spacing:.02em}
+.pot-val .amount{border-bottom:0}
+.pot-val .amount-tip{font-family:Inter,sans-serif}
+.pot-ember{display:none}
+.pot-badge:hover{border-color:#ff3038;box-shadow:0 0 22px #ff203040;transform:translateY(-1px)}
+.pot-full .pot-badge{border-color:#f5c54277;box-shadow:0 0 16px #f5c5421f}
+.pot-full .pot-tag{background:#f5c542;color:#1a1205}
+.pot-full .pot-val{color:#ffe7a3}
 .battle-meta small{letter-spacing:.12em}
-@property --pot-a{syntax:'<angle>';inherits:false;initial-value:0deg}
-@keyframes pot-rot{to{--pot-a:360deg}}
-@keyframes pot-flow{to{background-position:-200% 0}}
-@keyframes pot-breathe{0%,100%{opacity:.55}50%{opacity:1}}
-@keyframes pot-ember{0%{transform:translateY(0) scale(1);opacity:0}15%{opacity:1}100%{transform:translateY(-34px) scale(.3);opacity:0}}
-@keyframes pot-pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes pot-in{from{opacity:0;transform:translateY(3px)}}
 @media(max-width:760px){.battle-meta{flex-direction:row;align-items:center}}
 @media(max-width:500px){.pot-val{font-size:17px;padding:5px 9px 5px 7px}.pot-tag{font-size:8px;padding:0 5px}}
-@media(prefers-reduced-motion:reduce){.pot-badge,.pot-badge::before,.pot-badge::after,.pot-val .amount,.pot-ember{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.pot-badge{animation:none}}
 /* Lobby: battles + chat */
-.lobby-split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start;margin-top:31px}
-.lobby-split>.lobby-section{margin-top:0;min-width:0}
-.chat-panel{position:sticky;top:16px;display:flex;flex-direction:column;height:min(620px,calc(100vh - 40px));border:1px solid #382023;border-radius:12px;background:radial-gradient(ellipse at 50% 0%,#2a0c0f 0%,#141010 45%,#0f0c0c 100%);box-shadow:0 20px 50px #0008;overflow:hidden}
+.lobby-split{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+.lobby-main{min-width:0}
+.chat-panel{position:sticky;top:16px;display:flex;flex-direction:column;height:calc(100vh - 32px);max-height:820px;border:1px solid #382023;border-radius:12px;background:radial-gradient(ellipse at 50% 0%,#2a0c0f 0%,#141010 45%,#0f0c0c 100%);box-shadow:0 20px 50px #0008;overflow:hidden}
 .chat-head{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 12px;border-bottom:1px solid #2b2020}
 .chat-head h2{margin:4px 0 0;font:800 24px 'Barlow Condensed'}
 .online-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid #3ddc8455;background:#3ddc8412;color:#bff5d6;font:700 11px Inter,sans-serif;white-space:nowrap}

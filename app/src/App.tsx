@@ -619,6 +619,8 @@ export default function App() {
               </div>
             )}
 
+            <div className="lobby-split">
+            <div className="lobby-main">
             <section className="create-panel panel">
               <div className="section-top">
                 <div>
@@ -756,7 +758,6 @@ export default function App() {
               </details>
             )}
 
-            <div className="lobby-split">
               <section className="lobby-section">
                 <div className="lobby-heading">
                   <div>
@@ -801,8 +802,6 @@ export default function App() {
                   )}
                 </div>
               </section>
-              <ChatPanel me={me} signer={signer} names={names} onConnect={() => setWalletOpen(true)} />
-            </div>
 
             <section className="lobby-section">
               <div className="lobby-heading">
@@ -837,6 +836,9 @@ export default function App() {
                 )}
               </div>
             </section>
+            </div>
+            <ChatPanel me={me} signer={signer} names={names} onConnect={() => setWalletOpen(true)} />
+            </div>
           </section>
         ) : view === 'leaderboard' ? (
           <section className="view active">
