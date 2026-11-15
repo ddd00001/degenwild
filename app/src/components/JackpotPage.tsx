@@ -96,11 +96,12 @@ export function JackpotPage(props: {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.recent]);
-  const [hover, setHover] = useState<{ player: Address; x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<{ player: Address; x: number; y: number; left: boolean } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const hoverAt = (player: Address) => (e: React.MouseEvent) => {
     const r = wrapRef.current?.getBoundingClientRect();
-    if (r) setHover({ player, x: e.clientX - r.left, y: e.clientY - r.top });
+    // Window coordinates: the card is position:fixed so the wheel panel can't clip it.
+    if (r) setHover({ player, x: e.clientX, y: e.clientY, left: e.clientX > r.left + r.width / 2 });
   };
   const [rot, setRot] = useState(0);
   const [phase, setPhase] = useState<'live' | 'spinning' | 'landing' | 'result'>('live');
@@ -387,8 +388,8 @@ export function JackpotPage(props: {
                 const winPot = shown.total;
                 return (
                   <div
-                    className={`jp-tip ${hover.x > (wrapRef.current?.clientWidth ?? 460) / 2 ? 'left' : ''}`}
-                    style={{ left: hover.x, top: hover.y, borderColor: s.color }}
+                    className={`jp-tip ${hover.left ? 'left' : ''}`}
+                    style={{ left: hover.x, top: Math.min(Math.max(hover.y, 135), window.innerHeight - 135), borderColor: s.color }}
                     role="tooltip"
                   >
                     <div className="jp-tip-head">

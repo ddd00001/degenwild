@@ -777,3 +777,4 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 .jp-replay-proof.show{opacity:1;transform:none}
 .jp-winner-tx{display:block;margin-top:4px;color:#ff8a8f;font-size:11px;font-style:normal}
 a.jp-winner-tx:hover{color:#fff}
+.jp-tip{position:fixed;z-index:200}
