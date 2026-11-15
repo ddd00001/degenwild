@@ -473,7 +473,7 @@ export default function App() {
               <b>Rewards are coming soon.</b> Earn perks just for playing on DegenWild.
             </span>
           </div>
-          <button className={`nav-link ${view === 'leaderboard' ? 'active' : ''}`} onClick={() => setView('leaderboard')}>
+          <button className={`nav-link nav-tight ${view === 'leaderboard' ? 'active' : ''}`} onClick={() => setView('leaderboard')}>
             <span className="nav-icon">♛</span>$WILD Leaderboard
           </button>
           <button className={`nav-link ${view === 'roadmap' ? 'active' : ''}`} onClick={() => setView('roadmap')}>
