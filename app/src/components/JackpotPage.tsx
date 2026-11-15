@@ -4,6 +4,7 @@ import { client } from '../client';
 import { type JackpotView, fetchJackpot } from '../chain';
 import { JackpotStatus } from '../generated';
 import { fmtSol, parseSol, short, timeAgo, type Names } from '../format';
+import { explorerTx } from '../config';
 import { fetchJackpotEntries } from '../jackpotReplay';
 import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
@@ -434,6 +435,16 @@ export function JackpotPage(props: {
                     result.total,
                   )}% chance
                 </span>
+                {(() => {
+                  const tx = props.recent.find((x) => x.roundId === result.roundId)?.signature;
+                  return tx ? (
+                    <a className="jp-winner-tx" href={explorerTx(tx)} target="_blank" rel="noreferrer" title={tx}>
+                      Payout tx {tx.slice(0, 6)}…{tx.slice(-6)} ↗
+                    </a>
+                  ) : (
+                    <em className="jp-winner-tx">Payout tx confirming…</em>
+                  );
+                })()}
               </div>
             </div>
           )}

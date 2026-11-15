@@ -773,3 +773,7 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 /* Pot: bare Solana mark, no circle */
 .pot-sol,.pot-full .pot-sol{width:auto;height:auto;background:none;border:0;border-radius:0;box-shadow:none;color:#ffd166;font-size:.8em;font-weight:700;text-shadow:0 0 10px #f5c54266}
 .pot-tag,.pot-full .pot-tag{color:#fff;text-shadow:0 0 8px #ffffff40}
+.jp-replay-proof{opacity:0;transform:translateY(6px);transition:opacity .4s .15s,transform .4s .15s}
+.jp-replay-proof.show{opacity:1;transform:none}
+.jp-winner-tx{display:block;margin-top:4px;color:#ff8a8f;font-size:11px;font-style:normal}
+a.jp-winner-tx:hover{color:#fff}

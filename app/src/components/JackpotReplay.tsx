@@ -172,7 +172,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
           ))}
       </ul>
 
-      <dl className="jp-replay-proof">
+      <dl className={`jp-replay-proof ${done ? 'show' : ''}`}>
         <dt>Payout tx</dt>
         <dd>
           <a href={explorerTx(r.signature)} target="_blank" rel="noreferrer" title={r.signature}>
