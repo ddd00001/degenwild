@@ -4,7 +4,8 @@ import { client } from '../client';
 import { type JackpotView, fetchJackpot } from '../chain';
 import { JackpotStatus } from '../generated';
 import { fmtSol, parseSol, short, timeAgo, type Names } from '../format';
-import { explorerTx } from '../config';
+import { fetchJackpotEntries } from '../jackpotReplay';
+import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
 import { Amount } from './Amount';
@@ -18,27 +19,27 @@ const POLL_MS = 2_000;
 const KEEPER_URL: string = import.meta.env?.VITE_JACKPOT_URL ?? '/api/jackpot';
 
 /** Segment colors, in join order. */
-const SEGMENTS = ['#ff3038', '#f5c542', '#3ddc84', '#4f7cff', '#ff8a1f', '#a855f7', '#22d3ee', '#ff4fb4', '#14b8a6', '#e5e7eb', '#b91c1c', '#84cc16'];
+export const SEGMENTS = ['#ff3038', '#f5c542', '#3ddc84', '#4f7cff', '#ff8a1f', '#a855f7', '#22d3ee', '#ff4fb4', '#14b8a6', '#e5e7eb', '#b91c1c', '#84cc16'];
 
 type Entry = { player: Address; amount: bigint };
 
 /** "$12.34" for an amount in lamports, or '' until the SOL price has loaded. */
-function usd(lamports: bigint, solUsd: number | undefined): string {
+export function usd(lamports: bigint, solUsd: number | undefined): string {
   return solUsd ? fmtUsd((Number(lamports) / 1e9) * solUsd) : '';
 }
 type Snapshot = { roundId: bigint; total: bigint; entries: Entry[] };
 type Result = { roundId: bigint; winner: Address; total: bigint; payout: bigint; ticket: bigint; entries: Entry[] };
 
-const C = 200; // wheel center
-const R_OUT = 182;
-const R_IN = 96;
+export const C = 200; // wheel center
+export const R_OUT = 182;
+export const R_IN = 96;
 
-function polar(r: number, deg: number) {
+export function polar(r: number, deg: number) {
   const a = ((deg - 90) * Math.PI) / 180;
   return [C + r * Math.cos(a), C + r * Math.sin(a)];
 }
 
-function arc(start: number, end: number) {
+export function arc(start: number, end: number) {
   // Full circle needs two arcs.
   if (end - start >= 359.999) end = start + 359.999;
   const [x1, y1] = polar(R_OUT, start);
@@ -49,7 +50,7 @@ function arc(start: number, end: number) {
   return `M${x1} ${y1}A${R_OUT} ${R_OUT} 0 ${large} 1 ${x2} ${y2}L${x3} ${y3}A${R_IN} ${R_IN} 0 ${large} 0 ${x4} ${y4}Z`;
 }
 
-const pct = (part: bigint, total: bigint) => (total > 0n ? Number((part * 10_000n) / total) / 100 : 0);
+export const pct = (part: bigint, total: bigint) => (total > 0n ? Number((part * 10_000n) / total) / 100 : 0);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
 
 export function JackpotPage(props: {
@@ -67,6 +68,28 @@ export function JackpotPage(props: {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [stakeInput, setStakeInput] = useState('0.1');
+  const [replaying, setReplaying] = useState<JackpotResult | null>(null);
+  // Winner's chance per finished round, rebuilt from the round's entries (cached per round).
+  const [chances, setChances] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      for (const r of props.recent.slice(0, 10)) {
+        if (!alive || chances[r.signature] !== undefined) continue;
+        try {
+          const e = await fetchJackpotEntries(client.rpc, r.round);
+          const mine = e.find((x) => x.player === r.winner)?.amount ?? 0n;
+          if (alive && mine > 0n) setChances((c) => ({ ...c, [r.signature]: pct(mine, r.total) }));
+        } catch {
+          /* best effort */
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.recent]);
   const [hover, setHover] = useState<{ player: Address; x: number; y: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const hoverAt = (player: Address) => (e: React.MouseEvent) => {
@@ -530,20 +553,26 @@ export function JackpotPage(props: {
                       <Amount lamports={r.payout} />
                     </b>
                     {solUsd ? <span className="jp-usd"> ({usd(r.payout, solUsd)})</span> : null}
+                    {chances[r.signature] !== undefined && (
+                      <span className="jp-chance-pill" title="Winner's chance to win this round">
+                        {chances[r.signature].toFixed(2)}% chance
+                      </span>
+                    )}
                     <span className="jp-recent-meta">
                       {' '}
                       · {r.players} players · pot {fmtSol(r.total)} SOL
                     </span>
                   </span>
                   <span className="recent-time">{timeAgo(r.blockTime)}</span>
-                  <a className="replay-btn" href={explorerTx(r.signature)} target="_blank" rel="noreferrer" title="View payout on Solana Explorer" aria-label="View payout on Solana Explorer">
-                    ↗
-                  </a>
+                  <button className="replay-btn" title="Replay this jackpot" aria-label="Replay this jackpot" onClick={() => setReplaying(r)}>
+                    ▶
+                  </button>
                 </div>
               ))
           )}
         </div>
       </section>
+      {replaying && <JackpotReplay result={replaying} me={me} nameOf={nameOf} onClose={() => setReplaying(null)} />}
     </div>
   );
 }

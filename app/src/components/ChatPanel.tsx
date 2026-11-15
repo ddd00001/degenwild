@@ -34,8 +34,8 @@ export function ChatPanel(props: {
 
   useEffect(() => setToken(me ? savedToken(me) : null), [me]);
 
-  // Size the panel once so it ends at the bottom of the window on landing, then pin it in that
-  // same spot while scrolling. Only a window resize changes it, never scrolling.
+  // Size the panel once so it ends at the bottom of the window on landing, then pin it to the
+  // top of the window while scrolling. Only a window resize changes it, never scrolling.
   const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = panelRef.current;
@@ -47,7 +47,7 @@ export function ChatPanel(props: {
       const startTop = el.parentElement!.getBoundingClientRect().top + window.scrollY;
       const height = Math.max(360, window.innerHeight - startTop - 16);
       el.style.height = `${height}px`;
-      el.style.top = `${Math.max(16, window.innerHeight - height - 16)}px`;
+      el.style.top = '16px';
     };
     fit();
     window.addEventListener('resize', fit);

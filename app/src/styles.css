@@ -703,3 +703,21 @@ dialog>*:not(.embers){position:relative;z-index:1}
 a.replay-btn{display:grid;place-items:center;text-decoration:none}
 @media(max-width:600px){.jp-recent-meta{display:none}}
 @media(max-width:1400px){.jp-grid{grid-template-columns:1fr}}
+/* Jackpot replay */
+.jp-chance-pill{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:999px;background:#ff30381a;border:1px solid #ff303855;color:#ff8a8f;font-size:10px;font-weight:800;vertical-align:1px}
+.jp-replay{width:min(560px,calc(100vw - 24px))}
+.jp-replay-wheel{position:relative;width:min(100%,340px);margin:10px auto 0}
+.jp-replay-status{position:absolute;inset:auto 0 -6px;text-align:center;color:#9d8c8c;font-size:12px}
+.jp-replay-result{display:flex;align-items:center;gap:12px;justify-content:center;margin:14px 0 6px;opacity:0;transform:translateY(6px);transition:opacity .4s,transform .4s}
+.jp-replay-result.show{opacity:1;transform:none}
+.jp-replay-result b{display:block;font:900 24px 'Barlow Condensed';text-transform:uppercase;color:#ffd166}
+.jp-replay-result span{color:#cdbdbd;font-size:13px}
+.jp-replay-players{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:5px;text-align:left}
+.jp-replay-players li{display:grid;grid-template-columns:4px minmax(0,1fr) auto 58px;gap:10px;align-items:center;padding:7px 10px;border:1px solid #241a1a;border-radius:8px;background:#110d0d;font-size:12px}
+.jp-replay-players li i{width:4px;height:20px;border-radius:2px}
+.jp-replay-players li b{text-align:right}
+.jp-replay-players li.won{border-color:#ffd166;background:linear-gradient(90deg,#ffd16622,#110d0d 70%)}
+.jp-replay-proof{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:14px 0 4px;padding:10px 12px;border:1px solid #2b2020;border-radius:8px;background:#0d0a0a;font-size:11px;text-align:left}
+.jp-replay-proof dt{color:#8e8181}
+.jp-replay-proof dd{margin:0;text-align:right;color:#eee3e3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.jp-replay-proof a{color:#ff8a8f}
