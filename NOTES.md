@@ -45,8 +45,10 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 
 ## Demo mode (branch `demo-mode`, 2026-11-15)
 - "Try it free" in the Connect wallet dialog: in-browser demo wallet (`src/burner.ts`, key in localStorage, devnet only).
-- Faucet: Vercel function `app/api/faucet.ts` sends 0.2 devnet SOL to near-empty wallets (1 per IP per 10 min, 60/h per instance).
-  Needs Vercel env `FAUCET_SECRET_KEY` = contents of `~/.config/solana/degenwild-faucet.json`
-  (faucet wallet `CMSs…7sqo`, devnet only, top it up from the CLI wallet). Test: `scripts/test-faucet.mts`.
-- House opponent: `npm run bot` now joins open battles ≤ 0.5 SOL after 10 s with the CLI wallet (HOUSE=0 to disable).
-  Only works while the bot runs.
+- House wallet `CMSs…7sqo` (`~/.config/solana/degenwild-faucet.json`, devnet only) is both the faucet and the house
+  opponent, shown on the site as "Degen Bot 🤖" (`HOUSE_WALLET` in `src/config.ts`). Vercel env `FAUCET_SECRET_KEY`
+  holds its key (set for Production + Preview). Top it up from the CLI wallet.
+- Faucet `app/api/faucet.ts`: sends FAUCET_DRIP_SOL (default 5) to near-empty wallets, or what it can spare (min 0.2).
+  1 per IP per 10 min, 60/h per instance.
+- House `app/api/house.ts`: "Play house" button on your own open battle; the house joins and settles right away (no PC needed).
+- Bot: `npm run bot` also auto-joins open battles <= 5 SOL after 10 s as the house (HOUSE=0 to disable).

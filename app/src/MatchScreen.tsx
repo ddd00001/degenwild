@@ -30,7 +30,7 @@ export function MatchScreen(props: {
   /** Double Down: open a new battle at this stake on the same side. */
   doubleDown?: { amount: bigint; busy: boolean; onClick: (amount: bigint, side: 0 | 1) => void };
   /** Open battle: lets a spectator join, or the creator cancel, from the pop-up. */
-  open?: { joining: boolean; cancelling: boolean; onJoin?: () => void; onCancel?: () => void };
+  open?: { joining: boolean; cancelling: boolean; housing?: boolean; onJoin?: () => void; onCancel?: () => void; onHouse?: () => void };
   onClaim: () => void;
   onClose: () => void;
 }) {
@@ -180,6 +180,11 @@ export function MatchScreen(props: {
         {phase === 'open' && props.open?.onJoin && (
           <button className="primary-btn" disabled={props.open.joining} onClick={props.open.onJoin}>
             {props.open.joining ? 'Confirm in wallet…' : `Join on ${SIDE[1 - b.creatorSide]} · ${props.fmtSol(b.amount)} SOL`}
+          </button>
+        )}
+        {phase === 'open' && props.open?.onHouse && (
+          <button className="primary-btn" disabled={props.open.housing} onClick={props.open.onHouse}>
+            {props.open.housing ? 'Calling the house…' : '⚡ Play the house now'}
           </button>
         )}
         {phase === 'open' && props.open?.onCancel && (

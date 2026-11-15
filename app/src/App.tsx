@@ -2,7 +2,7 @@ import { type Address, type Instruction, type KeyPairSigner } from '@solana/kit'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConnectedWallet } from '@solana/kit-plugin-wallet/react';
 import { client, clientV0 } from './client';
-import { CLUSTER, MAX_STAKE_LAMPORTS, MIN_STAKE_LAMPORTS, PLATFORM_ADMIN, POLL_MS, explorerTx } from './config';
+import { CLUSTER, HOUSE_NAME, HOUSE_WALLET, MAX_STAKE_LAMPORTS, MIN_STAKE_LAMPORTS, PLATFORM_ADMIN, POLL_MS, explorerTx } from './config';
 import { type BattleView, type Randomness, buildCancel, buildChangeUsername, buildCreate, buildCreateProfile, buildDeleteProfile, buildInitPlatform, buildJoin, buildRefund, buildSettle, describeError, isExpiredError, fetchAllBattles, fetchAllUsernames, fetchRandomness, fetchTreasury, opponentOf, payoutFor, winnerOf } from './chain';
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
@@ -15,7 +15,7 @@ import { SIDE_NAME, type Side, fmtSol, parseSol, short, timeAgo, type Names } fr
 import { BattleRow } from './components/BattleRow';
 import { WalletWaitPill, WalletButton, ProfileDialog, WalletDialog } from './components/wallet';
 import { HowDialog } from './components/Modal';
-import { type BurnerClient, DEMO_ENABLED, burnerClient, forgetBurner, loadBurner, requestDemoSol } from './burner';
+import { type BurnerClient, DEMO_ENABLED, burnerClient, callHouse, forgetBurner, loadBurner, requestDemoSol } from './burner';
 
 /** Below this the demo wallet can't cover a minimum stake plus fees. */
 const DEMO_LOW = 60_000_000n;
@@ -84,7 +84,7 @@ export default function App() {
   const [walletOpen, setWalletOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(shouldShowWelcome);
-  const [names, setNames] = useState<Names>(new Map());
+  const [names, setNames] = useState<Names>(() => new Map(DEMO_ENABLED ? [[HOUSE_WALLET, HOUSE_NAME]] : []));
   const [treasury, setTreasury] = useState<Address | null | undefined>(undefined);
   const [namesLoaded, setNamesLoaded] = useState(false);
   const [profileOpen, setProfileOpen] = useState<'first' | 'edit' | null>(null);
@@ -121,7 +121,7 @@ export default function App() {
       ]);
       if (tre !== undefined) setTreasury(tre);
       if (usernames) {
-        setNames(usernames);
+        setNames(DEMO_ENABLED ? new Map([...usernames, [HOUSE_WALLET, HOUSE_NAME]]) : usernames);
         setNamesLoaded(true);
       }
       setSlot(s);
@@ -244,6 +244,21 @@ export default function App() {
     if (value < DEMO_LOW) await fundDemo(kp.address);
     else toast.show('Demo wallet ready — pick a side and flip!');
   }, [fundDemo, toast]);
+
+  /** Devnet: the house joins my open battle right away (server-side, no wallet prompt). */
+  const playHouse = useCallback(
+    async (b: BattleView) => {
+      setBusy(`house:${b.address}`);
+      try {
+        const r = await callHouse(b.address);
+        toast.show(r.message);
+        await refresh();
+      } finally {
+        setBusy(null);
+      }
+    },
+    [refresh, toast],
+  );
 
   const exitDemo = useCallback(() => {
     forgetBurner();
@@ -654,6 +669,7 @@ export default function App() {
                       onCancel={() =>
                         void send(`cancel:${b.address}`, () => buildCancel(signer!, b), 'Battle cancelled — stake refunded.')
                       }
+                      onHouse={DEMO_ENABLED ? () => void playHouse(b) : undefined}
                       onSettle={() =>
                         void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), `You won ${fmtSol(payoutFor(b.amount).payout)} SOL — paid to your wallet.`)
                       }
@@ -692,6 +708,7 @@ export default function App() {
                       onCancel={() =>
                         void send(`cancel:${b.address}`, () => buildCancel(signer!, b), 'Battle cancelled — stake refunded.')
                       }
+                      onHouse={DEMO_ENABLED ? () => void playHouse(b) : undefined}
                       onSettle={() =>
                         void send(`settle:${b.address}`, () => buildSettle(client.rpc, b), `You won ${fmtSol(payoutFor(b.amount).payout)} SOL — paid to your wallet.`)
                       }
@@ -823,6 +840,8 @@ export default function App() {
               ? {
                   joining: busy === `join:${match.address}`,
                   cancelling: busy === `cancel:${match.address}`,
+                  housing: busy === `house:${match.address}`,
+                  onHouse: DEMO_ENABLED && match.creator === me ? () => void playHouse(match) : undefined,
                   onJoin:
                     match.creator !== me
                       ? () => {

@@ -11,6 +11,7 @@ export const DEMO_ENABLED = CLUSTER !== 'mainnet';
 
 /** Where the faucet lives. Same origin on Vercel; override with VITE_FAUCET_URL (e.g. for GitHub Pages). */
 export const FAUCET_URL: string = import.meta.env?.VITE_FAUCET_URL ?? '/api/faucet';
+export const HOUSE_URL: string = import.meta.env?.VITE_HOUSE_URL ?? '/api/house';
 
 const toHex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
 const fromHex = (s: string) => new Uint8Array(s.match(/../g)!.map((h) => parseInt(h, 16)));
@@ -53,6 +54,21 @@ export async function burnerClient(kp: KeyPairSigner) {
 export type BurnerClient = Awaited<ReturnType<typeof burnerClient>>;
 
 /** Asks the faucet for demo SOL. Returns a message to show the player. */
+/** Asks the house (the faucet wallet) to join one of my open battles right away. */
+export async function callHouse(battle: string): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await fetch(HOUSE_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ battle }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { message?: string };
+    return { ok: res.ok, message: body.message ?? (res.ok ? 'The house joined.' : `House error (${res.status}).`) };
+  } catch {
+    return { ok: false, message: 'The house is unreachable right now — try again in a minute.' };
+  }
+}
+
 export async function requestDemoSol(address: string): Promise<{ ok: boolean; message: string }> {
   try {
     const res = await fetch(FAUCET_URL, {

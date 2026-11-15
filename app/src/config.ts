@@ -19,6 +19,10 @@ export const CHAIN = (import.meta.env?.VITE_WALLET_CHAIN ?? `solana:${CLUSTER}`)
 /** Mirrors PLATFORM_ADMIN in programs/degenwild/src/constants.rs. */
 export const PLATFORM_ADMIN = address('4VUJ1pCqT1TWQhKFSyDC7EP9HkEAUSGrcaBpYhCEfx7b');
 
+/** Devnet house wallet (faucet + house opponent). Shown as HOUSE_NAME instead of an address. */
+export const HOUSE_WALLET = address('CMSsRH5GeVceA6Ck3nhi63C8o6ZgJQR3mujypXHF7sqo');
+export const HOUSE_NAME = 'Degen Bot 🤖';
+
 export const ORAO_VRF_PROGRAM = address('VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y');
 
 /** Mirrors programs/degenwild/src/constants.rs */

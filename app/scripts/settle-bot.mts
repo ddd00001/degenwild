@@ -7,7 +7,8 @@
 //
 // House opponent (devnet only, on by default): if nobody joins an open battle within
 // HOUSE_DELAY_MS (default 10s), the bot's wallet joins it so a lone visitor still gets a game.
-// Only battles up to HOUSE_MAX_SOL (default 0.5). Disable with HOUSE=0.
+// Only battles up to HOUSE_MAX_SOL (default 5). Disable with HOUSE=0.
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { type Address, createClient } from '@solana/kit';
 import { solanaRpc } from '@solana/kit-plugin-rpc';
@@ -22,12 +23,17 @@ const LOW_BALANCE = 50_000_000n; // warn below 0.05 SOL
 const ON_MAINNET = /mainnet/i.test(RPC);
 const HOUSE = process.env.HOUSE !== '0' && !ON_MAINNET;
 const HOUSE_DELAY_MS = Number(process.env.HOUSE_DELAY_MS ?? 10_000);
-const HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 0.5) * 1e9));
+const HOUSE_MAX = BigInt(Math.round(Number(process.env.HOUSE_MAX_SOL ?? 5) * 1e9));
 const HOUSE_RESERVE = 20_000_000n; // keep 0.02 SOL for fees and the randomness fee
 
 const c = await createClient()
   .use(signerFromFile(KEYPAIR))
   .use(solanaRpc({ rpcUrl: RPC, transactionConfig: { version: 0 } }));
+// The house plays from the faucet wallet (shown as "Degen Bot" on the site); falls back to the fee payer.
+const HOUSE_KEYPAIR = process.env.HOUSE_KEYPAIR ?? `${homedir()}/.config/solana/degenwild-faucet.json`;
+const house = HOUSE && existsSync(HOUSE_KEYPAIR)
+  ? await createClient().use(signerFromFile(HOUSE_KEYPAIR)).use(solanaRpc({ rpcUrl: RPC, transactionConfig: { version: 0 } }))
+  : c;
 
 const log = (msg: string) => console.log(`${new Date().toISOString().slice(11, 19)}  ${msg}`);
 const short = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;
@@ -45,7 +51,7 @@ process.on('SIGINT', () => {
 });
 
 log(`auto-settle bot on ${RPC.replace(/([?&](api-)?key=)[^&]+/i, '$1…')} · fee payer ${short(c.identity.address)} · every ${POLL_MS}ms`);
-log(HOUSE ? `house opponent ON: joins open battles ≤ ${Number(HOUSE_MAX) / 1e9} SOL after ${HOUSE_DELAY_MS / 1000}s` : 'house opponent off');
+log(HOUSE ? `house opponent ON (${short(house.identity.address)}): joins open battles ≤ ${Number(HOUSE_MAX) / 1e9} SOL after ${HOUSE_DELAY_MS / 1000}s` : 'house opponent off');
 let ticks = 0;
 
 while (running) {
@@ -104,23 +110,23 @@ async function houseJoin(battles: Awaited<ReturnType<typeof fetchAllBattles>>) {
 
   const due = open.filter(
     (b) =>
-      b.creator !== c.identity.address &&
+      b.creator !== house.identity.address &&
       b.amount <= HOUSE_MAX &&
       now - firstSeen.get(b.address)! >= HOUSE_DELAY_MS &&
       !inFlight.has(b.address) &&
       (coolDown.get(b.address) ?? 0) <= now,
   );
   if (!due.length) return;
-  let bal: bigint = (await c.rpc.getBalance(c.identity.address, { commitment: 'confirmed' }).send()).value;
+  let bal: bigint = (await c.rpc.getBalance(house.identity.address, { commitment: 'confirmed' }).send()).value;
   for (const b of due) {
     if (bal < b.amount + HOUSE_RESERVE) {
-      log(`house can't cover ${short(b.address)} (${Number(b.amount) / 1e9} SOL) ⚠ top up ${short(c.identity.address)}`);
+      log(`house can't cover ${short(b.address)} (${Number(b.amount) / 1e9} SOL) ⚠ top up ${short(house.identity.address)}`);
       coolDown.set(b.address, now + 60_000);
       continue;
     }
     inFlight.add(b.address);
     try {
-      const res = await c.sendTransaction([await buildJoin(c.rpc, c.identity, b)]);
+      const res = await house.sendTransaction([await buildJoin(c.rpc, house.identity, b)]);
       bal -= b.amount + HOUSE_RESERVE / 4n;
       log(`house joined ${short(b.address)} for ${Number(b.amount) / 1e9} SOL  tx ${res.context.signature.slice(0, 16)}…`);
     } catch (e) {

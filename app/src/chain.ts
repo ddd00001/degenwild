@@ -116,6 +116,17 @@ export async function fetchAllBattles(rpc: Rpc): Promise<BattleView[]> {
   return out.sort((a, b) => Number(b.battleId - a.battleId));
 }
 
+/** One battle by address (null if closed or not a battle). Much lighter than fetchAllBattles. */
+export async function fetchBattle(rpc: Rpc, battle: Address): Promise<BattleView | null> {
+  const acc = await fetchEncodedAccount(rpc, battle, { commitment: 'confirmed' });
+  if (!acc.exists || acc.programAddress !== DEGENWILD_PROGRAM_ADDRESS) return null;
+  try {
+    return { ...getBattleDecoder().decode(acc.data), address: battle };
+  } catch {
+    return null;
+  }
+}
+
 export type OraoNetwork = { treasury: Address; requestFee: bigint };
 
 /** ORAO NetworkState: 8-byte discriminator, then authority (32), treasury (32), request_fee (u64). */

@@ -14,6 +14,8 @@ export function BattleRow(props: {
   busy: string | null;
   onJoin?: () => void;
   onCancel?: () => void;
+  /** Devnet demo: ask the house to join this (my own) open battle now. */
+  onHouse?: () => void;
   onSettle?: () => void;
   onRefund?: () => void;
   onReplay?: () => void;
@@ -38,9 +40,16 @@ export function BattleRow(props: {
       if (b.creator === me) {
         meta = 'WAITING FOR PLAYER';
         action = (
-          <button className="join-small ghost" disabled={busy !== null} onClick={props.onCancel}>
-            {isBusy('cancel') ? 'Confirm…' : 'Cancel'}
-          </button>
+          <>
+            {props.onHouse && (
+              <button className="join-small" disabled={busy !== null} onClick={props.onHouse} title="Play against the house now">
+                {isBusy('house') ? 'Calling…' : 'Play house'}
+              </button>
+            )}
+            <button className="join-small ghost" disabled={busy !== null} onClick={props.onCancel}>
+              {isBusy('cancel') ? 'Confirm…' : 'Cancel'}
+            </button>
+          </>
         );
       } else {
         action = (
