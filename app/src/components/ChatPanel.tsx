@@ -34,6 +34,36 @@ export function ChatPanel(props: {
 
   useEffect(() => setToken(me ? savedToken(me) : null), [me]);
 
+  // Fill the screen from wherever the panel starts down to the bottom of the window, then stay pinned while scrolling.
+  const panelRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    let raf = 0;
+    const fit = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (getComputedStyle(el).position !== 'sticky') return void (el.style.height = '');
+        // Visible part of the chat's column: from max(its top, 16px) to min(its bottom, window bottom - 16px).
+        const col = el.parentElement!.getBoundingClientRect();
+        const top = Math.max(16, col.top);
+        const bottom = Math.min(window.innerHeight - 16, col.bottom);
+        el.style.height = `${Math.max(320, bottom - top)}px`;
+      });
+    };
+    fit();
+    window.addEventListener('scroll', fit, { passive: true });
+    window.addEventListener('resize', fit);
+    const ro = new ResizeObserver(fit); // lists loading in change the column height without a scroll
+    ro.observe(el.parentElement!);
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', fit);
+      window.removeEventListener('resize', fit);
+    };
+  }, []);
+
   // Keep the newest message in view unless the reader scrolled up.
   useEffect(() => {
     const el = listRef.current;
@@ -77,7 +107,7 @@ export function ChatPanel(props: {
   }
 
   return (
-    <aside className="chat-panel" aria-label="Live chat">
+    <aside className="chat-panel" aria-label="Live chat" ref={panelRef}>
       <div className="chat-head">
         <div>
           <div className="eyebrow">DEGEN LOUNGE</div>

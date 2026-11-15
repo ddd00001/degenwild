@@ -651,7 +651,7 @@ dialog>*:not(.embers){position:relative;z-index:1}
 /* Lobby: battles + chat */
 .lobby-split{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
 .lobby-main{min-width:0}
-.chat-panel{position:sticky;top:16px;display:flex;flex-direction:column;height:calc(100vh - 32px);max-height:820px;border:1px solid #382023;border-radius:12px;background:radial-gradient(ellipse at 50% 0%,#2a0c0f 0%,#141010 45%,#0f0c0c 100%);box-shadow:0 20px 50px #0008;overflow:hidden}
+.chat-panel{position:sticky;top:16px;display:flex;flex-direction:column;height:calc(100vh - 32px);border:1px solid #382023;border-radius:12px;background:radial-gradient(ellipse at 50% 0%,#2a0c0f 0%,#141010 45%,#0f0c0c 100%);box-shadow:0 20px 50px #0008;overflow:hidden}
 .chat-head{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 12px;border-bottom:1px solid #2b2020}
 .chat-head h2{margin:4px 0 0;font:800 24px 'Barlow Condensed'}
 .online-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid #3ddc8455;background:#3ddc8412;color:#bff5d6;font:700 11px Inter,sans-serif;white-space:nowrap}
