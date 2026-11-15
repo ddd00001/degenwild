@@ -495,8 +495,8 @@ export function JackpotPage(props: {
               {stakeError
                 ? stakeError
                 : previewChance !== null
-                  ? `Your chance after this: ${previewChance}% · entries 0.01–10 SOL`
-                  : 'Entries 0.01–10 SOL'}
+                  ? `Your chance after this: ${previewChance}% · stakes 0.01–10.00 SOL`
+                  : 'Stakes 0.01–10.00 SOL'}
             </small>
             {canLeave && (
               <button

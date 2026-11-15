@@ -74,7 +74,7 @@ export default function App() {
   // #roadmap and #leaderboard are shareable links; the coinflip page has no hash.
   const setView = (v: View) => {
     setViewState(v);
-    window.history.replaceState(null, '', v === 'coinflip' ? window.location.pathname + window.location.search : `#${v}`);
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${v}`);
     window.scrollTo({ top: 0 });
   };
   useEffect(() => {
