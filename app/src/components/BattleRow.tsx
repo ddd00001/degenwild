@@ -131,11 +131,9 @@ export function BattleRow(props: {
         <div className="pot-badge" key={pot.toString()}>
           <span className="pot-tag">POT</span>
           <span className="pot-val">
+            <i className="pot-sol" aria-hidden="true">◎</i>
             <Amount lamports={pot} />
           </span>
-          <i className="pot-ember e1" />
-          <i className="pot-ember e2" />
-          <i className="pot-ember e3" />
         </div>
         {meta !== 'POT' && <small>{meta}</small>}
       </div>
