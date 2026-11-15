@@ -6,16 +6,6 @@ import { Avatar } from './Avatar';
 
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-export function OnlinePill() {
-  const n = useOnlineCount();
-  if (!CHAT_ENABLED) return null;
-  return (
-    <span className="online-pill" title="People on DegenWild right now">
-      <i /> {n > 0 ? n : '…'} online
-    </span>
-  );
-}
-
 export function ChatPanel(props: {
   me?: Address;
   signer: (TransactionSigner | MessageSigner) | null;

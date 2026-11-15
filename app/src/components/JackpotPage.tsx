@@ -70,7 +70,7 @@ export function JackpotPage(props: {
   const [stakeInput, setStakeInput] = useState('0.1');
   const [replaying, setReplaying] = useState<JackpotResult | null>(null);
   // Winner's chance per finished round, rebuilt from the round's entries (cached per round).
-  const [chances, setChances] = useState<Record<string, number>>({});
+  const [chances, setChances] = useState<Record<string, { chance: number; stake: bigint }>>({});
   useEffect(() => {
     let alive = true;
     void (async () => {
@@ -79,7 +79,7 @@ export function JackpotPage(props: {
         try {
           const e = await fetchJackpotEntries(client.rpc, r.round);
           const mine = e.find((x) => x.player === r.winner)?.amount ?? 0n;
-          if (alive && mine > 0n) setChances((c) => ({ ...c, [r.signature]: pct(mine, r.total) }));
+          if (alive && mine > 0n) setChances((c) => ({ ...c, [r.signature]: { chance: pct(mine, r.total), stake: mine } }));
         } catch {
           /* best effort */
         }
@@ -552,8 +552,13 @@ export function JackpotPage(props: {
                     <b>{fmtSol(r.total)} SOL</b>
                     {solUsd ? <span className="jp-usd"> ({usd(r.total, solUsd)})</span> : null}
                     {chances[r.signature] !== undefined && (
-                      <span className="jp-chance-pill" title="Winner's chance to win this round">
-                        {chances[r.signature].toFixed(2)}% chance
+                      <span className="jp-chance-pill" tabIndex={0}>
+                        {chances[r.signature].chance.toFixed(2)}% chance
+                        <span className="jp-chance-tip" role="tooltip">
+                          <small>BET SIZE</small>
+                          <b>{fmtSol(chances[r.signature].stake)} SOL</b>
+                          {solUsd ? <em>≈ {usd(chances[r.signature].stake, solUsd)}</em> : null}
+                        </span>
                       </span>
                     )}
                     <span className="jp-recent-meta">

@@ -721,3 +721,11 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 .jp-replay-proof dt{color:#8e8181}
 .jp-replay-proof dd{margin:0;text-align:right;color:#eee3e3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .jp-replay-proof a{color:#ff8a8f}
+.jp-recent .recent-text{overflow:visible}
+.jp-chance-pill{position:relative;cursor:help;outline:none}
+.jp-chance-tip{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);z-index:30;display:grid;gap:2px;min-width:120px;padding:8px 11px;border-radius:8px;background:#211315;border:1px solid #743038;box-shadow:0 10px 30px #000c;text-align:center;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s,transform .12s}
+.jp-chance-tip::after{content:"";position:absolute;left:50%;top:100%;width:8px;height:8px;background:#211315;border-right:1px solid #743038;border-bottom:1px solid #743038;transform:translate(-50%,-4px) rotate(45deg)}
+.jp-chance-tip small{color:#8e8181;font-size:9px;letter-spacing:.14em}
+.jp-chance-tip b{color:#fff;font:900 18px/1.1 'Barlow Condensed',sans-serif}
+.jp-chance-tip em{font-style:normal;color:#9d8c8c;font-size:10px;font-weight:600}
+.jp-chance-pill:hover .jp-chance-tip,.jp-chance-pill:focus-visible .jp-chance-tip{opacity:1;transform:translate(-50%,0)}

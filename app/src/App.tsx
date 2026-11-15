@@ -7,7 +7,7 @@ import { type BattleView, type Randomness, buildCancel, buildChangeUsername, bui
 import { BattleStatus } from './generated';
 import { MatchScreen } from './MatchScreen';
 import { RoadmapPage } from './components/RoadmapPage';
-import { ChatPanel, OnlinePill } from './components/ChatPanel';
+import { ChatPanel } from './components/ChatPanel';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { JackpotPage } from './components/JackpotPage';
 import { Welcome, shouldShowWelcome } from './components/Welcome';
@@ -527,7 +527,6 @@ export default function App() {
             )}
           </div>
           <div className="top-actions">
-            <OnlinePill />
             <span className={`network-label ${CLUSTER}`}>
               <i></i> {CLUSTER.toUpperCase()}
             </span>
