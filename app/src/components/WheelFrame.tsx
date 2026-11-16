@@ -7,9 +7,6 @@ import { Coin } from './Coin';
 import { coinCount } from '../visualTiers';
 import { useEffect, useRef } from 'react';
 
-// Read the wheel size at render time (this file and JackpotPage import each other).
-const BEZEL_W = 18;
-const bezelR = () => R_OUT + 11;
 
 /** Gradients, textures and filters the wheel uses. Render once inside each wheel's <svg>. */
 export function WheelDefs() {
