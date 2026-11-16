@@ -26,13 +26,13 @@ type JackpotTiers = {
   milestones: number[];
   /** The milestone that gets the bigger celebration. */
   special: number;
-  /** Pot (SOL) at which the liquid gold fills the wheel's vault to the top (devnet: 4, so 2 SOL = half). */
+  /** Pot (SOL) at which the liquid gold fills the wheel's vault to the top (devnet: 10, so 5 SOL = half). */
   vaultFull: number;
 };
 
 const DEVNET = {
   coinflip: { enhanced: 0.1, premium: 0.25, elite: 0.5, max: 10 } satisfies CoinflipTiers,
-  jackpot: { growing: 0.25, big: 0.5, major: 1, mega: 5, max: 20, milestones: [0.5, 1, 2, 5], special: 1, vaultFull: 4 } satisfies JackpotTiers,
+  jackpot: { growing: 0.25, big: 0.5, major: 1, mega: 5, max: 20, milestones: [0.5, 1, 2, 5], special: 1, vaultFull: 10 } satisfies JackpotTiers,
 };
 
 /** Mainnet thresholds are not decided yet: until a `mainnet` entry exists, the devnet values apply. */

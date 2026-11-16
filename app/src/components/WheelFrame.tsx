@@ -101,10 +101,13 @@ export function WheelDefs() {
         <stop offset="1" stopColor="#4a3108" />
       </linearGradient>
       <linearGradient id="jp-liquid-g" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#fff2b8" />
-        <stop offset=".06" stopColor="#ffd24a" />
-        <stop offset=".45" stopColor="#f0a21c" />
-        <stop offset="1" stopColor="#9a5e08" />
+        <stop offset="0" stopColor="#fffbe0" />
+        <stop offset=".04" stopColor="#ffd84f" />
+        <stop offset=".16" stopColor="#c9820e" />
+        <stop offset=".3" stopColor="#ffd35a" />
+        <stop offset=".38" stopColor="#e9a321" />
+        <stop offset=".62" stopColor="#9c5e08" />
+        <stop offset="1" stopColor="#4e2d03" />
       </linearGradient>
       <linearGradient id="jp-flow-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="160" y2="60" spreadMethod="repeat">
         <stop offset="0" stopColor="#fff3b0" stopOpacity="0" />
@@ -112,10 +115,19 @@ export function WheelDefs() {
         <stop offset=".55" stopColor="#fff3b0" stopOpacity=".22" />
         <stop offset="1" stopColor="#fff3b0" stopOpacity="0" />
       </linearGradient>
+      <radialGradient id="jp-bubble-g" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stopColor="#fff8d8" stopOpacity="0" />
+        <stop offset=".62" stopColor="#fff8d8" stopOpacity=".08" />
+        <stop offset=".88" stopColor="#fffbe8" stopOpacity=".75" />
+        <stop offset="1" stopColor="#fffbe8" stopOpacity=".15" />
+      </radialGradient>
       <linearGradient id="jp-glass-g" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#fff" stopOpacity=".28" />
         <stop offset="1" stopColor="#fff" stopOpacity="0" />
       </linearGradient>
+      <clipPath id="jp-liquid-clip">
+        <rect x={0} y={4} width={400} height={420} />
+      </clipPath>
       <clipPath id="jp-vault-clip">
         <circle cx={C} cy={C} r={R_OUT - 3} />
       </clipPath>
@@ -230,7 +242,6 @@ export function WheelShading({ empty }: { empty?: boolean }) {
     <g className="jp-shading">
       <circle cx={C} cy={C} r={mid} fill="none" stroke="url(#jp-depth)" strokeWidth={w} />
       <circle cx={C} cy={C} r={mid} fill="none" stroke="url(#jp-light)" strokeWidth={w} />
-      <circle cx={C} cy={C} r={mid} fill="none" stroke="#fff" strokeWidth={w} filter="url(#jp-grain)" className="jp-grain" />
       <circle cx={C} cy={C} r={R_OUT - 2} className="jp-ring-hi" />
     </g>
   );
@@ -250,13 +261,20 @@ export function WheelSheen() {
  * Molten gold inside the wheel, behind the (glass) slices. Its level follows the pot: 2 SOL fills
  * the vault halfway (vaultFull in visualTiers). The surface waves; the level eases when it rises.
  */
-const BUBBLES = Array.from({ length: 16 }, (_, i) => ({
-  x: 0.12 + ((i * 0.618) % 1) * 0.76,
-  depth: 30 + ((i * 47) % 120),
-  size: 1.6 + ((i * 13) % 5) * 0.6,
-  dur: 2.4 + ((i * 7) % 5) * 0.5,
-  delay: -((i * 0.83) % 4),
-}));
+// Bubbles drift in every direction at different depths, sizes and speeds (fixed seeds: same on every load).
+const BUBBLES = Array.from({ length: 22 }, (_, i) => {
+  const a = rnd(i, 21) * Math.PI * 2;
+  const dist = 14 + rnd(i, 22) * 34;
+  return {
+    x: 0.06 + rnd(i, 23) * 0.88,
+    depth: 8 + rnd(i, 24) * 150,
+    size: 1.2 + rnd(i, 25) * 3.2,
+    dx: Math.cos(a) * dist,
+    dy: Math.sin(a) * dist * 0.7,
+    dur: 3.2 + rnd(i, 26) * 4,
+    delay: -rnd(i, 27) * 6,
+  };
+});
 
 export function VaultLiquid({ total }: { total: bigint }) {
   const r = R_OUT - 2;
@@ -277,16 +295,18 @@ export function VaultLiquid({ total }: { total: bigint }) {
         {/* molten flow: slow light streaks drifting through the gold */}
         <rect x={C - r - 240} y={4} width={r * 2 + 480} height={2 * r} fill="url(#jp-flow-g)" className="jp-flow" />
         {/* bubbles rising to the surface */}
+        <g clipPath="url(#jp-liquid-clip)">
         {BUBBLES.map((b, i) => (
-          <circle
+          <g
             key={i}
-            cx={C - r + b.x * 2 * r}
-            cy={b.depth}
-            r={b.size}
             className="jp-bubble"
-            style={{ ['--rise' as string]: `${-b.depth + 4}px`, animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` } as React.CSSProperties}
-          />
+            style={{ ['--dx' as string]: `${b.dx.toFixed(1)}px`, ['--dy' as string]: `${b.dy.toFixed(1)}px`, animationDuration: `${b.dur.toFixed(2)}s`, animationDelay: `${b.delay.toFixed(2)}s` } as React.CSSProperties}
+          >
+            <circle cx={C - r + b.x * 2 * r} cy={b.depth} r={b.size} fill="url(#jp-bubble-g)" />
+            <circle cx={C - r + b.x * 2 * r - b.size * 0.35} cy={b.depth - b.size * 0.35} r={b.size * 0.28} fill="#fff" opacity=".85" />
+          </g>
         ))}
+        </g>
       </g>
     </g>
   );
