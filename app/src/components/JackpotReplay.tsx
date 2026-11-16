@@ -8,7 +8,7 @@ import { type ReplayEntry, fetchJackpotEntries } from '../jackpotReplay';
 import { useSolPrice } from '../price';
 import { Avatar } from './Avatar';
 import { Embers } from './Embers';
-import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, VaultCoins } from './WheelFrame';
+import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, VaultLiquid, VaultGlass } from './WheelFrame';
 import { C, R_IN, R_OUT, SEGMENTS, arc, pct, polar, ring, usd } from './JackpotPage';
 
 const SPIN_MS = 6500;
@@ -105,7 +105,8 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
         <svg viewBox="0 0 400 400" className="jp-wheel" role="img" aria-label="Jackpot wheel replay">
           <WheelDefs />
           <WheelBezel />
-          <g transform={`rotate(${rot} ${C} ${C})`}>
+          <VaultLiquid total={r.total} />
+              <g transform={`rotate(${rot} ${C} ${C})`}>
             {segs.length === 0 ? (
               <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-empty" strokeWidth={R_OUT - R_IN} />
             ) : (
@@ -131,7 +132,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
             })}
           </g>
           <WheelShading />
-              <VaultCoins total={r.total} />
+              <VaultGlass />
           <WheelHub />
 
           {phase !== 'countdown' && (

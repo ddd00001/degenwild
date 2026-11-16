@@ -4,8 +4,7 @@
 // All texture is generated with SVG filters (no image files).
 import { C, R_IN, R_OUT, polar } from './JackpotPage';
 import { Coin } from './Coin';
-import { coinCount } from '../visualTiers';
-import { useEffect, useRef } from 'react';
+import { vaultFill } from '../visualTiers';
 
 
 /** Gradients, textures and filters the wheel uses. Render once inside each wheel's <svg>. */
@@ -100,6 +99,22 @@ export function WheelDefs() {
         <stop offset=".5" stopColor="#ffe08a" />
         <stop offset=".75" stopColor="#b07a1c" />
         <stop offset="1" stopColor="#4a3108" />
+      </linearGradient>
+      <linearGradient id="jp-liquid-g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#fff2b8" />
+        <stop offset=".06" stopColor="#ffd24a" />
+        <stop offset=".45" stopColor="#f0a21c" />
+        <stop offset="1" stopColor="#9a5e08" />
+      </linearGradient>
+      <linearGradient id="jp-flow-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="160" y2="60" spreadMethod="repeat">
+        <stop offset="0" stopColor="#fff3b0" stopOpacity="0" />
+        <stop offset=".45" stopColor="#fff3b0" stopOpacity=".22" />
+        <stop offset=".55" stopColor="#fff3b0" stopOpacity=".22" />
+        <stop offset="1" stopColor="#fff3b0" stopOpacity="0" />
+      </linearGradient>
+      <linearGradient id="jp-glass-g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#fff" stopOpacity=".28" />
+        <stop offset="1" stopColor="#fff" stopOpacity="0" />
       </linearGradient>
       <clipPath id="jp-vault-clip">
         <circle cx={C} cy={C} r={R_OUT - 3} />
@@ -230,72 +245,58 @@ export function WheelSheen() {
   );
 }
 
-// ---------------------------------------------------------------- the vault: coins piling up in the wheel
-// Slots fill the wheel's disc from the bottom up, staggered like a pile. Spacing is set so the lower
-// half holds ~80 coins: with 1 coin = 0.025 SOL, a 2 SOL pot fills the wheel halfway.
-const COIN_W = 32;
-const SLOT_DX = 27;
-const SLOT_DY = 22;
-type Slot = { x: number; y: number; rot: number; tilt: number };
-let VAULT: Slot[] | null = null;
-function vaultSlots(): Slot[] {
-  if (VAULT) return VAULT;
-  const r = R_OUT - 10;
-  const out: Slot[] = [];
-  let row = 0;
-  for (let y = C + r - 8; y > C - r + 6; y -= SLOT_DY) {
-    const half = Math.sqrt(Math.max(0, r * r - (y - C) * (y - C))) - COIN_W / 2;
-    const off = row % 2 ? SLOT_DX / 2 : 0;
-    for (let x = C - half + off; x <= C + half; x += SLOT_DX) {
-      const i = out.length;
-      out.push({ x: x + ((i * 37) % 7) - 3, y: y + ((i * 53) % 7) - 3, rot: ((i * 71) % 40) - 20, tilt: 0.42 + ((i * 29) % 18) / 100 });
-    }
-    row++;
-  }
-  return (VAULT = out);
-}
+// ---------------------------------------------------------------- the vault: liquid gold behind glass
+/**
+ * Molten gold inside the wheel, behind the (glass) slices. Its level follows the pot: 2 SOL fills
+ * the vault halfway (vaultFull in visualTiers). The surface waves; the level eases when it rises.
+ */
+const BUBBLES = Array.from({ length: 16 }, (_, i) => ({
+  x: 0.12 + ((i * 0.618) % 1) * 0.76,
+  depth: 30 + ((i * 47) % 120),
+  size: 1.6 + ((i * 13) % 5) * 0.6,
+  dur: 2.4 + ((i * 7) % 5) * 0.5,
+  delay: -((i * 0.83) % 4),
+}));
 
-/** One coin with real thickness: a reeded gold edge under a tilted Heads face. */
-function VaultCoin({ s }: { s: Slot }) {
-  const rx = COIN_W / 2;
-  const ry = rx * s.tilt;
-  const t = 5; // thickness
+export function VaultLiquid({ total }: { total: bigint }) {
+  const r = R_OUT - 2;
+  const level = C + r - vaultFill(total) * 2 * r; // y of the surface
+  // two wave layers, each twice the wheel's width so they can scroll seamlessly
+  const wave = (amp: number, len: number, phase: number) => {
+    let d = `M${C - r - len * 2} ${amp * Math.sin(phase)}`;
+    for (let x = C - r - len * 2; x <= C + r + len * 2; x += 8) d += `L${x} ${(amp * Math.sin(((x / len) * Math.PI * 2) + phase)).toFixed(2)}`;
+    return d + `L${C + r + len * 2} 420L${C - r - len * 2} 420Z`;
+  };
   return (
-    <g transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}>
-      <ellipse cx={0} cy={t} rx={rx} ry={ry} fill="url(#jp-coin-edge)" />
-      <rect x={-rx} y={0} width={rx * 2} height={t} fill="url(#jp-coin-edge)" />
-      <ellipse cx={0} cy={t} rx={rx} ry={ry} fill="none" stroke="#3d2a06" strokeWidth={0.8} />
-      <g transform={`scale(1 ${s.tilt})`}>
-        <use href="#jp-coin-sym" x={-rx} y={-rx} width={COIN_W} height={COIN_W} />
+    <g clipPath="url(#jp-vault-clip)" className="jp-vault" aria-hidden="true">
+      <circle cx={C} cy={C} r={r} fill="#0b0605" />
+      <g className="jp-liquid" style={{ transform: `translateY(${level}px)` }}>
+        <path d={wave(4, 60, 0)} fill="url(#jp-liquid-g)" className="jp-wave back" />
+        <path d={wave(3, 40, 1.6)} fill="url(#jp-liquid-g)" className="jp-wave front" />
+        <rect x={C - r} y={1} width={r * 2} height={3} fill="#fff6c8" opacity=".5" className="jp-liquid-shine" />
+        {/* molten flow: slow light streaks drifting through the gold */}
+        <rect x={C - r - 240} y={4} width={r * 2 + 480} height={2 * r} fill="url(#jp-flow-g)" className="jp-flow" />
+        {/* bubbles rising to the surface */}
+        {BUBBLES.map((b, i) => (
+          <circle
+            key={i}
+            cx={C - r + b.x * 2 * r}
+            cy={b.depth}
+            r={b.size}
+            className="jp-bubble"
+            style={{ ['--rise' as string]: `${-b.depth + 4}px`, animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` } as React.CSSProperties}
+          />
+        ))}
       </g>
     </g>
   );
 }
 
-/**
- * Gold coins in the wheel's vault, 1 per 0.025 SOL of pot, piling up from the bottom. Coins that
- * arrive while you watch fall in from the top of the wheel; the ones already there on load don't.
- */
-export function VaultCoins({ total }: { total: bigint }) {
-  const slots = vaultSlots();
-  const n = Math.min(slots.length, coinCount(total));
-  const shownBefore = useRef<number | null>(null);
-  const firstNew = shownBefore.current ?? n; // first render: nothing falls
-  useEffect(() => {
-    shownBefore.current = n;
-  }, [n]);
-  const top = C - R_OUT;
+/** The glass over the vault: a curved reflection so the slices read as panes in front of the gold. */
+export function VaultGlass() {
   return (
-    <g clipPath="url(#jp-vault-clip)" className="jp-vault" aria-hidden="true">
-      {slots.slice(0, n).map((s, i) => (
-        <g
-          key={i}
-          className={i >= firstNew ? 'jp-coin-fall' : undefined}
-          style={i >= firstNew ? ({ ['--fall' as string]: `${top - s.y - 20}px`, animationDelay: `${(i - firstNew) * 45}ms` } as React.CSSProperties) : undefined}
-        >
-          <VaultCoin s={s} />
-        </g>
-      ))}
+    <g className="jp-glass" aria-hidden="true">
+      <path d={`M${C - R_OUT + 18} ${C - 30} A${R_OUT - 18} ${R_OUT - 18} 0 0 1 ${C + 40} ${C - R_OUT + 16} L${C + 30} ${C - R_OUT + 34} A${R_OUT - 36} ${R_OUT - 36} 0 0 0 ${C - R_OUT + 36} ${C - 22} Z`} fill="url(#jp-glass-g)" />
     </g>
   );
 }

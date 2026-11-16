@@ -9,7 +9,7 @@ import { fetchJackpotEntries } from '../jackpotReplay';
 import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
-import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, VaultCoins } from './WheelFrame';
+import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, VaultLiquid, VaultGlass } from './WheelFrame';
 import { fmtUsd, useSolPrice } from '../price';
 import { crossedMilestone, jackpotTier } from '../visualTiers';
 import { play } from '../sound';
@@ -432,6 +432,7 @@ export function JackpotPage(props: {
               {/* outer rim with tick marks */}
               <WheelBezel />
 
+              <VaultLiquid total={phase === 'result' && result ? result.total : potLamports} />
               <g transform={`rotate(${rot} ${C} ${C})`}>
                 {segments.length === 0 ? (
                   <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-empty" strokeWidth={R_OUT - R_IN} />
@@ -466,7 +467,7 @@ export function JackpotPage(props: {
                 })}
               </g>
               <WheelShading empty={wheelSegs.length === 0} />
-              <VaultCoins total={phase === 'result' && result ? result.total : potLamports} />
+              <VaultGlass />
 
               {/* hub with the pot and countdown */}
               <WheelHub />

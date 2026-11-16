@@ -85,9 +85,13 @@ if (process.argv[2] === 'sweep') {
   // crowd: 4 wallets join one by one (8s apart) so the site's join animations, colors and milestones can be watched.
   // eleven: 11 wallets, 7s apart; the pot crosses 0.5 (3rd), 1 (5th), 2 (7th) and 5 SOL (11th).
   const eleven = process.argv[2] === 'eleven';
-  const crowd = process.argv[2] === 'crowd' || eleven;
+  // fourteen: 14 wallets, ~3 SOL total (vault ~3/4 full), 6s apart.
+  const fourteen = process.argv[2] === 'fourteen';
+  const crowd = process.argv[2] === 'crowd' || eleven || fourteen;
   const onlyEnter = process.argv[2] === 'enter' || crowd;
-  const stakes = eleven
+  const stakes = fourteen
+    ? [150, 100, 250, 200, 300, 100, 150, 350, 200, 250, 150, 300, 100, 200].map((m) => BigInt(m) * 1_000_000n)
+    : eleven
     ? [200, 200, 150, 250, 300, 400, 600, 700, 900, 600, 800].map((m) => BigInt(m) * 1_000_000n)
     : crowd
     ? [150_000_000n, 100_000_000n, 350_000_000n, 400_000_000n]
@@ -102,7 +106,7 @@ if (process.argv[2] === 'sweep') {
     const j = await fetchJackpot(c.rpc);
     await c.sendTransaction([await buildEnterJackpot(p, stakes[i], j.state!.currentRound)]);
     console.log(`player ${i + 1} entered ${Number(stakes[i]) / 1e9} SOL`);
-    if (crowd && i < players.length - 1) await sleep(eleven ? 7000 : 8000);
+    if (crowd && i < players.length - 1) await sleep(fourteen ? 6000 : eleven ? 7000 : 8000);
   }
   if (onlyEnter) process.exit(0);
   let j = await fetchJackpot(cli.rpc);

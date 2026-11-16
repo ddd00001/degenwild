@@ -1071,3 +1071,25 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-coin-fall{animation:jp-coin-fall .75s cubic-bezier(.35,0,.6,1) backwards}
 @keyframes jp-coin-fall{0%{transform:translateY(var(--fall,-300px));opacity:0}12%{opacity:1}78%{transform:translateY(2px)}90%{transform:translateY(-4px)}100%{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.jp-coin-fall{animation:none}}
+/* ===== Vault: liquid gold behind glass slices ===== */
+.jp-liquid{transition:transform 1.2s cubic-bezier(.3,.8,.3,1)}
+.jp-wave{animation:jp-wave 6s linear infinite}
+.jp-wave.front{animation-duration:4.2s;animation-direction:reverse;opacity:.85}
+@keyframes jp-wave{from{transform:translateX(0)}to{transform:translateX(120px)}}
+.jp-liquid-shine{animation:jp-wave 5s linear infinite}
+/* the slices become tinted glass so the gold shows through */
+.jp-stage .jp-seg,.jp-replay .jp-seg{fill-opacity:.62}
+.jp-glass{pointer-events:none;mix-blend-mode:screen}
+.jp-vault{pointer-events:none}
+@media(prefers-reduced-motion:reduce){.jp-wave,.jp-liquid-shine{animation:none}.jp-liquid{transition:none}}
+/* Player panel keeps one size: rows scroll inside it instead of the panel growing */
+.jp-players{display:flex;flex-direction:column;height:300px}
+.jp-players ul{flex:1;min-height:0;max-height:none;overflow-y:auto;padding-right:4px}
+@media(max-width:760px){.jp-players{height:280px}}
+/* clearer glass so the gold reads through every pane */
+.jp-stage .jp-seg,.jp-replay .jp-seg{fill-opacity:.5}
+.jp-flow{animation:jp-flow 9s linear infinite;mix-blend-mode:screen}
+@keyframes jp-flow{from{transform:translateX(0)}to{transform:translateX(160px)}}
+.jp-bubble{fill:#fff6d0;fill-opacity:.55;stroke:#fffbe8;stroke-width:.6;stroke-opacity:.8;animation:jp-bubble 3s ease-in infinite}
+@keyframes jp-bubble{0%{transform:translateY(0);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(var(--rise));opacity:0}}
+@media(prefers-reduced-motion:reduce){.jp-flow,.jp-bubble{animation:none}.jp-bubble{display:none}}
