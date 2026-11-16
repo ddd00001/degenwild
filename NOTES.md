@@ -79,3 +79,13 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
 - `components/PriceSource.tsx`: bottom-left disclosure of the SOL/USD source (CoinGecko, Jupiter fallback; says so when stale/offline).
 - Jackpot colors: `SEGMENTS` in JackpotPage.tsx by join order (gold, red, blue, purple, …); avatars are tinted with the same color.
 - Test a busy round: `npx tsx scripts/jackpot-e2e.mts crowd` (4 wallets join 8s apart), then POST `/api/jackpot` (or keep the live site open) to draw/settle.
+
+## Session handoff (2026-11-16, in progress)
+Uncommitted local changes, type-check passes, NOT yet pushed (live `#jackpot` wheel not re-checked visually):
+- Jackpot wheel: avatars moved into their own rotating group ABOVE the glass (JackpotPage.tsx, JackpotReplay.tsx), lighter glass (`.jp-shading{opacity:.7}`, seg fill-opacity .58).
+- Welcome slideshow jackpot slide (Welcome.tsx `JackpotTeaser`) rebuilt from the shared WheelFrame parts (sticker frame, VaultLiquid, glass, claw pointer, ◎ amount).
+  Now mirrors the live round flow: join -> draining countdown ring (cd-hot/cd-final) -> ~3.3s spin -> winner card in the hub (avatar, name, ◎ amount, % chance); lighter glass applies to `.teaser .jp-seg` too. Visually checked locally at `/?welcome=3`.
+Next steps: check both locally (`npm run dev` in app/, open `/?welcome=3` and `#jackpot`), then type-check + push to master (user approves pushing directly to live).
+Wheel parts live in `app/src/components/WheelFrame.tsx` (WheelDefs/Bezel/Hub/Pointer/Shading/Sheen/VaultLiquid/VaultGlass). Vault full = 10 SOL (`vaultFull` in visualTiers.ts).
+Live test helpers: `scripts/jackpot-e2e.mts crowd|eleven|fourteen|sweep` (sweep returns test SOL to the house; use the private RPC from .env.local if rate-limited).
+User preferences: push straight to live (no previews); no emojis; DegenWild sticker/esports look, gold accents; test changes live with real rounds.

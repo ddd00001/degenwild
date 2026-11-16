@@ -454,6 +454,11 @@ export function JackpotPage(props: {
                     />
                   ))
                 )}
+              </g>
+              <WheelShading empty={wheelSegs.length === 0} />
+              <VaultGlass />
+              {/* avatars sit on top of the glass so they stay clear */}
+              <g transform={`rotate(${rot} ${C} ${C})`} className="jp-avatars">
                 {wheelSegs.map((s) => {
                   const span = s.end - s.start;
                   if (span < 9) return null;
@@ -472,8 +477,6 @@ export function JackpotPage(props: {
                   );
                 })}
               </g>
-              <WheelShading empty={wheelSegs.length === 0} />
-              <VaultGlass />
 
               {/* hub with the pot and countdown */}
               <WheelHub />

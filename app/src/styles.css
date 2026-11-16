@@ -1111,3 +1111,7 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-status{margin-top:26px}
 /* replay: player list scrolls inside a fixed box too */
 .jp-replay-players{max-height:176px;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;scrollbar-width:thin;scrollbar-color:#3a2729 transparent}
+/* lighter glass, avatars on top and easy to spot */
+.jp-stage .jp-seg,.jp-replay .jp-seg,.teaser .jp-seg{fill-opacity:.58}
+.jp-shading{opacity:.7}
+.jp-avatars .avatar-svg,.jp-avatars svg{filter:drop-shadow(0 2px 4px #000c) drop-shadow(0 0 6px #ffffff40)}

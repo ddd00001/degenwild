@@ -3,6 +3,7 @@ import { Coin, Coin3D } from './Coin';
 import { Embers } from './Embers';
 import { Avatar } from './Avatar';
 import { C, R_IN, R_OUT, SEGMENTS, arc, polar } from './JackpotPage';
+import { VaultGlass, VaultLiquid, WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen } from './WheelFrame';
 
 const SEEN_KEY = 'dw-welcome-seen';
 const SLIDES = 4;
@@ -287,10 +288,14 @@ const TEASER = [
   { player: 'teaser-wagmi', sol: 0.8 },
 ];
 const TEASER_TOTAL = TEASER.reduce((a, e) => a + e.sol, 0);
-const TEASER_WIN = 1; // flipqueen
-const LOOP_MS = 8800;
+const TEASER_WIN = 1; // "you"
+const TEASER_WIN_PCT = (TEASER[TEASER_WIN].sol / TEASER_TOTAL) * 100;
+// join -> countdown ring drains -> ~3.3s spin -> winner card in the hub (same flow as the live wheel)
 const JOIN_END = 1800;
-const SPIN_END = 6300;
+const CD_END = 3200;
+const SPIN_END = 6500;
+const LOOP_MS = 9300;
+const RING_LEN = 2 * Math.PI * (R_IN - 12);
 const ease = (t: number) => 1 - Math.pow(1 - t, 4);
 
 /** A looping mock round: players join, the wheel spins and lands on the winner. Purely illustrative. */
@@ -319,44 +324,89 @@ function JackpotTeaser() {
   // Land in the middle of the winner's slice.
   const w = segs[TEASER_WIN];
   const target = w ? 360 * 4 + (360 - (w.start + w.end) / 2) : 0;
-  const k = t < JOIN_END ? 0 : Math.min(1, (t - JOIN_END) / (SPIN_END - JOIN_END));
-  const rot = target * ease(k);
   const done = t >= SPIN_END;
+  const k = t < CD_END ? 0 : Math.min(1, (t - CD_END) / (SPIN_END - CD_END));
+  const ringFrac = t < JOIN_END ? 1 : Math.max(0, 1 - (t - JOIN_END) / (CD_END - JOIN_END));
+  const cdStage = t >= JOIN_END && t < CD_END ? (ringFrac < 0.35 ? 'cd-final' : 'cd-hot') : '';
+  const pot = (done ? TEASER_TOTAL : total).toFixed(2);
+  const potW = [...pot].reduce((a, ch) => a + (ch === '.' ? 9 : 21), 0);
+  const potLeft = C - (potW + 26) / 2;
+  const rot = target * ease(k);
 
   return (
     <div className="teaser-wrap" aria-hidden="true">
-    <div className="teaser">
+    <div className={`teaser ${cdStage}`}>
       <svg viewBox="0 0 400 400" className="jp-wheel">
-        <circle cx={C} cy={C} r={R_OUT + 12} className="jp-rim" />
-        {Array.from({ length: 60 }, (_, i) => {
-          const [x1, y1] = polar(R_OUT + 5, i * 6);
-          const [x2, y2] = polar(R_OUT + (i % 5 === 0 ? 14 : 10), i * 6);
-          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="jp-tick" />;
-        })}
+        {/* same parts as the real wheel: sticker frame, gold filling behind glass, claw pointer */}
+        <WheelDefs />
+        <WheelBezel />
+        <VaultLiquid total={BigInt(Math.round((done ? TEASER_TOTAL : total) * 1e9))} />
         <g transform={`rotate(${rot} ${C} ${C})`}>
           {segs.map((s, i) => (
             <path key={s.player} d={arc(s.start, s.end)} fill={s.color} className={`jp-seg ${done && i !== TEASER_WIN ? 'dim' : ''}`} />
           ))}
+        </g>
+        <WheelShading />
+        <VaultGlass />
+        <g transform={`rotate(${rot} ${C} ${C})`} className="jp-avatars">
           {segs.map((s) => {
             const [x, y] = polar((R_OUT + R_IN) / 2, (s.start + s.end) / 2);
             return (
               <g key={`a-${s.player}`} transform={`rotate(${-rot} ${x} ${y})`}>
-                <Avatar address={s.player} size={40} x={x - 20} y={y - 20} ring={s.color} />
+                <Avatar address={s.player} size={40} x={x - 20} y={y - 20} ring={s.color} tint={s.color} />
               </g>
             );
           })}
         </g>
-        <circle cx={C} cy={C} r={R_IN - 4} fill="#0f0a0b" className="jp-hub" />
-        <text x={C} y={C - 26} className="jp-hub-label">
-          {done ? 'WON' : t < JOIN_END ? 'PLAYERS JOINING' : 'SPINNING'}
-        </text>
-        <text x={C} y={C + 2} className="jp-hub-pot">
-          {(done ? TEASER_TOTAL : total).toFixed(2)}
-        </text>
-        <text x={C} y={C + 30} className="jp-hub-sol">
-          SOL
-        </text>
-        <path d={`M${C - 15} 2 L${C + 15} 2 L${C} 34 Z`} className="jp-pointer" />
+        <WheelHub />
+        <circle cx={C} cy={C} r={R_IN - 12} className="jp-ring-bg" />
+        <circle
+          cx={C}
+          cy={C}
+          r={R_IN - 12}
+          className={`jp-ring ${done ? 'off' : ''}`}
+          strokeDasharray={`${RING_LEN}`}
+          strokeDashoffset={`${RING_LEN * (1 - ringFrac)}`}
+          transform={`rotate(-90 ${C} ${C})`}
+          style={{ transition: 'none' }}
+        />
+        {done ? (
+          <g className="jp-hub-win" style={{ ['--win' as string]: segs[TEASER_WIN]?.color ?? '#ffd166' }}>
+            <circle cx={C} cy={C} r={R_IN - 6} className="jp-hub-win-ring" />
+            <text x={C} y={C - 56} className="jp-hub-win-label">
+              WINNER
+            </text>
+            <g className="jp-hub-win-av">
+              <Avatar address={TEASER[TEASER_WIN].player} size={50} x={C - 25} y={C - 49} ring={segs[TEASER_WIN]?.color} tint={segs[TEASER_WIN]?.color} />
+            </g>
+            <text x={C} y={C + 18} className="jp-hub-win-name">
+              You
+            </text>
+            <text x={C} y={C + 47} className="jp-hub-win-amt">
+              ◎ {TEASER_TOTAL.toFixed(2)}
+            </text>
+            <text x={C} y={C + 64} className="jp-hub-win-chance">
+              {TEASER_WIN_PCT.toFixed(2)}% chance
+            </text>
+          </g>
+        ) : (
+          <>
+            <text x={C} y={C - 36} className="jp-hub-label">
+              {t < CD_END ? 'JACKPOT' : 'SPINNING'}
+            </text>
+            <text x={potLeft + 9} y={C + 2} className="jp-hub-sol-glyph">
+              ◎
+            </text>
+            <text x={potLeft + 26} y={C + 4} className="jp-hub-pot left">
+              {pot}
+            </text>
+            <text x={C} y={C + 30} className="jp-hub-sol">
+              SOL
+            </text>
+          </>
+        )}
+        <WheelSheen />
+        <WheelPointer />
       </svg>
       {done && (
         <div className="burst">
@@ -366,7 +416,7 @@ function JackpotTeaser() {
         </div>
       )}
     </div>
-    <div className={`reel-result ${done ? 'teaser-won' : ''}`}>{done ? `YOU WON ${TEASER_TOTAL.toFixed(2)} SOL` : t < JOIN_END ? 'Players joining…' : 'Spinning…'}</div>
+    <div className={`reel-result ${done ? 'teaser-won' : ''}`}>{done ? `YOU WON ${TEASER_TOTAL.toFixed(2)} SOL` : t < JOIN_END ? 'Players joining…' : t < CD_END ? 'Round starting…' : 'Spinning…'}</div>
     </div>
   );
 }

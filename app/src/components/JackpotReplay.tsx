@@ -106,7 +106,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
           <WheelDefs />
           <WheelBezel />
           <VaultLiquid total={r.total} />
-              <g transform={`rotate(${rot} ${C} ${C})`}>
+          <g transform={`rotate(${rot} ${C} ${C})`}>
             {segs.length === 0 ? (
               <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-empty" strokeWidth={R_OUT - R_IN} />
             ) : (
@@ -119,6 +119,11 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
                 />
               ))
             )}
+          </g>
+          <WheelShading />
+          <VaultGlass />
+          {/* avatars sit on top of the glass so they stay clear */}
+          <g transform={`rotate(${rot} ${C} ${C})`} className="jp-avatars">
             {segs.map((s) => {
               const span = s.end - s.start;
               if (span < 9) return null;
@@ -131,8 +136,6 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
               );
             })}
           </g>
-          <WheelShading />
-              <VaultGlass />
           <WheelHub />
 
           {phase !== 'countdown' && (
@@ -161,7 +164,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
             </>
           )}
           <WheelSheen />
-<WheelPointer />
+          <WheelPointer />
         </svg>
         {phase === 'countdown' && (
           <div className="jp-replay-count" key={count}>
