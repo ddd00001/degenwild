@@ -9,6 +9,7 @@ import { fetchJackpotEntries } from '../jackpotReplay';
 import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
+import { WheelBezel, WheelDefs, WheelHub, WheelPointer } from './WheelFrame';
 import { fmtUsd, useSolPrice } from '../price';
 import { crossedMilestone, jackpotTier } from '../visualTiers';
 import { play } from '../sound';
@@ -336,7 +337,11 @@ export function JackpotPage(props: {
   const msPrev = useRef<{ round: bigint; total: bigint } | null>(null);
   const [celebrate, setCelebrate] = useState<{ at: number; special: boolean; key: string } | null>(null);
   useEffect(() => {
-    if (!round) return;
+    if (!view) return;
+    if (!round) {
+      msPrev.current ??= { round: -1n, total: 0n }; // saw the jackpot empty: the next round starts from 0
+      return;
+    }
     const prev = msPrev.current;
     msPrev.current = { round: round.roundId, total: round.total };
     if (!prev) return; // first look after (re)loading: never replay old milestones
@@ -351,7 +356,7 @@ export function JackpotPage(props: {
       /* storage blocked: still celebrate once for this page */
     }
     setCelebrate({ ...hit, key });
-  }, [round?.roundId, round?.total]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [view, round?.roundId, round?.total]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!celebrate) return;
     const id = window.setTimeout(() => setCelebrate(null), celebrate.special ? 3200 : 2200);
@@ -367,14 +372,19 @@ export function JackpotPage(props: {
   // ---------------------------------------------------------------- sounds (from observed round state)
   const sndPrev = useRef<{ round: bigint; players: number; countdown: boolean } | null>(null);
   useEffect(() => {
-    if (!round) return;
+    if (!view) return;
+    if (!round) {
+      sndPrev.current ??= { round: -1n, players: 0, countdown: false }; // saw it empty
+      return;
+    }
     const cur = { round: round.roundId, players: round.entries.length, countdown: round.countdownEnd > 0n };
     const prev = sndPrev.current;
     sndPrev.current = cur;
-    if (!prev || prev.round !== cur.round) return; // first look: nothing to announce
-    if (cur.players > prev.players) play('jpJoin', `jp-join:${cur.round}:${cur.players}`);
-    if (cur.countdown && !prev.countdown) play('jpCountdown', `jp-cd:${cur.round}`);
-  }, [round?.roundId, round?.entries.length, round?.countdownEnd]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!prev) return; // first look after (re)loading: nothing to announce
+    const before = prev.round === cur.round ? prev : { players: 0, countdown: false };
+    if (cur.players > before.players) play('jpJoin', `jp-join:${cur.round}:${cur.players}`);
+    if (cur.countdown && !before.countdown) play('jpCountdown', `jp-cd:${cur.round}`);
+  }, [view, round?.roundId, round?.entries.length, round?.countdownEnd]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (round && secondsLeft !== null && secondsLeft > 0 && secondsLeft <= 10 && !entriesClosed)
       play('jpTick', `jp-tick:${round.roundId}:${secondsLeft}`);
@@ -408,45 +418,10 @@ export function JackpotPage(props: {
           ) : null}
           <div className="jp-wheel-wrap" ref={wrapRef} onMouseLeave={() => setHover(null)}>
             <svg className="jp-wheel" viewBox="0 0 400 400" role="img" aria-label="Jackpot wheel">
-              <defs>
-                <radialGradient id="jp-depth" gradientUnits="userSpaceOnUse" cx={C} cy={C} r={R_OUT}>
-                  <stop offset={R_IN / R_OUT} stopColor="#000" stopOpacity=".6" />
-                  <stop offset=".74" stopColor="#000" stopOpacity="0" />
-                  <stop offset=".93" stopColor="#fff" stopOpacity=".06" />
-                  <stop offset="1" stopColor="#000" stopOpacity=".45" />
-                </radialGradient>
-                <pattern id="jp-slashes" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
-                  <rect width="2" height="9" fill="#000" fillOpacity=".16" />
-                </pattern>
-                <linearGradient id="jp-gold" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stopColor="#fff1b8" />
-                  <stop offset=".5" stopColor="#ffd166" />
-                  <stop offset="1" stopColor="#d9a12a" />
-                </linearGradient>
-                <radialGradient id="jp-hub" cx="50%" cy="40%" r="70%">
-                  <stop offset="0%" stopColor="#2a1012" />
-                  <stop offset="100%" stopColor="#0c0909" />
-                </radialGradient>
-                <filter id="jp-glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="6" result="b" />
-                  <feMerge>
-                    <feMergeNode in="b" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
+              <WheelDefs />
 
               {/* outer rim with tick marks */}
-              <circle cx={C} cy={C} r={R_OUT + 12} className="jp-rim" />
-              {/* sleek rim: a thin outer line and 8 slim blades, like the cuts in the WILD logo */}
-              <circle cx={C} cy={C} r={R_OUT + 17} className="jp-rim-line" />
-              {Array.from({ length: 8 }, (_, i) => {
-                const a = i * 45;
-                const [x1, y1] = polar(R_OUT + 4, a - 3.2);
-                const [x2, y2] = polar(R_OUT + 22, a);
-                const [x3, y3] = polar(R_OUT + 4, a + 3.2);
-                return <path key={i} d={`M${x1} ${y1}L${x2} ${y2}L${x3} ${y3}Z`} className="jp-blade" />;
-              })}
+              <WheelBezel />
 
               <g transform={`rotate(${rot} ${C} ${C})`}>
                 {segments.length === 0 ? (
@@ -484,16 +459,7 @@ export function JackpotPage(props: {
               <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-depth" strokeWidth={R_OUT - R_IN} />
 
               {/* hub with the pot and countdown */}
-              <path
-                d={
-                  Array.from({ length: 24 }, (_, i) => {
-                    const [x, y] = polar(i % 2 ? R_IN - 3 : R_IN + 1, i * 15);
-                    return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
-                  }).join('') + 'Z'
-                }
-                fill="url(#jp-hub)"
-                className="jp-hub spiky"
-              />
+              <WheelHub />
               <circle
                 cx={C}
                 cy={C}
@@ -561,10 +527,7 @@ export function JackpotPage(props: {
                 </>
               )}
 
-              {/* pointer */}
-              <g filter="url(#jp-glow)">
-                <path d={`M${C - 13} 0 L${C + 13} 0 L${C + 5} 13 L${C} 42 L${C - 5} 13 Z`} className="jp-pointer blade" />
-              </g>
+              <WheelPointer />
             </svg>
             {hover &&
               shown &&

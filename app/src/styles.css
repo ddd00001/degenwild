@@ -981,3 +981,20 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-hub-pot-row .jp-hub-sol-glyph{font-size:24px;dominant-baseline:middle;text-anchor:middle}
 .jp-hub-pot-row.bump{animation:jp-bump .6s ease-out;transform-box:fill-box;transform-origin:center}
 @media(prefers-reduced-motion:reduce){.cd-final .jp-blade{animation:none}}
+/* ===== Wheel frame v3: machined bezel, neon line, fang pointer ===== */
+.jp-bezel{fill:none;stroke:url(#jp-bezel-g)}
+.jp-bezel-edge{fill:none;stroke:#000;stroke-width:3}
+.jp-slot{fill:#050506}
+.jp-slot.lit{fill:#ff3038;filter:drop-shadow(0 0 3px #ff3038)}
+.jp-tier-3 .jp-slot.lit,.jp-tier-4 .jp-slot.lit,.jp-tier-5 .jp-slot.lit{fill:#ffd166;filter:drop-shadow(0 0 4px #f5c542)}
+.cd-final .jp-slot.lit{animation:jp-slot .5s ease-in-out infinite alternate}
+@keyframes jp-slot{to{fill:#fff1b8}}
+.jp-stage .jp-rim{fill:none;stroke:#ff3038;stroke-width:2}
+.jp-tier-4 .jp-rim,.jp-tier-5 .jp-rim{stroke:#ffd166}
+.jp-hub-neon{fill:none;stroke:#ff3038;stroke-width:1.5;filter:drop-shadow(0 0 5px #ff3038)}
+.jp-tier-4 .jp-hub-neon,.jp-tier-5 .jp-hub-neon{stroke:#ffd166;filter:drop-shadow(0 0 5px #f5c542)}
+.jp-pointer.fang{fill:url(#jp-fang);stroke:#0a0505;stroke-width:2;stroke-linejoin:round;filter:drop-shadow(0 3px 6px #000c) drop-shadow(0 0 8px #ff303888)}
+.jp-pointer-shine{fill:#ffffff55}
+.jp-pivot{fill:url(#jp-pivot-g);stroke:#000;stroke-width:1.5}
+.jp-seg{stroke:#060303;stroke-width:4}
+@media(prefers-reduced-motion:reduce){.cd-final .jp-slot.lit{animation:none}}
