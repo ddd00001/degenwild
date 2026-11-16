@@ -122,8 +122,9 @@ export function WheelDefs() {
         <stop offset="1" stopColor="#fffbe8" stopOpacity=".15" />
       </radialGradient>
       <linearGradient id="jp-glass-g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#fff" stopOpacity=".28" />
-        <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        <stop offset="0" stopColor="#fff" stopOpacity=".55" />
+        <stop offset=".55" stopColor="#fff" stopOpacity=".18" />
+        <stop offset="1" stopColor="#fff" stopOpacity=".04" />
       </linearGradient>
       <clipPath id="jp-liquid-clip">
         <rect x={0} y={4} width={400} height={420} />
@@ -262,17 +263,17 @@ export function WheelSheen() {
  * the vault halfway (vaultFull in visualTiers). The surface waves; the level eases when it rises.
  */
 // Bubbles drift in every direction at different depths, sizes and speeds (fixed seeds: same on every load).
-const BUBBLES = Array.from({ length: 22 }, (_, i) => {
+const BUBBLES = Array.from({ length: 12 }, (_, i) => {
   const a = rnd(i, 21) * Math.PI * 2;
-  const dist = 14 + rnd(i, 22) * 34;
+  const dist = 6 + rnd(i, 22) * 16; // heavy liquid: bubbles barely travel
   return {
     x: 0.06 + rnd(i, 23) * 0.88,
     depth: 8 + rnd(i, 24) * 150,
     size: 1.2 + rnd(i, 25) * 3.2,
     dx: Math.cos(a) * dist,
     dy: Math.sin(a) * dist * 0.7,
-    dur: 3.2 + rnd(i, 26) * 4,
-    delay: -rnd(i, 27) * 6,
+    dur: 9 + rnd(i, 26) * 7,
+    delay: -rnd(i, 27) * 16,
   };
 });
 
@@ -314,9 +315,22 @@ export function VaultLiquid({ total }: { total: bigint }) {
 
 /** The glass over the vault: a curved reflection so the slices read as panes in front of the gold. */
 export function VaultGlass() {
+  const R = R_OUT - 6;
+  const arc = (r: number, a0: number, a1: number) => {
+    const [x0, y0] = polar(r, a0);
+    const [x1, y1] = polar(r, a1);
+    return { x0, y0, x1, y1 };
+  };
+  // a crisp crescent on the top-left, with a hard bright edge, plus one thin secondary streak
+  const o = arc(R, 292, 338);
+  const n = arc(R - 16, 296, 334);
+  const s1 = arc(R - 26, 300, 322);
+  const s2 = arc(R - 31, 302, 320);
   return (
     <g className="jp-glass" aria-hidden="true">
-      <path d={`M${C - R_OUT + 18} ${C - 30} A${R_OUT - 18} ${R_OUT - 18} 0 0 1 ${C + 40} ${C - R_OUT + 16} L${C + 30} ${C - R_OUT + 34} A${R_OUT - 36} ${R_OUT - 36} 0 0 0 ${C - R_OUT + 36} ${C - 22} Z`} fill="url(#jp-glass-g)" />
+      <path d={`M${o.x0} ${o.y0}A${R} ${R} 0 0 1 ${o.x1} ${o.y1}L${n.x1} ${n.y1}A${R - 16} ${R - 16} 0 0 0 ${n.x0} ${n.y0}Z`} fill="url(#jp-glass-g)" />
+      <path d={`M${o.x0} ${o.y0}A${R} ${R} 0 0 1 ${o.x1} ${o.y1}`} fill="none" stroke="#fff" strokeOpacity=".85" strokeWidth={1.6} strokeLinecap="round" />
+      <path d={`M${s1.x0} ${s1.y0}A${R - 26} ${R - 26} 0 0 1 ${s1.x1} ${s1.y1}L${s2.x1} ${s2.y1}A${R - 31} ${R - 31} 0 0 0 ${s2.x0} ${s2.y0}Z`} fill="#fff" fillOpacity=".22" />
     </g>
   );
 }

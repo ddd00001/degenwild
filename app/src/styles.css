@@ -1103,3 +1103,5 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-flow{animation-duration:22s}
 .jp-liquid-shine{animation-duration:13s}
 .jp-liquid{transition-duration:2.2s}
+.jp-bubble{animation-timing-function:cubic-bezier(.45,0,.55,1)}
+.jp-glass{mix-blend-mode:normal}
