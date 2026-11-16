@@ -4,7 +4,8 @@
 // All texture is generated with SVG filters (no image files).
 import { C, R_IN, R_OUT, polar } from './JackpotPage';
 import { Coin } from './Coin';
-import { coinFill } from '../visualTiers';
+import { coinCount } from '../visualTiers';
+import { useEffect, useRef } from 'react';
 
 // Read the wheel size at render time (this file and JackpotPage import each other).
 const BEZEL_W = 18;
@@ -96,6 +97,16 @@ export function WheelDefs() {
         <stop offset=".58" stopColor="#ffe08a" stopOpacity=".12" />
         <stop offset="1" stopColor="#fff6d6" stopOpacity="0" />
       </linearGradient>
+      <linearGradient id="jp-coin-edge" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#5e3f0a" />
+        <stop offset=".25" stopColor="#c98a1d" />
+        <stop offset=".5" stopColor="#ffe08a" />
+        <stop offset=".75" stopColor="#b07a1c" />
+        <stop offset="1" stopColor="#4a3108" />
+      </linearGradient>
+      <clipPath id="jp-vault-clip">
+        <circle cx={C} cy={C} r={R_OUT - 3} />
+      </clipPath>
       <clipPath id="jp-hub-clip">
         <circle cx={C} cy={C} r={R_IN - 9} />
       </clipPath>
@@ -222,37 +233,70 @@ export function WheelSheen() {
   );
 }
 
-// Coin slots in the hub, bottom row first, staggered like a pile. Fixed jitter so a refresh looks the same.
-const COIN_R = 12;
-const HUB_R = () => R_IN - 9;
-function pileSlots() {
-  const out: { x: number; y: number; rot: number; tilt: number }[] = [];
-  const r = HUB_R();
+// ---------------------------------------------------------------- the vault: coins piling up in the wheel
+// Slots fill the wheel's disc from the bottom up, staggered like a pile. Spacing is set so the lower
+// half holds ~80 coins: with 1 coin = 0.025 SOL, a 2 SOL pot fills the wheel halfway.
+const COIN_W = 32;
+const SLOT_DX = 27;
+const SLOT_DY = 22;
+type Slot = { x: number; y: number; rot: number; tilt: number };
+let VAULT: Slot[] | null = null;
+function vaultSlots(): Slot[] {
+  if (VAULT) return VAULT;
+  const r = R_OUT - 10;
+  const out: Slot[] = [];
   let row = 0;
-  for (let y = C + r - COIN_R * 0.55; y > C - r; y -= COIN_R * 0.95) {
-    const half = Math.sqrt(Math.max(0, r * r - (y - C) * (y - C)));
-    const off = row % 2 ? COIN_R : 0;
-    for (let x = C - half + COIN_R * 0.6 + off; x < C + half - COIN_R * 0.4; x += COIN_R * 1.9) {
+  for (let y = C + r - 8; y > C - r + 6; y -= SLOT_DY) {
+    const half = Math.sqrt(Math.max(0, r * r - (y - C) * (y - C))) - COIN_W / 2;
+    const off = row % 2 ? SLOT_DX / 2 : 0;
+    for (let x = C - half + off; x <= C + half; x += SLOT_DX) {
       const i = out.length;
-      out.push({ x: x + ((i * 37) % 7) - 3, y: y + ((i * 53) % 5) - 2, rot: ((i * 71) % 60) - 30, tilt: 0.42 + ((i * 29) % 25) / 100 });
+      out.push({ x: x + ((i * 37) % 7) - 3, y: y + ((i * 53) % 7) - 3, rot: ((i * 71) % 40) - 20, tilt: 0.42 + ((i * 29) % 18) / 100 });
     }
     row++;
   }
-  return out;
+  return (VAULT = out);
 }
-let SLOTS: ReturnType<typeof pileSlots> | null = null;
 
-/** Gold coins piling up inside the hub; 2 SOL fills it halfway (see coinsFull in visualTiers). */
-export function HubCoins({ total }: { total: bigint }) {
-  SLOTS ??= pileSlots();
-  const r = HUB_R();
-  const level = C + r - coinFill(total) * 2 * r; // y of the pile's top
-  const coins = SLOTS.filter((c) => c.y >= level);
+/** One coin with real thickness: a reeded gold edge under a tilted Heads face. */
+function VaultCoin({ s }: { s: Slot }) {
+  const rx = COIN_W / 2;
+  const ry = rx * s.tilt;
+  const t = 5; // thickness
   return (
-    <g clipPath="url(#jp-hub-clip)" className="jp-coins" aria-hidden="true">
-      {coins.map((c, i) => (
-        <g key={i} transform={`translate(${c.x} ${c.y}) rotate(${c.rot}) scale(1 ${c.tilt})`}>
-          <use href="#jp-coin-sym" x={-COIN_R} y={-COIN_R} width={COIN_R * 2} height={COIN_R * 2} className="jp-coin" />
+    <g transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}>
+      <ellipse cx={0} cy={t} rx={rx} ry={ry} fill="url(#jp-coin-edge)" />
+      <rect x={-rx} y={0} width={rx * 2} height={t} fill="url(#jp-coin-edge)" />
+      <ellipse cx={0} cy={t} rx={rx} ry={ry} fill="none" stroke="#3d2a06" strokeWidth={0.8} />
+      <g transform={`scale(1 ${s.tilt})`}>
+        <use href="#jp-coin-sym" x={-rx} y={-rx} width={COIN_W} height={COIN_W} />
+      </g>
+    </g>
+  );
+}
+
+/**
+ * Gold coins in the wheel's vault, 1 per 0.025 SOL of pot, piling up from the bottom. Coins that
+ * arrive while you watch fall in from the top of the wheel; the ones already there on load don't.
+ */
+export function VaultCoins({ total }: { total: bigint }) {
+  const slots = vaultSlots();
+  const n = Math.min(slots.length, coinCount(total));
+  const shownBefore = useRef<number | null>(null);
+  const firstNew = shownBefore.current ?? n; // first render: nothing falls
+  useEffect(() => {
+    shownBefore.current = n;
+  }, [n]);
+  const top = C - R_OUT;
+  return (
+    <g clipPath="url(#jp-vault-clip)" className="jp-vault" aria-hidden="true">
+      {slots.slice(0, n).map((s, i) => (
+        <g
+          key={i}
+          className={i >= firstNew ? 'jp-coin-fall' : undefined}
+          style={i >= firstNew ? ({ ['--fall' as string]: `${top - s.y - 20}px`, animationDelay: `${(i - firstNew) * 45}ms` } as React.CSSProperties) : undefined}
+        >
+          <VaultCoin s={s} />
         </g>
       ))}
     </g>

@@ -8,7 +8,7 @@ import { type ReplayEntry, fetchJackpotEntries } from '../jackpotReplay';
 import { useSolPrice } from '../price';
 import { Avatar } from './Avatar';
 import { Embers } from './Embers';
-import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, HubCoins } from './WheelFrame';
+import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, VaultCoins } from './WheelFrame';
 import { C, R_IN, R_OUT, SEGMENTS, arc, pct, polar, ring, usd } from './JackpotPage';
 
 const SPIN_MS = 6500;
@@ -131,8 +131,9 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
             })}
           </g>
           <WheelShading />
+              <VaultCoins total={r.total} />
           <WheelHub />
-<HubCoins total={r.total} />
+
           {phase !== 'countdown' && (
             <>
               <text x={C} y={C - 36} className="jp-hub-label">

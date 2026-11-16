@@ -9,7 +9,7 @@ import { fetchJackpotEntries } from '../jackpotReplay';
 import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
-import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, HubCoins } from './WheelFrame';
+import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, VaultCoins } from './WheelFrame';
 import { fmtUsd, useSolPrice } from '../price';
 import { crossedMilestone, jackpotTier } from '../visualTiers';
 import { play } from '../sound';
@@ -466,10 +466,11 @@ export function JackpotPage(props: {
                 })}
               </g>
               <WheelShading empty={wheelSegs.length === 0} />
+              <VaultCoins total={phase === 'result' && result ? result.total : potLamports} />
 
               {/* hub with the pot and countdown */}
               <WheelHub />
-              <HubCoins total={phase === 'result' && result ? result.total : potLamports} />
+              
               <circle
                 cx={C}
                 cy={C}

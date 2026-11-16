@@ -1066,3 +1066,8 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-usd-tip span{color:#ffd166;font:700 12px Inter,sans-serif;font-variant-numeric:tabular-nums}
 .jp-usd-tip em{color:#8e8181;font:500 10px/1.4 Inter,sans-serif;font-style:normal}
 .jp-usd-corner:hover .jp-usd-tip,.jp-usd-corner:focus-visible .jp-usd-tip{opacity:1;transform:none}
+/* Vault coins: fall from the top of the wheel and bounce onto the pile */
+.jp-vault{pointer-events:none;filter:drop-shadow(0 3px 3px #000a)}
+.jp-coin-fall{animation:jp-coin-fall .75s cubic-bezier(.35,0,.6,1) backwards}
+@keyframes jp-coin-fall{0%{transform:translateY(var(--fall,-300px));opacity:0}12%{opacity:1}78%{transform:translateY(2px)}90%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.jp-coin-fall{animation:none}}

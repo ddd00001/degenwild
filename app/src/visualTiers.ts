@@ -26,13 +26,13 @@ type JackpotTiers = {
   milestones: number[];
   /** The milestone that gets the bigger celebration. */
   special: number;
-  /** Pot (SOL) at which the coin pile fills the hub completely (half of it = half full). */
-  coinsFull: number;
+  /** SOL each falling coin in the wheel's vault stands for (devnet: 0.025, so 2 SOL = 80 coins = half full). */
+  coinValue: number;
 };
 
 const DEVNET = {
   coinflip: { enhanced: 0.1, premium: 0.25, elite: 0.5, max: 10 } satisfies CoinflipTiers,
-  jackpot: { growing: 0.25, big: 0.5, major: 1, mega: 5, max: 20, milestones: [0.5, 1, 2, 5], special: 1, coinsFull: 4 } satisfies JackpotTiers,
+  jackpot: { growing: 0.25, big: 0.5, major: 1, mega: 5, max: 20, milestones: [0.5, 1, 2, 5], special: 1, coinValue: 0.025 } satisfies JackpotTiers,
 };
 
 /** Mainnet thresholds are not decided yet: until a `mainnet` entry exists, the devnet values apply. */
@@ -81,7 +81,7 @@ export function crossedMilestone(beforeLamports: bigint, afterLamports: bigint):
   return { at: hits[hits.length - 1], special: hits.includes(j.special) };
 }
 
-/** How full the hub's coin pile is (0..1) for a pot. */
-export function coinFill(totalLamports: bigint): number {
-  return clamp01(sol(totalLamports) / ACTIVE.jackpot.coinsFull);
+/** How many coins the vault shows for a pot (1 coin = coinValue SOL). */
+export function coinCount(totalLamports: bigint): number {
+  return Math.floor(sol(totalLamports) / ACTIVE.jackpot.coinValue + 1e-9);
 }
