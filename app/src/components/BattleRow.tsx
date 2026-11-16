@@ -3,10 +3,13 @@ import { type BattleView, type Randomness, opponentOf, payoutFor, refundDeadline
 import { BattleStatus } from '../generated';
 import { Coin } from './Coin';
 import { Amount } from './Amount';
+import { coinflipTier } from '../visualTiers';
 import { SIDE_NAME, fmtSol, short, type Names } from '../format';
 
 export function BattleRow(props: {
   b: BattleView;
+  /** Just matched by someone: shown briefly in the lobby before it leaves. */
+  flash?: boolean;
   names: Names;
   me?: Address;
   slot: bigint;
@@ -103,8 +106,16 @@ export function BattleRow(props: {
       break;
   }
 
+  // Visual tier from the open pot shown on the card (creator's stake), only while joinable.
+  const tier = open ? coinflipTier(b.amount) : null;
+  const tierClass = tier ? `pot-tier-${tier.tier}${tier.ultimate ? ' pot-ultimate' : ''}` : '';
+
   return (
-    <div className={`battle-row ${rowClass}`}>
+    <div
+      className={`battle-row ${rowClass} ${tierClass} ${props.flash ? 'row-matched' : ''}`}
+      data-key={b.address}
+      style={tier ? ({ ['--pot-i' as string]: tier.intensity.toFixed(3) } as React.CSSProperties) : undefined}
+    >
       <div className="player">
         <span className={`row-coin ${b.creatorSide === 1 ? 'tails' : 'heads'} ${winner === b.creator ? 'win' : ''}`}>{b.creatorSide <= 1 ? <Coin side={b.creatorSide as 0 | 1} /> : '?'}</span>
         <div>
@@ -130,7 +141,7 @@ export function BattleRow(props: {
             <span className="pot-num">{fmtSol(pot)} SOL</span>
           </span>
         </div>
-        {meta !== 'POT' && <small>{meta}</small>}
+        {props.flash ? <small className="matched-tag">MATCHED · FLIPPING</small> : meta !== 'POT' && <small>{meta}</small>}
       </div>
       <div className="battle-action">
         {/* Once the coin has landed, ▶ (replay) opens the same pop-up, so View is hidden. */}

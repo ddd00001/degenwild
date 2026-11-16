@@ -95,3 +95,37 @@ const LEAVES: [number, number, number][] = [
 ];
 
 const STAR = 'M50 33 L54.6 44.4 L66.8 45.2 L57.4 53 L60.4 65 L50 58.4 L39.6 65 L42.6 53 L33.2 45.2 L45.4 44.4 Z';
+
+const EDGE_LAYERS = 14;
+
+/**
+ * A coin with real thickness: two faces plus stacked edge slices, flipped end over end (rotateX).
+ * `angle` is where it should end up (multiples of 360 = heads up, +180 = tails up); the caller
+ * derives it from the confirmed result, the animation only shows it.
+ */
+export function Coin3D({ angle, durationMs, idle, tossing }: { angle: number; durationMs?: number; idle?: boolean; tossing?: boolean }) {
+  return (
+    <div
+      className={`coin3d-wrap ${idle ? 'idle' : ''} ${tossing ? 'tossing' : ''}`}
+      style={{ ['--toss-ms' as string]: `${durationMs ?? 0}ms` }}
+    >
+      <div
+        className="coin3d"
+        style={{
+          transform: `rotateX(${angle}deg)`,
+          transition: durationMs ? `transform ${durationMs}ms cubic-bezier(.15,.7,.2,1)` : 'none',
+        }}
+      >
+        {Array.from({ length: EDGE_LAYERS }, (_, i) => (
+          <div key={i} className="coin-edge" style={{ ['--z' as string]: (i / (EDGE_LAYERS - 1) - 0.5).toFixed(3) }} />
+        ))}
+        <div className="coin-face heads">
+          <Coin side={0} detailed />
+        </div>
+        <div className="coin-face tails">
+          <Coin side={1} detailed />
+        </div>
+      </div>
+    </div>
+  );
+}

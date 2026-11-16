@@ -2,8 +2,12 @@
 //   npx tsx scripts/jackpot-e2e.mts init
 //   npx tsx scripts/jackpot-e2e.mts round    (full round, 3 wallets)
 //   npx tsx scripts/jackpot-e2e.mts enter    (2 wallets enter, the site/keeper does the rest)
+//   npx tsx scripts/jackpot-e2e.mts crowd    (4 wallets join 8s apart: 0.15/0.10/0.35/0.40 SOL)
+//   npx tsx scripts/jackpot-e2e.mts sweep    (send everything left in saved test wallets back to the house)
+// Test wallet keys are saved to ~/.config/solana/degenwild-test-wallets.json (outside the repo) so no SOL is stranded.
 import { homedir } from 'node:os';
-import { AccountRole, type Instruction, createClient, generateKeyPairSigner, getU32Encoder, getU64Encoder, address } from '@solana/kit';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { AccountRole, type Instruction, type KeyPairSigner, createClient, createKeyPairSignerFromPrivateKeyBytes, getU32Encoder, getU64Encoder, address } from '@solana/kit';
 import { solanaRpc } from '@solana/kit-plugin-rpc';
 import { signer, signerFromFile } from '@solana/kit-plugin-signer';
 import { buildDrawJackpot, buildEnterJackpot, buildInitJackpot, buildSettleJackpot, describeError, fetchJackpot, fetchRandomnessBytes, jackpotWinner } from '../src/chain.ts';
@@ -11,6 +15,17 @@ import { buildDrawJackpot, buildEnterJackpot, buildInitJackpot, buildSettleJackp
 const RPC = process.env.VITE_RPC_URL ?? 'https://api.devnet.solana.com';
 const cli = await createClient().use(signerFromFile(`${homedir()}/.config/solana/id.json`)).use(solanaRpc({ rpcUrl: RPC }));
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const HOUSE = address('CMSsRH5GeVceA6Ck3nhi63C8o6ZgJQR3mujypXHF7sqo');
+const WALLETS_FILE = `${homedir()}/.config/solana/degenwild-test-wallets.json`;
+const toHex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+const fromHex = (h: string) => new Uint8Array(h.match(/../g)!.map((x) => parseInt(x, 16)));
+const savedSeeds = (): string[] => (existsSync(WALLETS_FILE) ? (JSON.parse(readFileSync(WALLETS_FILE, 'utf8')) as string[]) : []);
+/** A throwaway wallet whose key is kept on disk, so `sweep` can return its SOL later. */
+async function testWallet(): Promise<KeyPairSigner> {
+  const seed = crypto.getRandomValues(new Uint8Array(32));
+  writeFileSync(WALLETS_FILE, JSON.stringify([...savedSeeds(), toHex(seed)]), { mode: 0o600 });
+  return createKeyPairSignerFromPrivateKeyBytes(seed);
+}
 
 function transfer(to: string, lamports: bigint): Instruction {
   const data = new Uint8Array(12);
@@ -26,7 +41,40 @@ function transfer(to: string, lamports: bigint): Instruction {
   };
 }
 
-if (process.argv[2] === 'init') {
+if (process.argv[2] === 'sweep') {
+  let total = 0n;
+  const keep: string[] = [];
+  for (const hex of savedSeeds()) {
+    const kp = await createKeyPairSignerFromPrivateKeyBytes(fromHex(hex));
+    const c = await createClient().use(signer(kp)).use(solanaRpc({ rpcUrl: RPC }));
+    const bal = BigInt((await c.rpc.getBalance(kp.address).send()).value);
+    const amount = bal - 5_000n;
+    if (amount <= 0n) continue;
+    const data = new Uint8Array(12);
+    data.set(getU32Encoder().encode(2), 0);
+    data.set(getU64Encoder().encode(amount), 4);
+    try {
+      await c.sendTransaction([
+        {
+          programAddress: address('11111111111111111111111111111111'),
+          accounts: [
+            { address: kp.address, role: AccountRole.WRITABLE_SIGNER, signer: kp } as never,
+            { address: HOUSE, role: AccountRole.WRITABLE },
+          ],
+          data,
+        },
+      ]);
+      total += amount;
+      console.log(`${kp.address}: returned ${Number(amount) / 1e9} SOL`);
+    } catch (e) {
+      keep.push(hex); // still in a round, try again later
+      console.log(`${kp.address}: kept (${describeError(e)})`);
+    }
+  }
+  writeFileSync(WALLETS_FILE, JSON.stringify(keep), { mode: 0o600 });
+  console.log(`returned ${Number(total) / 1e9} SOL to the house`);
+  process.exit(0);
+} else if (process.argv[2] === 'init') {
   const j = await fetchJackpot(cli.rpc);
   if (j.state) console.log('already initialized, current round', j.state.currentRound);
   else {
@@ -34,15 +82,23 @@ if (process.argv[2] === 'init') {
     console.log('initialized:', (await fetchJackpot(cli.rpc)).state);
   }
 } else {
-  const onlyEnter = process.argv[2] === 'enter';
-  const stakes = onlyEnter ? [300_000_000n, 200_000_000n] : [1_000_000_000n, 2_000_000_000n, 500_000_000n];
-  const players = await Promise.all(stakes.map(() => generateKeyPairSigner()));
+  // crowd: 4 wallets join one by one (8s apart) so the site's join animations, colors and milestones can be watched.
+  const crowd = process.argv[2] === 'crowd';
+  const onlyEnter = process.argv[2] === 'enter' || crowd;
+  const stakes = crowd
+    ? [150_000_000n, 100_000_000n, 350_000_000n, 400_000_000n]
+    : onlyEnter
+      ? [300_000_000n, 200_000_000n]
+      : [1_000_000_000n, 2_000_000_000n, 500_000_000n];
+  const players: KeyPairSigner[] = [];
+  for (const _ of stakes) players.push(await testWallet());
   await cli.sendTransaction(players.map((p, i) => transfer(p.address, stakes[i] + 30_000_000n)));
   for (const [i, p] of players.entries()) {
     const c = await createClient().use(signer(p)).use(solanaRpc({ rpcUrl: RPC }));
     const j = await fetchJackpot(c.rpc);
     await c.sendTransaction([await buildEnterJackpot(p, stakes[i], j.state!.currentRound)]);
     console.log(`player ${i + 1} entered ${Number(stakes[i]) / 1e9} SOL`);
+    if (crowd && i < players.length - 1) await sleep(8000);
   }
   if (onlyEnter) process.exit(0);
   let j = await fetchJackpot(cli.rpc);

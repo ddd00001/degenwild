@@ -93,12 +93,22 @@ export function avatarName(address: string): string {
   return SYMBOLS[Math.floor(i / 10)].name;
 }
 
-/** Round avatar for a wallet. `size` in px. Usable inside HTML or (with `x`/`y`) inside an SVG. */
-export function Avatar({ address, size = 32, x, y, ring }: { address: string; size?: number; x?: number; y?: number; ring?: string }) {
+/** Darker shade of a #rrggbb color, for the avatar gradient when it's tinted. */
+function shade(hex: string, f = 0.45): string {
+  const n = parseInt(hex.slice(1, 7), 16);
+  const c = (v: number) => Math.round(v * f).toString(16).padStart(2, '0');
+  return `#${c(n >> 16)}${c((n >> 8) & 255)}${c(n & 255)}`;
+}
+
+/**
+ * Round avatar for a wallet. `size` in px. Usable inside HTML or (with `x`/`y`) inside an SVG.
+ * `tint` recolors the background (e.g. the player's jackpot color) while keeping their symbol.
+ */
+export function Avatar({ address, size = 32, x, y, ring, tint }: { address: string; size?: number; x?: number; y?: number; ring?: string; tint?: string }) {
   const i = avatarIndex(address);
-  const [c1, c2] = COLORS[i % 10];
+  const [c1, c2] = tint ? [tint, shade(tint)] : COLORS[i % 10];
   const sym = SYMBOLS[Math.floor(i / 10)];
-  const gid = `av-${i}`;
+  const gid = tint ? `av-${i}-${tint.slice(1)}` : `av-${i}`;
   return (
     <svg
       className="avatar-svg"

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Coin } from './Coin';
+import { Coin, Coin3D } from './Coin';
 import { Embers } from './Embers';
 import { Avatar } from './Avatar';
 import { C, R_IN, R_OUT, SEGMENTS, arc, polar } from './JackpotPage';
@@ -252,21 +252,8 @@ function DemoReel() {
                   <div className="match-count">{count}</div>
                 </div>
               ) : (
-                <div className="coin3d-wrap reel-flip">
-                  <div
-                    className="coin3d"
-                    style={{
-                      transform: `rotateY(${spun ? 360 * 5 + 180 : 0}deg)`,
-                      transition: spun ? 'transform 2000ms cubic-bezier(.15,.7,.2,1)' : 'none',
-                    }}
-                  >
-                    <div className="coin-face heads">
-                      <Coin side={0} detailed />
-                    </div>
-                    <div className="coin-face tails">
-                      <Coin side={1} detailed />
-                    </div>
-                  </div>
+                <div className="reel-flip">
+                  <Coin3D angle={spun ? 360 * 5 + 180 : 0} durationMs={spun ? 2000 : undefined} tossing={spun && stage === 'flip'} />
                   {stage === 'win' && (
                     <div className="burst">
                       {Array.from({ length: 12 }, (_, n) => (

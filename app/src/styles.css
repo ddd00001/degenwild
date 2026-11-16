@@ -796,3 +796,188 @@ a.jp-winner-tx:hover{color:#fff}
 .teaser .burst{inset:30%}
 .teaser-won{color:#7cf09c;text-shadow:0 0 22px #2f8a4788;animation:winPop .5s cubic-bezier(.2,1.5,.4,1) both}
 @media(max-width:500px){.teaser{width:160px;height:160px}}
+
+/* ===== Coinflip lobby: visual tiers by OPEN POT (thresholds in src/visualTiers.ts) ===== */
+/* Tier 1 (< enhanced): clean, no sweep */
+.pot-tier-1 .pot-val .pot-num{animation:none;background-position:0 0}
+.pot-tier-1 .pot-val{filter:none}
+/* Tier 2: standard sweep, subtle glow */
+.pot-tier-2 .pot-val .pot-num{animation-duration:5s}
+.pot-tier-2 .pot-val{filter:drop-shadow(0 0 10px #f5c54233)}
+/* Tier 3: brighter, faster sweep, warmer card */
+.pot-tier-3 .pot-val .pot-num{animation-duration:3.6s;background-image:linear-gradient(100deg,#ffd166 0%,#ffd166 38%,#ffffff 50%,#ffd166 62%,#ffd166 100%)}
+.pot-tier-3 .pot-val{filter:drop-shadow(0 0 14px #f5c54255)}
+.battle-row.pot-tier-3{border-color:#f5c54233}
+/* Tier 4: strongest, scales with --pot-i (0 at the elite bound, 1 at the max) */
+.pot-tier-4 .pot-val .pot-num{animation-duration:calc(3s - 1.4s * var(--pot-i,0));background-image:linear-gradient(100deg,#ffd166 0%,#ffd166 36%,#ffffff 50%,#ffd166 64%,#ffd166 100%)}
+.pot-tier-4 .pot-val{font-size:calc(32px + 6px * var(--pot-i,0));filter:drop-shadow(0 0 calc(14px + 14px * var(--pot-i,0)) rgba(245,197,66,calc(.4 + .35 * var(--pot-i,0))))}
+.battle-row.pot-tier-4{border-color:rgba(245,197,66,calc(.28 + .4 * var(--pot-i,0)));background:linear-gradient(90deg,#121010 55%,rgba(245,197,66,calc(.04 + .1 * var(--pot-i,0))));box-shadow:0 0 calc(10px + 22px * var(--pot-i,0)) rgba(245,197,66,calc(.06 + .16 * var(--pot-i,0)))}
+.pot-tier-4 .pot-tag{color:#ffd166;text-shadow:0 0 8px #f5c54280}
+/* The max pot: a slow gold edge that travels around the card */
+.battle-row.pot-ultimate{position:relative;border-color:#ffd166;isolation:isolate}
+.battle-row.pot-ultimate::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:conic-gradient(from var(--pot-ring,0deg),transparent 0 70%,#ffd166 85%,#fff8e1 90%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:pot-ring 4s linear infinite;pointer-events:none}
+.pot-ultimate .pot-tag::after{content:" · MAX";color:#fff8e1}
+@property --pot-ring{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes pot-ring{to{--pot-ring:360deg}}
+/* New battles slide in once (never on refresh) */
+.battle-row.row-enter{animation:row-enter .5s cubic-bezier(.2,.8,.2,1) backwards}
+@keyframes row-enter{0%{opacity:0;transform:translateY(-8px) scale(.98);box-shadow:0 0 0 1px #ff303800}35%{opacity:1;box-shadow:0 0 0 1px #ff3038aa,0 0 22px #ff303844}100%{transform:none;box-shadow:none}}
+@media(prefers-reduced-motion:reduce){.pot-tier-2 .pot-val .pot-num,.pot-tier-3 .pot-val .pot-num,.pot-tier-4 .pot-val .pot-num,.battle-row.pot-ultimate::before,.battle-row.row-enter{animation:none}}
+
+/* ===== 3D coin: real thickness, metallic rim, end-over-end toss ===== */
+.coin3d-wrap{--coin-t:12px;perspective:760px;position:relative}
+.coin3d{transform-style:preserve-3d}
+.coin3d .coin-face{transform:translateZ(calc(var(--coin-t) / 2))}
+.coin3d .coin-face.tails{transform:rotateX(180deg) translateZ(calc(var(--coin-t) / 2))}
+/* Edge slices stacked through the thickness; edge-on they read as a solid reeded metal band. */
+.coin-edge{position:absolute;inset:1.5%;border-radius:50%;transform:translateZ(calc(var(--coin-t) * var(--z)));background:linear-gradient(90deg,#4a3209 0%,#a87a22 18%,#f4cf6a 50%,#a87a22 82%,#4a3209 100%)}
+.coin-edge:nth-child(odd){background:linear-gradient(90deg,#3d2a08 0%,#94691c 18%,#e2b955 50%,#94691c 82%,#3d2a08 100%)}
+/* Faces catch the light as the coin turns */
+.coin3d .coin-face::after{content:"";position:absolute;inset:4%;border-radius:50%;background:linear-gradient(115deg,transparent 30%,#ffffff55 46%,transparent 60%);background-size:260% 260%;background-position:100% 100%;opacity:0;pointer-events:none;mix-blend-mode:screen}
+.coin3d-wrap.tossing .coin-face::after{opacity:1;animation:coin-sheen .45s linear infinite}
+@keyframes coin-sheen{to{background-position:-60% -60%}}
+/* The toss: up, a little closer, and back down while it flips */
+.coin3d-wrap.tossing{animation:coin-toss var(--toss-ms,3400ms) cubic-bezier(.25,.6,.3,1) both}
+@keyframes coin-toss{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-34px) scale(1.12)}75%{transform:translateY(-4px) scale(1.02)}88%{transform:translateY(2px) scale(.99)}100%{transform:translateY(0) scale(1)}}
+/* Idle: slow turn on the vertical axis so the rim stays visible */
+.coin3d-wrap.idle .coin3d{animation:coinIdle3d 3.2s linear infinite}
+@keyframes coinIdle3d{from{transform:rotateY(-20deg) rotateX(0)}to{transform:rotateY(-20deg) rotateX(360deg)}}
+@media(prefers-reduced-motion:reduce){.coin3d-wrap.tossing{animation:none}.coin3d-wrap.tossing .coin-face::after{animation:none;opacity:0}}
+.reel-flip{position:relative}
+.reel-flip .coin3d-wrap{width:100%;height:100%;--coin-t:9px}
+.pot-val,.pot-num{white-space:nowrap}
+.pot-tier-4 .pot-val{font-size:calc(32px + 4px * var(--pot-i,0))}
+@media(min-width:1051px){.battle-row{grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr) 170px auto}}
+
+/* ===== Jackpot: tiers by WHOLE POT (src/visualTiers.ts), --jp-i rises 0..1 with the pot ===== */
+.jp-stage .jp-rim{filter:drop-shadow(0 0 calc(8px + 22px * var(--jp-i,0)) rgba(255,32,43,calc(.35 + .5 * var(--jp-i,0))))}
+.jp-stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 42%,rgba(255,48,56,calc(.04 + .16 * var(--jp-i,0))) 0%,transparent 55%);animation:jp-breathe 3.6s ease-in-out infinite}
+.jp-tier-1::after{animation:none}
+.jp-tier-4 .jp-rim,.jp-tier-5 .jp-rim{stroke:#ffd166}
+.jp-tier-4::after,.jp-tier-5::after{background:radial-gradient(circle at 50% 42%,rgba(245,197,66,calc(.06 + .14 * var(--jp-i,0))) 0%,rgba(255,48,56,.06) 40%,transparent 60%)}
+.jp-tier-5{box-shadow:inset 0 0 0 1px #ffd16655,0 0 calc(20px + 30px * var(--jp-i,0)) rgba(245,197,66,.18)}
+.jp-tier-5 .jp-hub-pot{fill:#ffd166}
+@keyframes jp-breathe{0%,100%{opacity:.65}50%{opacity:1}}
+/* Pot ticks up and pops a little when SOL comes in */
+.jp-hub-pot.bump{animation:jp-bump .6s ease-out}
+@keyframes jp-bump{0%{transform:scale(1)}30%{transform:scale(1.12);fill:#ffd166}100%{transform:scale(1)}}
+.jp-hub-pot{transform-box:fill-box;transform-origin:center}
+/* Countdown stages */
+.cd-hot .jp-ring{stroke:#ff5a30;filter:drop-shadow(0 0 9px #ff3a1f)}
+.cd-hot::after{animation-duration:2s}
+.cd-final .jp-ring{stroke:#ffd166;filter:drop-shadow(0 0 12px #ffb43a)}
+.cd-final::after{animation-duration:.9s}
+.cd-final .jp-rim{animation:jp-rim-pulse .5s ease-in-out infinite alternate}
+.jp-ring.off{opacity:0}
+/* Winner inside the hub */
+.jp-hub-win{animation:jp-win-in .55s cubic-bezier(.2,1.3,.4,1) both;transform-box:view-box;transform-origin:200px 200px}
+.jp-hub-win-ring{fill:none;stroke:var(--win);stroke-width:3;filter:drop-shadow(0 0 10px var(--win));animation:jp-win-ring 1.6s ease-out both}
+.jp-hub-label.win{fill:var(--win);font-size:8.5px;letter-spacing:.16em}
+.jp-hub-win-av{animation:jp-win-pop .6s .15s cubic-bezier(.2,1.6,.4,1) both;transform-box:fill-box;transform-origin:center}
+.jp-hub-win-name{fill:#fff;font:800 17px Inter,sans-serif;text-anchor:middle}
+.jp-hub-win-amt{fill:#ffd166;font:900 30px 'Barlow Condensed',sans-serif;text-anchor:middle;filter:drop-shadow(0 0 10px #f5c54266);animation:jp-win-pop .5s .3s ease-out both;transform-box:fill-box;transform-origin:center}
+.jp-hub-win-chance{fill:#b9a9aa;font:600 10px Inter,sans-serif;text-anchor:middle}
+@keyframes jp-win-in{from{opacity:0;transform:scale(.85)}}
+@keyframes jp-win-pop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+@keyframes jp-win-ring{0%{stroke-width:14;opacity:1}100%{stroke-width:3;opacity:.9}}
+/* Status line keeps one height; the tx link sits on it after a win */
+.jp-status{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px}
+.jp-status-tx{font:600 11px Inter,sans-serif;letter-spacing:0;text-transform:none;color:#ff8a8f}
+.jp-status-tx a{color:#ff8a8f}
+.jp-status-tx a:hover{color:#fff}
+/* Milestone celebration over the wheel */
+.jp-celebrate{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:5;display:grid;justify-items:center;gap:2px;padding:12px 22px;border-radius:12px;background:#120a0bd9;border:1px solid #ff303888;box-shadow:0 0 40px #ff303855;pointer-events:none;animation:jp-cel 2.2s ease-out both}
+.jp-celebrate b{font:900 40px/1 'Barlow Condensed',sans-serif;color:#fff;text-shadow:0 0 18px #ff3038}
+.jp-celebrate span{font:800 10px Inter,sans-serif;letter-spacing:.22em;color:#ff8a8f}
+.jp-celebrate.special{border-color:#ffd166;box-shadow:0 0 60px #f5c54277;animation-duration:3.2s}
+.jp-celebrate.special b{font-size:52px;color:#ffd166;text-shadow:0 0 24px #f5c542}
+.jp-celebrate.special span{color:#ffe7a3}
+@keyframes jp-cel{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-56%) scale(.98)}}
+@media(prefers-reduced-motion:reduce){.jp-stage::after,.jp-hub-pot.bump,.jp-hub-win,.jp-hub-win-av,.jp-hub-win-amt,.jp-hub-win-ring,.cd-final .jp-rim{animation:none}.jp-celebrate{animation:none;opacity:1}}
+.jp-wheel-wrap{z-index:1}
+
+/* ---- price source disclosure ---- */
+.price-source{padding:0 5px 14px;max-width:190px;color:#6f6363;font-size:9.5px;line-height:1.4}
+.price-source a{color:#8a7e7e;text-decoration:none}
+.price-source a:hover{color:#b9a9aa;text-decoration:underline}
+@media(max-width:760px){.price-source{display:none}}
+
+/* ===== Live activity ===== */
+.battle-row.row-matched{opacity:.75;border-color:#3ddc8455;animation:row-matched 4.5s ease-out both}
+.battle-row.row-matched .battle-action{opacity:.35;pointer-events:none}
+.matched-tag{color:#7cf09c !important;letter-spacing:.12em}
+@keyframes row-matched{0%{box-shadow:0 0 0 1px #3ddc84,0 0 22px #3ddc8444}20%{box-shadow:none}85%{opacity:.75}100%{opacity:0}}
+.recent-row.row-enter{animation:recent-enter 1.6s ease-out backwards}
+@keyframes recent-enter{0%{opacity:0;transform:translateY(-6px);background:#2a210a;border-color:#ffd166}25%{opacity:1;transform:none}100%{background:#100d0d;border-color:#241b1b}}
+/* Sound toggle */
+.sound-toggle{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 11px;border-radius:8px;border:1px solid #3a292a;background:#120d0d;color:#8e8181;font:700 11px Inter,sans-serif;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
+.sound-toggle:hover{color:#fff;border-color:#ff303888}
+.sound-toggle.on{color:#ffd166;border-color:#f5c54266;background:#1d1608}
+.sound-toggle svg{flex:none}
+@media(max-width:760px){.sound-toggle span{display:none}.sound-toggle{padding:0 9px}}
+@media(prefers-reduced-motion:reduce){.battle-row.row-matched,.recent-row.row-enter{animation:none}}
+
+/* ===== Mobile (<=760px): lobby cards, top bar, feeds ===== */
+@media(max-width:760px){
+  .battle-row,.battle-row.pot-tier-4{grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);row-gap:10px}
+  .battle-meta{grid-column:1/-1;grid-row:2;justify-content:space-between}
+  .battle-action{grid-column:1/-1;grid-row:3;display:flex;gap:8px}
+  .battle-action>button,.battle-action .join-small,.battle-action .view-btn{flex:1;min-height:40px}
+  .pot-val,.pot-tier-4 .pot-val{font-size:26px}
+  .recent-row{grid-template-columns:28px minmax(0,1fr) auto;row-gap:4px}
+  .recent-text{white-space:normal;overflow:visible;line-height:1.35}
+  .recent-time{grid-column:2;grid-row:2}
+  .replay-btn{grid-column:3;grid-row:1/3;min-height:38px}
+}
+@media(max-width:500px){
+  .topbar{height:auto;min-height:56px;flex-wrap:wrap;row-gap:8px;padding:8px 0}
+  .top-actions{flex-wrap:wrap;justify-content:flex-end;gap:6px;margin-left:auto}
+  .pot-val,.pot-tier-4 .pot-val{font-size:24px}
+}
+/* Pop-ups never run off a short phone screen: they scroll inside instead */
+@media(max-width:760px){.match-dialog,.welcome-dialog{max-height:calc(100dvh - 20px);overflow-y:auto;overscroll-behavior:contain}.match-kicker{padding:0 34px}}
+/* Hub: Solana mark + amount; USD lives in the corner */
+.jp-hub-sol-mark path{fill:url(#jp-gold)}
+.jp-hub-sol-mark{filter:drop-shadow(0 0 6px #f5c54266)}
+.jp-hub-pot{font-size:44px}
+.jp-usd-corner{position:absolute;top:14px;right:16px;z-index:2;display:grid;justify-items:end;gap:1px;padding:6px 10px;border-radius:8px;border:1px solid #3a292a;background:#0f0b0bcc}
+.jp-usd-corner small{color:#8e8181;font:800 8px Inter,sans-serif;letter-spacing:.18em}
+.jp-usd-corner b{color:#ffd166;font:800 15px/1.1 'Barlow Condensed',sans-serif;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+@media(max-width:500px){.jp-usd-corner{top:10px;right:10px;padding:4px 8px}.jp-usd-corner b{font-size:13px}}
+/* Replay: the winner highlight uses the winner's own player color */
+.jp-replay-result b{color:var(--win,#ffd166);text-shadow:0 0 14px color-mix(in srgb,var(--win,#ffd166) 45%,transparent)}
+.jp-replay-players li.won{border-color:var(--win,#ffd166);background:linear-gradient(90deg,color-mix(in srgb,var(--win,#ffd166) 18%,transparent),#110d0d 70%)}
+.jp-hub-sol-glyph{fill:#ffd166;font:700 22px Inter,sans-serif;text-anchor:middle;filter:drop-shadow(0 0 6px #f5c54280)}
+/* Aggressive wheel: teeth, hard black dividers, depth, spiky hub, blade pointer */
+.jp-tooth{fill:#1a0b0c;stroke:#ff3038;stroke-width:1.4;stroke-linejoin:miter}
+.jp-tooth.big{fill:#ff3038;stroke:#ff8a8f}
+.jp-tier-4 .jp-tooth.big,.jp-tier-5 .jp-tooth.big{fill:#ffd166;stroke:#fff1b8}
+.jp-tier-4 .jp-tooth,.jp-tier-5 .jp-tooth{stroke:#ffd166}
+.cd-final .jp-tooth.big{animation:jp-tooth 0.5s ease-in-out infinite alternate}
+@keyframes jp-tooth{to{fill:#fff1b8}}
+.jp-seg{stroke:#060303;stroke-width:5;stroke-linejoin:miter}
+.jp-depth{fill:none;stroke:url(#jp-depth);pointer-events:none}
+.jp-slash{fill:none;stroke:url(#jp-slashes);pointer-events:none}
+.jp-hub.spiky{stroke:#ff3038;stroke-width:2;stroke-linejoin:miter;filter:drop-shadow(0 0 10px #ff203066)}
+.jp-tier-4 .jp-hub.spiky,.jp-tier-5 .jp-hub.spiky{stroke:#ffd166}
+.jp-pointer.blade{fill:#ff3038;stroke:#0a0505;stroke-width:2.5;stroke-linejoin:miter}
+@media(prefers-reduced-motion:reduce){.cd-final .jp-tooth.big{animation:none}}
+/* Cleaner hub: no red text inside the circle */
+.jp-hub-sol{fill:#c9a85a;letter-spacing:.28em}
+.jp-hub-label{fill:#8e8181}
+.jp-hub-win-label{fill:#fff;font:900 13px 'Barlow Condensed',sans-serif;letter-spacing:.34em;text-anchor:middle;opacity:.92}
+.jp-hub-win-name{fill:#f5f1f1;font:700 14px Inter,sans-serif}
+.jp-hub-win-amt{font-size:30px}
+.jp-hub-win-chance{fill:#8e8181;font:600 9.5px Inter,sans-serif;letter-spacing:.06em}
+/* Sleek rim (replaces the teeth) */
+.jp-rim-line{fill:none;stroke:#ff303866;stroke-width:1.2}
+.jp-blade{fill:#ff3038;stroke:#0a0505;stroke-width:1;filter:drop-shadow(0 0 6px #ff3038aa)}
+.jp-tier-3 .jp-rim-line,.jp-tier-4 .jp-rim-line,.jp-tier-5 .jp-rim-line{stroke:#ffd16677}
+.jp-tier-4 .jp-blade,.jp-tier-5 .jp-blade{fill:#ffd166;filter:drop-shadow(0 0 8px #f5c542)}
+.cd-final .jp-blade{animation:jp-blade .5s ease-in-out infinite alternate}
+@keyframes jp-blade{to{fill:#fff1b8}}
+.jp-hub.spiky{stroke-width:1.6}
+.jp-hub-pot.left{text-anchor:start}
+.jp-hub-pot-row .jp-hub-sol-glyph{font-size:24px;dominant-baseline:middle;text-anchor:middle}
+.jp-hub-pot-row.bump{animation:jp-bump .6s ease-out;transform-box:fill-box;transform-origin:center}
+@media(prefers-reduced-motion:reduce){.cd-final .jp-blade{animation:none}}

@@ -80,7 +80,12 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
   const label = (a: Address) => (a === props.me ? 'You' : props.nameOf(a));
 
   return (
-    <dialog ref={dialog} className="match-dialog jp-replay" onClose={props.onClose}>
+    <dialog
+      ref={dialog}
+      className="match-dialog jp-replay"
+      onClose={props.onClose}
+      style={{ ['--win' as string]: win?.color ?? '#ffd166' } as React.CSSProperties}
+    >
       <Embers />
       <button className="match-close" onClick={props.onClose} aria-label="Close">
         ×
@@ -112,7 +117,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
               const [x, y] = polar((R_OUT + R_IN) / 2, (s.start + s.end) / 2);
               return (
                 <g key={`a-${s.player}`} transform={`rotate(${-rot} ${x} ${y})`}>
-                  <Avatar address={s.player} size={size} x={x - size / 2} y={y - size / 2} ring={s.color} />
+                  <Avatar address={s.player} size={size} x={x - size / 2} y={y - size / 2} ring={s.color} tint={s.color} />
                 </g>
               );
             })}
@@ -150,7 +155,7 @@ export function JackpotReplay(props: { result: JackpotResult; me?: Address; name
       </div>
 
       <div className={`jp-replay-result ${done ? 'show' : ''}`}>
-        <Avatar address={r.winner} size={48} ring={win?.color} />
+        <Avatar address={r.winner} size={48} ring={win?.color} tint={win?.color} />
         <div>
           <b>{label(r.winner)} won</b>
           <span>

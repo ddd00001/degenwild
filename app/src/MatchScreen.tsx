@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { Address } from '@solana/kit';
 import { type BattleView, type Randomness, opponentOf, payoutFor } from './chain';
 import { explorerTx } from './config';
-import { Coin } from './components/Coin';
+import { Coin, Coin3D } from './components/Coin';
+import { play } from './sound';
 import { Embers } from './components/Embers';
 import { Amount } from './components/Amount';
 
@@ -88,6 +89,21 @@ export function MatchScreen(props: {
   const winner = coin === null ? null : creatorWins ? b.creator : opp;
   const iWon = !!me && winner === me;
   const playing = !!me && (b.creator === me || opp === me);
+
+  // Sounds follow the pop-up's phases, which follow confirmed on-chain state. The landing and win
+  // sounds play only in 'result', i.e. after the randomness is in and the coin has finished.
+  const live = !props.replay;
+  useEffect(() => {
+    if (live && playing && phase === 'waiting') play('flipJoined', `joined:${b.address}`);
+    if (phase === 'flip') play('coinSpin', live ? `spin:${b.address}` : undefined);
+    if (phase === 'result') {
+      play('coinLand', live ? `land:${b.address}` : undefined);
+      if (iWon) {
+        const id = window.setTimeout(() => play('flipWin', live ? `win:${b.address}` : undefined), 280);
+        return () => window.clearTimeout(id);
+      }
+    }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const { pot } = payoutFor(b.amount);
   const mySide = b.creator === me ? b.creatorSide : 1 - b.creatorSide;
 
@@ -136,22 +152,12 @@ export function MatchScreen(props: {
             <div className="match-count">{count}</div>
           </div>
         ) : (
-          <div className={`coin3d-wrap ${phase === 'waiting' || phase === 'open' ? 'idle' : ''}`}>
-            <div
-              className="coin3d"
-              style={{
-                transform: `rotateY(${rotation}deg)`,
-                transition: phase === 'flip' ? `transform ${FLIP_MS}ms cubic-bezier(.15,.7,.2,1)` : 'none',
-              }}
-            >
-              <div className="coin-face heads">
-                <Coin side={0} detailed />
-              </div>
-              <div className="coin-face tails">
-                <Coin side={1} detailed />
-              </div>
-            </div>
-          </div>
+          <Coin3D
+            angle={rotation}
+            durationMs={phase === 'flip' ? FLIP_MS : undefined}
+            idle={phase === 'waiting' || phase === 'open'}
+            tossing={phase === 'flip' && rotation !== 0}
+          />
         )}
       </div>
 

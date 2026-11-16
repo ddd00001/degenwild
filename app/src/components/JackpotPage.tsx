@@ -10,6 +10,8 @@ import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
 import { fmtUsd, useSolPrice } from '../price';
+import { crossedMilestone, jackpotTier } from '../visualTiers';
+import { play } from '../sound';
 
 /** Keep in sync with programs/degenwild/src/constants.rs. */
 const MIN_ENTRY = 50_000_000n; // 0.05 SOL
@@ -18,8 +20,11 @@ const COUNTDOWN_SECS = 120;
 const POLL_MS = 2_000;
 const KEEPER_URL: string = import.meta.env?.VITE_JACKPOT_URL ?? '/api/jackpot';
 
-/** Segment colors, in join order. */
-export const SEGMENTS = ['#ff3038', '#f5c542', '#3ddc84', '#4f7cff', '#ff8a1f', '#a855f7', '#22d3ee', '#ff4fb4', '#14b8a6', '#e5e7eb', '#b91c1c', '#84cc16'];
+/**
+ * Player colors, by join order in the round (stable on-chain order, so the same after a refresh
+ * and unchanged when someone else joins). Gold and red first; the rest only with more players.
+ */
+export const SEGMENTS = ['#f5c542', '#ff3038', '#3d8bff', '#a855f7', '#22d3ee', '#ff8a1f', '#3ddc84', '#ff4fb4', '#e5e7eb', '#14b8a6', '#b91c1c', '#84cc16'];
 
 type Entry = { player: Address; amount: bigint };
 
@@ -57,6 +62,7 @@ export function ring() {
 
 export const pct = (part: bigint, total: bigint) => (total > 0n ? Number((part * 10_000n) / total) / 100 : 0);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
+const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export function JackpotPage(props: {
   me?: Address;
@@ -67,6 +73,8 @@ export function JackpotPage(props: {
   onEnter: (amount: bigint, roundId: bigint) => Promise<boolean>;
   onLeave: (roundId: bigint) => Promise<boolean>;
   recent: JackpotResult[];
+  /** Every known result, including ones still held back from the feed (for the payout tx link). */
+  allRecent: JackpotResult[];
 }) {
   const { me, names } = props;
   const [view, setView] = useState<JackpotView | null>(null);
@@ -261,26 +269,160 @@ export function JackpotPage(props: {
   const ringFrac = secondsLeft === null ? 1 : secondsLeft / COUNTDOWN_SECS;
   const winnerSeg = result ? segments.find((s) => s.player === result.winner) : undefined;
 
+  // ---------------------------------------------------------------- segments ease to new sizes
+  // A new player grows in from the top; everyone else shrinks to make room. Purely visual: the
+  // odds shown everywhere come from `segments`, never from these in-between angles.
+  const segSig = segments.map((g) => `${g.player}:${g.start.toFixed(3)}:${g.end.toFixed(3)}`).join('|');
+  const segFrom = useRef(new Map<string, { start: number; end: number }>());
+  const segOnScreen = useRef(new Map<string, { start: number; end: number }>());
+  const segMounted = useRef(false);
+  const [segK, setSegK] = useState(1);
+  useEffect(() => {
+    segFrom.current = new Map(segOnScreen.current);
+    if (!segMounted.current || reducedMotion()) {
+      segMounted.current = true;
+      setSegK(1);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / 650);
+      setSegK(k);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    setSegK(0);
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [segSig]);
+  const segE = easeOut(segK);
+  const wheelSegs = segments.map((g) => {
+    const from = segFrom.current.get(g.player) ?? { start: 360, end: 360 };
+    return { ...g, start: from.start + (g.start - from.start) * segE, end: from.end + (g.end - from.end) * segE };
+  });
+  segOnScreen.current = new Map(wheelSegs.map((g) => [g.player, { start: g.start, end: g.end }]));
+
+  // ---------------------------------------------------------------- pot counts up to its new value
+  const potTarget = Number(shown?.total ?? 0n) / 1e9;
+  const [potShown, setPotShown] = useState(potTarget);
+  const potRef = useRef(potTarget);
+  const [potBump, setPotBump] = useState(0);
+  useEffect(() => {
+    const from = potRef.current;
+    const to = potTarget;
+    if (from === to) return;
+    if (to > from && from > 0) setPotBump((n) => n + 1);
+    if (reducedMotion()) {
+      potRef.current = to;
+      setPotShown(to);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / 900);
+      const v = from + (to - from) * easeOut(k);
+      potRef.current = v;
+      setPotShown(v);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [potTarget]);
+  const potLamports = BigInt(Math.round(potShown * 1e9));
+
+  // ---------------------------------------------------------------- tier + milestones (whole pot)
+  const tier = jackpotTier(shown?.total ?? 0n);
+  const msPrev = useRef<{ round: bigint; total: bigint } | null>(null);
+  const [celebrate, setCelebrate] = useState<{ at: number; special: boolean; key: string } | null>(null);
+  useEffect(() => {
+    if (!round) return;
+    const prev = msPrev.current;
+    msPrev.current = { round: round.roundId, total: round.total };
+    if (!prev) return; // first look after (re)loading: never replay old milestones
+    const before = prev.round === round.roundId ? prev.total : 0n;
+    const hit = crossedMilestone(before, round.total);
+    if (!hit) return;
+    const key = `dw-jp-ms:${round.roundId}:${hit.at}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch {
+      /* storage blocked: still celebrate once for this page */
+    }
+    setCelebrate({ ...hit, key });
+  }, [round?.roundId, round?.total]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!celebrate) return;
+    const id = window.setTimeout(() => setCelebrate(null), celebrate.special ? 3200 : 2200);
+    return () => window.clearTimeout(id);
+  }, [celebrate]);
+
+  // ---------------------------------------------------------------- countdown stages
+  const cdStage =
+    secondsLeft === null || entriesClosed ? '' : secondsLeft <= 10 ? 'cd-final' : secondsLeft <= 30 ? 'cd-hot' : 'cd-on';
+  const winnerChance = result && winnerSeg ? winnerSeg.chance : 0;
+  const payoutTx = result ? props.allRecent.find((x) => x.roundId === result.roundId)?.signature : undefined;
+
+  // ---------------------------------------------------------------- sounds (from observed round state)
+  const sndPrev = useRef<{ round: bigint; players: number; countdown: boolean } | null>(null);
+  useEffect(() => {
+    if (!round) return;
+    const cur = { round: round.roundId, players: round.entries.length, countdown: round.countdownEnd > 0n };
+    const prev = sndPrev.current;
+    sndPrev.current = cur;
+    if (!prev || prev.round !== cur.round) return; // first look: nothing to announce
+    if (cur.players > prev.players) play('jpJoin', `jp-join:${cur.round}:${cur.players}`);
+    if (cur.countdown && !prev.countdown) play('jpCountdown', `jp-cd:${cur.round}`);
+  }, [round?.roundId, round?.entries.length, round?.countdownEnd]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (round && secondsLeft !== null && secondsLeft > 0 && secondsLeft <= 10 && !entriesClosed)
+      play('jpTick', `jp-tick:${round.roundId}:${secondsLeft}`);
+  }, [secondsLeft]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (phase === 'spinning') play('jpSpin', `jp-spin:${shown?.roundId ?? ''}`);
+    if (phase === 'result' && result) play('jpWin', `jp-win:${result.roundId}`);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   let status: React.ReactNode;
-  if (phase === 'result' && result) status = <>Winner!</>;
+  if (phase === 'result' && result) status = <>Round #{result.roundId.toString()} complete</>;
   else if (phase === 'landing') status = <>Landing…</>;
-  else if (drawing || due) status = <>Spinning…</>;
-  else if (secondsLeft !== null)
-    status = (
-      <>
-        Spin in {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
-      </>
-    );
+  else if (drawing) status = <>Awaiting on-chain confirmation…</>;
+  else if (due) status = <>Locking the round on-chain…</>;
+  else if (secondsLeft !== null) status = secondsLeft <= 10 ? <>Last call!</> : <>Entries open</>;
   else if (players === 1) status = <>Need 1 more player</>;
   else status = <>Be the first in</>;
 
   return (
     <div className="jp-page">
       <div className="jp-grid">
-        <section className={`jp-stage panel ${phase}`}>
+        <section
+          className={`jp-stage panel ${phase} jp-tier-${tier.tier} ${cdStage}`}
+          style={{ ['--jp-i' as string]: tier.intensity.toFixed(3) } as React.CSSProperties}
+        >
+          {solUsd ? (
+            <div className="jp-usd-corner" title="Pot value in US dollars (live SOL/USD estimate)">
+              <small>POT VALUE</small>
+              <b>≈ {usd(phase === 'result' && result ? result.total : potLamports, solUsd)}</b>
+            </div>
+          ) : null}
           <div className="jp-wheel-wrap" ref={wrapRef} onMouseLeave={() => setHover(null)}>
             <svg className="jp-wheel" viewBox="0 0 400 400" role="img" aria-label="Jackpot wheel">
               <defs>
+                <radialGradient id="jp-depth" gradientUnits="userSpaceOnUse" cx={C} cy={C} r={R_OUT}>
+                  <stop offset={R_IN / R_OUT} stopColor="#000" stopOpacity=".6" />
+                  <stop offset=".74" stopColor="#000" stopOpacity="0" />
+                  <stop offset=".93" stopColor="#fff" stopOpacity=".06" />
+                  <stop offset="1" stopColor="#000" stopOpacity=".45" />
+                </radialGradient>
+                <pattern id="jp-slashes" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+                  <rect width="2" height="9" fill="#000" fillOpacity=".16" />
+                </pattern>
+                <linearGradient id="jp-gold" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor="#fff1b8" />
+                  <stop offset=".5" stopColor="#ffd166" />
+                  <stop offset="1" stopColor="#d9a12a" />
+                </linearGradient>
                 <radialGradient id="jp-hub" cx="50%" cy="40%" r="70%">
                   <stop offset="0%" stopColor="#2a1012" />
                   <stop offset="100%" stopColor="#0c0909" />
@@ -296,28 +438,32 @@ export function JackpotPage(props: {
 
               {/* outer rim with tick marks */}
               <circle cx={C} cy={C} r={R_OUT + 12} className="jp-rim" />
-              {Array.from({ length: 60 }, (_, i) => {
-                const [x1, y1] = polar(R_OUT + 5, i * 6);
-                const [x2, y2] = polar(R_OUT + (i % 5 === 0 ? 14 : 10), i * 6);
-                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="jp-tick" />;
+              {/* sleek rim: a thin outer line and 8 slim blades, like the cuts in the WILD logo */}
+              <circle cx={C} cy={C} r={R_OUT + 17} className="jp-rim-line" />
+              {Array.from({ length: 8 }, (_, i) => {
+                const a = i * 45;
+                const [x1, y1] = polar(R_OUT + 4, a - 3.2);
+                const [x2, y2] = polar(R_OUT + 22, a);
+                const [x3, y3] = polar(R_OUT + 4, a + 3.2);
+                return <path key={i} d={`M${x1} ${y1}L${x2} ${y2}L${x3} ${y3}Z`} className="jp-blade" />;
               })}
 
               <g transform={`rotate(${rot} ${C} ${C})`}>
                 {segments.length === 0 ? (
                   <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-empty" strokeWidth={R_OUT - R_IN} />
                 ) : (
-                  segments.map((s) => (
+                  wheelSegs.map((s) => (
                     <path
                       key={s.player}
                       d={s.end - s.start >= 359.9 ? ring() : arc(s.start, s.end)}
                       fill={s.color}
-                      className={`jp-seg ${s.player === me ? 'mine' : ''} ${winnerSeg && winnerSeg.player !== s.player ? 'dim' : ''} ${hover?.player === s.player ? 'hot' : ''}`}
+                      className={`jp-seg ${s.player === me ? 'mine' : ''} ${phase === 'result' && winnerSeg && winnerSeg.player !== s.player ? 'dim' : ''} ${hover?.player === s.player ? 'hot' : ''}`}
                       onMouseMove={hoverAt(s.player)}
                       onClick={hoverAt(s.player)}
                     />
                   ))
                 )}
-                {segments.map((s) => {
+                {wheelSegs.map((s) => {
                   const span = s.end - s.start;
                   if (span < 9) return null;
                   const size = Math.max(22, Math.min(46, span * 0.9));
@@ -330,14 +476,24 @@ export function JackpotPage(props: {
                       onMouseMove={hoverAt(s.player)}
                       onClick={hoverAt(s.player)}
                     >
-                      <Avatar address={s.player} size={size} x={x - size / 2} y={y - size / 2} ring={s.color} />
+                      <Avatar address={s.player} size={size} x={x - size / 2} y={y - size / 2} ring={s.color} tint={s.color} />
                     </g>
                   );
                 })}
               </g>
+              <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-depth" strokeWidth={R_OUT - R_IN} />
 
               {/* hub with the pot and countdown */}
-              <circle cx={C} cy={C} r={R_IN - 4} fill="url(#jp-hub)" className="jp-hub" />
+              <path
+                d={
+                  Array.from({ length: 24 }, (_, i) => {
+                    const [x, y] = polar(i % 2 ? R_IN - 3 : R_IN + 1, i * 15);
+                    return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+                  }).join('') + 'Z'
+                }
+                fill="url(#jp-hub)"
+                className="jp-hub spiky"
+              />
               <circle
                 cx={C}
                 cy={C}
@@ -348,35 +504,66 @@ export function JackpotPage(props: {
                 cx={C}
                 cy={C}
                 r={R_IN - 12}
-                className="jp-ring"
+                className={`jp-ring ${phase === 'result' ? 'off' : ''}`}
                 strokeDasharray={`${2 * Math.PI * (R_IN - 12)}`}
                 strokeDashoffset={`${2 * Math.PI * (R_IN - 12) * (1 - ringFrac)}`}
                 transform={`rotate(-90 ${C} ${C})`}
               />
-              <text x={C} y={C - 30} className="jp-hub-label">
-                {phase === 'result' ? 'WON' : 'POT'}
-              </text>
-              <text x={C} y={C - 4} className="jp-hub-pot">
-                {fmtSol(phase === 'result' && result ? result.total : (shown?.total ?? 0n))}
-              </text>
-              <text x={C} y={C + 26} className="jp-hub-sol">
-                SOL
-                {solUsd ? (
-                  <tspan className="jp-hub-usd">
-                    {' '}
-                    ≈ {usd(phase === 'result' && result ? result.total : (shown?.total ?? 0n), solUsd)}
-                  </tspan>
-                ) : null}
-              </text>
-              <text x={C} y={C + 54} className={`jp-hub-timer ${secondsLeft !== null && secondsLeft <= 10 && !entriesClosed ? 'hot' : ''}`}>
-                {secondsLeft !== null && !entriesClosed
-                  ? `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
-                  : ''}
-              </text>
+              {phase === 'result' && result ? (
+                // Winner, inside the hub: no extra card under the wheel, so the panel never changes height.
+                <g className="jp-hub-win" key={`win-${result.roundId}`} style={{ ['--win' as string]: winnerSeg?.color ?? '#ffd166' }}>
+                  <circle cx={C} cy={C} r={R_IN - 6} className="jp-hub-win-ring" />
+                  <text x={C} y={C - 56} className="jp-hub-win-label">
+                    WINNER
+                  </text>
+                  <g className="jp-hub-win-av">
+                    <Avatar address={result.winner} size={50} x={C - 25} y={C - 49} ring={winnerSeg?.color} tint={winnerSeg?.color} />
+                  </g>
+                  <text x={C} y={C + 18} className="jp-hub-win-name">
+                    {nameOf(result.winner).length > 12 ? `${nameOf(result.winner).slice(0, 11)}…` : nameOf(result.winner)}
+                  </text>
+                  <text x={C} y={C + 47} className="jp-hub-win-amt">
+                    ◎ {fmtSol(result.total)}
+                  </text>
+                  <text x={C} y={C + 64} className="jp-hub-win-chance">
+                    {winnerChance.toFixed(2)}% chance
+                  </text>
+                </g>
+              ) : (
+                <>
+                  <text x={C} y={C - 36} className="jp-hub-label">
+                    JACKPOT
+                  </text>
+                  {(() => {
+                    // Center "◎ 0.50" as one unit: estimate the amount's width (condensed digits ~21px, dot ~9px).
+                    const txt = fmtSol(potLamports);
+                    const w = [...txt].reduce((a, ch) => a + (ch === '.' ? 9 : 21), 0);
+                    const left = C - (w + 26) / 2;
+                    return (
+                      <g key={`pot-${potBump}`} className={`jp-hub-pot-row ${potBump ? 'bump' : ''}`}>
+                        <text x={left + 9} y={C + 2} className="jp-hub-sol-glyph" aria-hidden="true">
+                          ◎
+                        </text>
+                        <text x={left + 26} y={C + 4} className="jp-hub-pot left">
+                          {txt}
+                        </text>
+                      </g>
+                    );
+                  })()}
+                  <text x={C} y={C + 30} className="jp-hub-sol">
+                    SOL
+                  </text>
+                  <text x={C} y={C + 58} className={`jp-hub-timer ${secondsLeft !== null && secondsLeft <= 10 && !entriesClosed ? 'hot' : ''}`}>
+                    {secondsLeft !== null && !entriesClosed
+                      ? `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
+                      : ''}
+                  </text>
+                </>
+              )}
 
               {/* pointer */}
               <g filter="url(#jp-glow)">
-                <path d={`M${C - 15} 2 L${C + 15} 2 L${C} 34 Z`} className="jp-pointer" />
+                <path d={`M${C - 13} 0 L${C + 13} 0 L${C + 5} 13 L${C} 42 L${C - 5} 13 Z`} className="jp-pointer blade" />
               </g>
             </svg>
             {hover &&
@@ -392,7 +579,7 @@ export function JackpotPage(props: {
                     role="tooltip"
                   >
                     <div className="jp-tip-head">
-                      <Avatar address={s.player} size={36} ring={s.color} />
+                      <Avatar address={s.player} size={36} ring={s.color} tint={s.color} />
                       <div>
                         <b>{nameOf(s.player)}</b>
                         <small>{avatarName(s.player)} · {short(s.player)}</small>
@@ -409,45 +596,34 @@ export function JackpotPage(props: {
                       <dd>
                         {fmtSol(s.amount)} SOL{solUsd ? <em> ≈ {usd(s.amount, solUsd)}</em> : null}
                       </dd>
-                      <dt>Wins if picked</dt>
-                      <dd>
-                        {fmtSol(winPot)} SOL{solUsd ? <em> ≈ {usd(winPot, solUsd)}</em> : null}
-                      </dd>
-                      <dt>Multiplier</dt>
+                      <dt>Multiplier if picked</dt>
                       <dd>{s.amount > 0n ? (Number(winPot) / Number(s.amount)).toFixed(2) : '0'}x</dd>
                     </dl>
                   </div>
                 );
               })()}
-            <div className="jp-status">{status}</div>
-          </div>
-
-          {phase === 'result' && result && (
-            <div className="jp-winner" role="status">
-              <Avatar address={result.winner} size={64} ring={winnerSeg?.color} />
-              <div>
-                <small>ROUND #{result.roundId.toString()} WINNER</small>
-                <b>{nameOf(result.winner)}</b>
-                <span>
-                  won <b>{fmtSol(result.total)} SOL</b>
-                  {solUsd ? <span className="jp-usd"> ({usd(result.total, solUsd)})</span> : null} with a {pct(
-                    result.entries.find((e) => e.player === result.winner)?.amount ?? 0n,
-                    result.total,
-                  )}% chance
-                </span>
-                {(() => {
-                  const tx = props.recent.find((x) => x.roundId === result.roundId)?.signature;
-                  return tx ? (
-                    <a className="jp-winner-tx" href={explorerTx(tx)} target="_blank" rel="noreferrer" title={tx}>
-                      Payout tx {tx.slice(0, 6)}…{tx.slice(-6)} ↗
+            {celebrate && (
+              <div className={`jp-celebrate ${celebrate.special ? 'special' : ''}`} key={celebrate.key} aria-live="polite">
+                <b>{celebrate.at} SOL</b>
+                <span>{celebrate.special ? 'JACKPOT IS HEATING UP' : 'POT MILESTONE'}</span>
+              </div>
+            )}
+            <div className="jp-status">
+              {status}
+              {phase === 'result' && result && (
+                <span className="jp-status-tx">
+                  {payoutTx ? (
+                    <a href={explorerTx(payoutTx)} target="_blank" rel="noreferrer" title={payoutTx}>
+                      Payout tx {payoutTx.slice(0, 6)}…{payoutTx.slice(-6)} ↗
                     </a>
                   ) : (
-                    <em className="jp-winner-tx">Payout tx confirming…</em>
-                  );
-                })()}
-              </div>
+                    'Payout tx confirming…'
+                  )}
+                </span>
+              )}
             </div>
-          )}
+          </div>
+
         </section>
 
         <aside className="jp-side">
@@ -484,7 +660,7 @@ export function JackpotPage(props: {
               {props.busy === 'jackpot'
                 ? 'Entering…'
                 : entriesClosed
-                  ? 'Entries closed: spinning'
+                  ? 'Entries closed: drawing on-chain'
                   : !props.canPlay
                     ? 'Connect to enter'
                     : myAmount > 0n
@@ -526,9 +702,9 @@ export function JackpotPage(props: {
                 {[...segments]
                   .sort((a, b) => (b.amount > a.amount ? 1 : b.amount < a.amount ? -1 : 0))
                   .map((s) => (
-                    <li key={s.player} className={`${s.player === me ? 'mine' : ''} ${result?.winner === s.player ? 'won' : ''}`}>
+                    <li key={s.player} className={`${s.player === me ? 'mine' : ''} ${phase === 'result' && result?.winner === s.player ? 'won' : ''}`}>
                       <i style={{ background: s.color }} />
-                      <Avatar address={s.player} size={30} ring={s.color} />
+                      <Avatar address={s.player} size={30} ring={s.color} tint={s.color} />
                       <span className="jp-name">{nameOf(s.player)}</span>
                       <span className="jp-amt">
                         <b>{fmtSol(s.amount)} SOL</b>

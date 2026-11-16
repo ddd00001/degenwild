@@ -71,3 +71,11 @@ Brand is written **DegenWild** (one word), **DEGENWILD** in all-caps spots.
   (house wallet pays ORAO fee), settles, or refunds after timeout. The page pokes it while a round is due/drawing.
 - UI: `src/components/JackpotPage.tsx` (wheel) + `Avatar.tsx` (100 avatars = 10 symbols x 10 colors, from the wallet hash).
 
+
+## Visual polish layer (frontend only)
+- `app/src/visualTiers.ts`: the only place for coinflip/jackpot visual thresholds (devnet values; add a `mainnet` entry later). Coinflip tiers use the OPEN pot (creator's stake); jackpot tiers/milestones use the whole pot. Visual only.
+- `app/src/flip.ts`: `useFlipList` = smooth lobby/feed reordering + one-time entrance animation (no library).
+- `app/src/sound.ts` + `components/SoundToggle.tsx`: Web Audio synthesized sounds, off by default (`localStorage dw-sound`), de-duplicated per event id.
+- `components/PriceSource.tsx`: bottom-left disclosure of the SOL/USD source (CoinGecko, Jupiter fallback; says so when stale/offline).
+- Jackpot colors: `SEGMENTS` in JackpotPage.tsx by join order (gold, red, blue, purple, …); avatars are tinted with the same color.
+- Test a busy round: `npx tsx scripts/jackpot-e2e.mts crowd` (4 wallets join 8s apart), then POST `/api/jackpot` (or keep the live site open) to draw/settle.

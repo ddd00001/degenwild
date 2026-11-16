@@ -13,7 +13,11 @@ import { JackpotPage } from './components/JackpotPage';
 import { Welcome, shouldShowWelcome } from './components/Welcome';
 import { Coin } from './components/Coin';
 import { Amount } from './components/Amount';
+import { PriceSource } from './components/PriceSource';
 import { type GameResult, type JackpotResult, GameHistory, resultToBattle } from './history';
+import { useFlipList } from './flip';
+import { play } from './sound';
+import { SoundToggle } from './components/SoundToggle';
 import { SIDE_NAME, type Side, fmtSol, parseSol, short, timeAgo, type Names } from './format';
 import { BattleRow } from './components/BattleRow';
 import { WalletWaitPill, WalletButton, ProfileDialog, WalletDialog } from './components/wallet';
@@ -465,7 +469,7 @@ export default function App() {
       'create',
       async () => (await buildCreate(signer, stake, side)).ix,
       `Coinflip created: ${fmtSol(stake)} SOL on ${SIDE_NAME[side]}.`,
-    );
+    ).then((ok) => ok && play('flipCreated'));
   };
 
   // -------------------------------------------------------- derived lists
@@ -495,7 +499,47 @@ export default function App() {
   const HISTORY_PAGE = 5;
   const historyPages = Math.max(1, Math.ceil(myHistory.length / HISTORY_PAGE));
   const historyShown = myHistory.slice((Math.min(historyPage, historyPages) - 1) * HISTORY_PAGE, Math.min(historyPage, historyPages) * HISTORY_PAGE);
-  const othersOpen = open.filter((b) => b.creator !== me);
+  // Joinable battles, biggest displayed open pot (the creator's stake) first; oldest first on ties.
+  const othersOpen = useMemo(
+    () =>
+      open
+        .filter((b) => b.creator !== me)
+        .sort((a, b) => (b.amount !== a.amount ? (b.amount > a.amount ? 1 : -1) : a.battleId < b.battleId ? -1 : a.battleId > b.battleId ? 1 : 0)),
+    [open, me],
+  );
+  const [matchedFlash, setMatchedFlash] = useState<BattleView[]>([]);
+  const prevJoinable = useRef<Map<string, BattleView> | null>(null);
+  useEffect(() => {
+    const now = new Map(othersOpen.map((b) => [b.address as string, b]));
+    const before = prevJoinable.current;
+    prevJoinable.current = now;
+    if (!before) return;
+    const gone = [...before.values()].filter((b) => !now.has(b.address)).map((b) => battles.find((x) => x.address === b.address)).filter(
+      (b): b is BattleView => !!b && b.status !== BattleStatus.Open && b.status !== BattleStatus.Refunded,
+    );
+    if (!gone.length) return;
+    setMatchedFlash((f) => [...f.filter((x) => !gone.some((g) => g.address === x.address)), ...gone]);
+    const id = window.setTimeout(() => setMatchedFlash((f) => f.filter((x) => !gone.some((g) => g.address === x.address))), 4500);
+    return () => window.clearTimeout(id);
+  }, [othersOpen, battles]);
+  const lobbyRows = useMemo(
+    () =>
+      [...othersOpen.map((b) => ({ b, flash: false })), ...matchedFlash.map((b) => ({ b, flash: true }))].sort(
+        (x, y) => (y.b.amount > x.b.amount ? 1 : y.b.amount < x.b.amount ? -1 : 0),
+      ),
+    [othersOpen, matchedFlash],
+  );
+  const lobbyRef = useRef<HTMLDivElement>(null);
+  const recentRef = useRef<HTMLDivElement>(null);
+  const recentKeys = results
+    .filter((r) => r.kind === 'settled' && released(r.signature) && r.battle !== match?.address)
+    .slice(0, 10)
+    .map((r) => r.signature as string);
+  useFlipList(recentRef, recentKeys);
+  useFlipList(
+    lobbyRef,
+    lobbyRows.map((r) => r.b.address),
+  );
 
   return (
     <div className="app-shell">
@@ -534,6 +578,7 @@ export default function App() {
             <i className={loadError ? 'down' : CLUSTER}></i>
             <span>{loadError ? 'RPC UNREACHABLE' : `${CLUSTER.toUpperCase()} · SLOT ${slot.toString()}`}</span>
           </div>
+          <PriceSource />
         </div>
       </aside>
 
@@ -566,6 +611,7 @@ export default function App() {
             )}
           </div>
           <div className="top-actions">
+            <SoundToggle />
             {me && balance !== null && <span className="balance">◎ <Amount lamports={balance} max={3} /></span>}
             {demo && balance !== null && balance < DEMO_LOW && (
               <button className="wallet-btn demo-topup" disabled={funding} onClick={() => void fundDemo(demo.kp.address)}>
@@ -814,13 +860,14 @@ export default function App() {
                     ↻ <span>Refresh</span>
                   </button>
                 </div>
-                <div className="battle-list">
-                  {othersOpen.length === 0 ? (
+                <div className="battle-list" ref={lobbyRef}>
+                  {lobbyRows.length === 0 ? (
                     <div className="empty-state">No open battles right now. Create one and start the lobby.</div>
                   ) : (
-                    othersOpen.map((b) => (
+                    lobbyRows.map(({ b, flash }) => (
                       <BattleRow
                         names={names}
+                        flash={flash}
                         key={b.address}
                         b={b}
                         me={me}
@@ -848,7 +895,7 @@ export default function App() {
                   <h2>Recent games</h2>
                 </div>
               </div>
-              <div className="recent-list">
+              <div className="recent-list" ref={recentRef}>
                 {results.filter((r) => r.kind === 'settled' && released(r.signature) && r.battle !== match?.address).length === 0 ? (
                   <div className="empty-state">No finished games yet.</div>
                 ) : (
@@ -859,7 +906,7 @@ export default function App() {
                       const loser = r.winner === r.creator ? r.opponent : r.creator;
                       const nm = (a: Address) => (a === me ? 'You' : (names.get(a) ?? short(a)));
                       return (
-                        <div key={r.signature} className={`recent-row ${r.winner === me ? 'mine-win' : ''}`}>
+                        <div key={r.signature} data-key={r.signature} className={`recent-row ${r.winner === me ? 'mine-win' : ''}`}>
                           <span className="recent-coin" aria-label={r.coin ? 'Tails' : 'Heads'}><Coin side={r.coin} /></span>
                           <span className="recent-text">
                             <b>{nm(r.winner)}</b> beat {nm(loser)} · won <b>{fmtSol(r.payout + r.fee)} SOL</b>
@@ -914,6 +961,7 @@ export default function App() {
               }
               onLeave={(roundId) => send('jackpot', () => buildLeaveJackpot(signer!, roundId), 'You left the pot: SOL refunded.')}
               recent={releasedJackpots}
+              allRecent={jackpotResults}
             />
             </div>
             <ChatPanel me={me} signer={signer} names={names} onConnect={() => setWalletOpen(true)} />
