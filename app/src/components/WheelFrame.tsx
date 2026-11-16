@@ -1,30 +1,18 @@
 // The jackpot wheel's frame (bezel, hub ring, pointer, shared gradients). One source for the live
 // wheel and the replay so they always look the same. Coordinates are the 400x400 wheel viewBox.
-import { C, R_IN, R_OUT, polar } from "./JackpotPage";
+import { C, R_IN, R_OUT, polar } from './JackpotPage';
 
 /** Gradients and filters the wheel uses. Render once inside each wheel's <svg>. */
 export function WheelDefs() {
   return (
     <defs>
-      <radialGradient
-        id="jp-depth"
-        gradientUnits="userSpaceOnUse"
-        cx={C}
-        cy={C}
-        r={R_OUT}
-      >
+      <radialGradient id="jp-depth" gradientUnits="userSpaceOnUse" cx={C} cy={C} r={R_OUT}>
         <stop offset={R_IN / R_OUT} stopColor="#000" stopOpacity=".6" />
         <stop offset=".74" stopColor="#000" stopOpacity="0" />
         <stop offset=".93" stopColor="#fff" stopOpacity=".06" />
         <stop offset="1" stopColor="#000" stopOpacity=".45" />
       </radialGradient>
-      <pattern
-        id="jp-slashes"
-        width="9"
-        height="9"
-        patternUnits="userSpaceOnUse"
-        patternTransform="rotate(35)"
-      >
+      <pattern id="jp-slashes" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
         <rect width="2" height="9" fill="#000" fillOpacity=".16" />
       </pattern>
       {/* fixed light from the top-left over the colored ring, plus a brushed-metal grain */}
@@ -34,13 +22,7 @@ export function WheelDefs() {
         <stop offset=".55" stopColor="#000" stopOpacity="0" />
         <stop offset="1" stopColor="#000" stopOpacity=".58" />
       </linearGradient>
-      <pattern
-        id="jp-brush"
-        width="6"
-        height="6"
-        patternUnits="userSpaceOnUse"
-        patternTransform="rotate(-28)"
-      >
+      <pattern id="jp-brush" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)">
         <rect width="6" height="1" fill="#fff" fillOpacity=".1" />
         <rect y="3" width="6" height=".6" fill="#000" fillOpacity=".12" />
       </pattern>
@@ -86,13 +68,7 @@ export function WheelBezel() {
     <>
       {/* bezel: beveled gunmetal ring, a red neon line inside, machined slots around it */}
       <circle cx={C} cy={C} r={R_OUT + 20} className="jp-bezel-edge" />
-      <circle
-        cx={C}
-        cy={C}
-        r={R_OUT + 11}
-        className="jp-bezel"
-        strokeWidth={17}
-      />
+      <circle cx={C} cy={C} r={R_OUT + 11} className="jp-bezel" strokeWidth={17} />
       {Array.from({ length: 36 }, (_, i) => {
         if (i === 0) return null; // the pointer sits here
         const [x, y] = polar(R_OUT + 11, i * 10);
@@ -105,7 +81,7 @@ export function WheelBezel() {
             height={i % 3 === 0 ? 12 : 7}
             rx={1}
             transform={`rotate(${i * 10} ${x} ${y})`}
-            className={`jp-slot ${i % 3 === 0 ? "lit" : ""}`}
+            className={`jp-slot ${i % 3 === 0 ? 'lit' : ''}`}
           />
         );
       })}
@@ -118,13 +94,7 @@ export function WheelBezel() {
 export function WheelHub() {
   return (
     <>
-      <circle
-        cx={C}
-        cy={C}
-        r={R_IN - 4}
-        fill="url(#jp-hub)"
-        className="jp-hub"
-      />
+      <circle cx={C} cy={C} r={R_IN - 4} fill="url(#jp-hub)" className="jp-hub" />
       <circle cx={C} cy={C} r={R_IN - 1} className="jp-bezel" strokeWidth={7} />
       <circle cx={C} cy={C} r={R_IN - 5.5} className="jp-hub-neon" />
     </>
@@ -135,14 +105,8 @@ export function WheelHub() {
 export function WheelPointer() {
   return (
     <g filter="url(#jp-glow)">
-      <path
-        d={`M${C - 16} 4 Q${C} -2 ${C + 16} 4 L${C + 5} 24 L${C} 52 L${C - 5} 24 Z`}
-        className="jp-pointer fang"
-      />
-      <path
-        d={`M${C - 1.2} 9 L${C + 1.8} 9 L${C} 44 Z`}
-        className="jp-pointer-shine"
-      />
+      <path d={`M${C - 16} 4 Q${C} -2 ${C + 16} 4 L${C + 5} 24 L${C} 52 L${C - 5} 24 Z`} className="jp-pointer fang" />
+      <path d={`M${C - 1.2} 9 L${C + 1.8} 9 L${C} 44 Z`} className="jp-pointer-shine" />
       <circle cx={C} cy={9} r={6.5} className="jp-pivot" />
     </g>
   );
@@ -155,22 +119,8 @@ export function WheelShading() {
   return (
     <g className="jp-shading">
       <circle cx={C} cy={C} r={mid} className="jp-depth" strokeWidth={w} />
-      <circle
-        cx={C}
-        cy={C}
-        r={mid}
-        stroke="url(#jp-light)"
-        strokeWidth={w}
-        fill="none"
-      />
-      <circle
-        cx={C}
-        cy={C}
-        r={mid}
-        stroke="url(#jp-brush)"
-        strokeWidth={w}
-        fill="none"
-      />
+      <circle cx={C} cy={C} r={mid} stroke="url(#jp-light)" strokeWidth={w} fill="none" />
+      <circle cx={C} cy={C} r={mid} stroke="url(#jp-brush)" strokeWidth={w} fill="none" />
       <circle cx={C} cy={C} r={R_OUT - 2} className="jp-ring-hi" />
     </g>
   );
