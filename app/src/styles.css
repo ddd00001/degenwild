@@ -778,3 +778,21 @@ a.replay-btn{display:grid;place-items:center;text-decoration:none}
 .jp-winner-tx{display:block;margin-top:4px;color:#ff8a8f;font-size:11px;font-style:normal}
 a.jp-winner-tx:hover{color:#fff}
 .jp-tip{position:fixed;z-index:200}
+/* Pot shine v2: gold base, one bright band that crosses the full text, then rests */
+.pot-val .pot-num,.pot-val .amount,.pot-full .pot-val .amount{background-image:linear-gradient(100deg,#ffd166 0%,#ffd166 40%,#fff8e1 50%,#ffd166 60%,#ffd166 100%);background-size:300% 100%;background-position:100% 0;animation:pot-sweep 5s ease-in-out infinite}
+@keyframes pot-sweep{0%{background-position:100% 0}45%{background-position:0% 0}100%{background-position:0% 0}}
+@media(prefers-reduced-motion:reduce){.pot-val .pot-num,.pot-val .amount{animation:none;background-position:0 0}}
+/* Pop-up pot tooltip opens downward so a short window can't cut it */
+.match-pot .amount-tip{bottom:auto;top:calc(100% + 8px)}
+.match-pot .amount-tip::after{top:auto;bottom:100%;transform:translate(-50%,4px) rotate(225deg)}
+/* Welcome reel: ring countdown like the real pop-up */
+.reel-count-ring{width:96px;height:96px}
+.reel-count-ring .match-count{font-size:52px}
+.reel-count-ring .bar{animation-duration:.6s}
+.reel-count-ring .match-count{animation-duration:.6s}
+/* Jackpot teaser: room for the result line, YOU WON like the coinflip reel */
+.teaser-wrap{display:flex;flex-direction:column;align-items:center}
+.teaser{position:relative;width:184px;height:184px}
+.teaser .burst{inset:30%}
+.teaser-won{color:#7cf09c;text-shadow:0 0 22px #2f8a4788;animation:winPop .5s cubic-bezier(.2,1.5,.4,1) both}
+@media(max-width:500px){.teaser{width:160px;height:160px}}

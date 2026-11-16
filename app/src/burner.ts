@@ -1,6 +1,6 @@
 // Demo wallet: a throwaway keypair kept in this browser, so visitors can play on devnet
 // without installing a wallet or finding devnet SOL. Never used on mainnet.
-import { type KeyPairSigner, createClient, createKeyPairSignerFromPrivateKeyBytes } from '@solana/kit';
+import { AccountRole, type Address, type Instruction, type KeyPairSigner, address, createClient, createKeyPairSignerFromPrivateKeyBytes } from '@solana/kit';
 import { solanaRpc } from '@solana/kit-plugin-rpc';
 import { signer } from '@solana/kit-plugin-signer';
 import { CLUSTER, RPC_URL, RPC_WS_URL } from './config';
@@ -81,4 +81,29 @@ export async function requestDemoSol(address: string): Promise<{ ok: boolean; me
   } catch {
     return { ok: false, message: 'The faucet is unreachable right now — try again in a minute.' };
   }
+}
+
+/**
+ * Sends everything left in the demo wallet back to the house before the key is forgotten,
+ * so play money isn't stranded in a wallet nobody can open again. Best effort.
+ */
+export async function returnDemoSol(kp: KeyPairSigner, client: BurnerClient, house: Address): Promise<bigint> {
+  const FEE = 5_000n;
+  const { value } = await client.rpc.getBalance(kp.address, { commitment: 'confirmed' }).send();
+  const amount = BigInt(value) - FEE;
+  if (amount <= 0n) return 0n;
+  const data = new Uint8Array(12);
+  const view = new DataView(data.buffer);
+  view.setUint32(0, 2, true); // SystemInstruction::Transfer
+  view.setBigUint64(4, amount, true);
+  const ix: Instruction = {
+    programAddress: address('11111111111111111111111111111111'),
+    accounts: [
+      { address: kp.address, role: AccountRole.WRITABLE_SIGNER, signer: kp } as never,
+      { address: house, role: AccountRole.WRITABLE },
+    ],
+    data,
+  };
+  await client.sendTransaction([ix]);
+  return amount;
 }

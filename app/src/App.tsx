@@ -19,7 +19,7 @@ import { BattleRow } from './components/BattleRow';
 import { WalletWaitPill, WalletButton, ProfileDialog, WalletDialog } from './components/wallet';
 import { HowDialog } from './components/Modal';
 import { LaunchBanner } from './components/LaunchBanner';
-import { type BurnerClient, DEMO_ENABLED, burnerClient, callHouse, forgetBurner, loadBurner, requestDemoSol } from './burner';
+import { type BurnerClient, DEMO_ENABLED, burnerClient, callHouse, forgetBurner, loadBurner, requestDemoSol, returnDemoSol } from './burner';
 
 /** Below this the demo wallet can't cover a minimum stake plus fees. */
 const DEMO_LOW = 60_000_000n;
@@ -327,11 +327,20 @@ export default function App() {
     [refresh, toast],
   );
 
-  const exitDemo = useCallback(() => {
+  const exitDemo = useCallback(async () => {
+    // Give the play money back to the house first; the key is gone after this.
+    if (burner) {
+      try {
+        const back = await returnDemoSol(burner.kp, burner.client, HOUSE_WALLET);
+        if (back > 0n) toast.show(`Returned ${fmtSol(back)} demo SOL to the house.`);
+      } catch {
+        /* nothing to return, or the network hiccuped: exit anyway */
+      }
+    }
     forgetBurner();
     setBurner(null);
     setProfileOpen(null);
-  }, []);
+  }, [burner, toast]);
 
   // First connect: ask for a username once names have loaded, unless they chose "later" this session.
   const myName = me ? names.get(me) : undefined;
@@ -557,9 +566,6 @@ export default function App() {
             )}
           </div>
           <div className="top-actions">
-            <span className={`network-label ${CLUSTER}`}>
-              <i></i> {CLUSTER.toUpperCase()}
-            </span>
             {me && balance !== null && <span className="balance">◎ <Amount lamports={balance} max={3} /></span>}
             {demo && balance !== null && balance < DEMO_LOW && (
               <button className="wallet-btn demo-topup" disabled={funding} onClick={() => void fundDemo(demo.kp.address)}>
@@ -752,7 +758,7 @@ export default function App() {
               <details className="lobby-section history">
                 <summary className="lobby-heading">
                   <div>
-                    <div className="eyebrow">YOUR MATCHES</div>
+                    <div className="eyebrow">PAST MATCHES</div>
                     <h2>
                       History <span className="count-pill">{String(myHistory.length).padStart(2, '0')}</span>
                       <span className="history-toggle" aria-hidden="true">▾</span>
@@ -1031,7 +1037,7 @@ export default function App() {
           }}
         />
       )}
-      {howOpen && <HowDialog onClose={() => setHowOpen(false)} />}
+      {howOpen && <HowDialog game={view === 'jackpot' ? 'jackpot' : 'coinflip'} onClose={() => setHowOpen(false)} />}
     </div>
   );
 }

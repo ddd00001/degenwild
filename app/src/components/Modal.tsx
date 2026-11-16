@@ -3,7 +3,28 @@ import { useEffect, useRef } from 'react';
 import { MAX_STAKE_LAMPORTS, MIN_STAKE_LAMPORTS } from '../config';
 import { fmtSol } from '../format';
 
-export function HowDialog({ onClose }: { onClose: () => void }) {
+export function HowDialog({ game, onClose }: { game: 'coinflip' | 'jackpot'; onClose: () => void }) {
+  if (game === 'jackpot')
+    return (
+      <Modal title="How jackpot works" onClose={onClose}>
+        <p>
+          <b>1.</b> Put 0.05–10 SOL into the round's pot. Your stake sits in an on-chain account owned by the DegenWild
+          program, and your slice of the wheel is your share of the pot. You can add more before the spin.
+        </p>
+        <p>
+          <b>2.</b> When a second player joins, a 2-minute countdown starts. More players can join until it hits zero (up to 30
+          per round).
+        </p>
+        <p>
+          <b>3.</b> The wheel spins on a provably fair random number. The winner is paid the pot automatically, minus a 3.5%
+          platform fee. If no result arrives in time, everyone is refunded.
+        </p>
+        <p className="dialog-muted">
+          Provably fair: nobody, including DegenWild, can choose where the wheel stops. The randomness is signed by independent
+          nodes and checked on-chain before anyone is paid.
+        </p>
+      </Modal>
+    );
   return (
     <Modal title="How coinflip works" onClose={onClose}>
       <p>
@@ -15,7 +36,7 @@ export function HowDialog({ onClose }: { onClose: () => void }) {
         result from an independent randomness network; the joiner pays its small fee (~0.0003 SOL).
       </p>
       <p>
-        <b>3.</b> Seconds later the coin lands. The winner claims the pot minus a 3.5% platform fee. If no result arrives within
+        <b>3.</b> Seconds later the coin lands. The winner is paid the pot automatically, minus a 3.5% platform fee. If no result arrives within
         ~5 minutes, either player can refund both stakes.
       </p>
       <p className="dialog-muted">

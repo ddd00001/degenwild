@@ -159,7 +159,7 @@ export function MatchScreen(props: {
         {phase === 'open' &&
           (b.creator === me
             ? 'Your battle is live in the lobby — this flips the moment someone joins.'
-            : `Join on ${SIDE[1 - b.creatorSide]} for ${props.fmtSol(b.amount)} SOL to start the flip.`)}
+            : `Take the open seat: win the ${props.fmtSol(pot)} SOL pot if it lands ${SIDE[1 - b.creatorSide]}.`)}
         {phase === 'waiting' && (rnd?.state === 'missing' ? 'Requesting a fair result…' : 'Waiting for the provably fair result…')}
         {phase === 'countdown' && 'Flipping in…'}
         {phase === 'flip' && (playing ? `You called ${SIDE[mySide]}` : 'Flipping…')}
@@ -174,9 +174,7 @@ export function MatchScreen(props: {
             )}
             {winner && (
               <div className="match-receipt">
-                <span>
-                  <b>{winner === me ? 'You' : props.nameOf(winner)}</b> won the <b>{props.fmtSol(pot)} SOL</b> pot
-                </span>
+                <span>Payout transaction</span>
                 {props.payoutTx ? (
                   <a href={explorerTx(props.payoutTx)} target="_blank" rel="noreferrer" title={props.payoutTx}>
                     tx {props.payoutTx.slice(0, 6)}…{props.payoutTx.slice(-6)} ↗

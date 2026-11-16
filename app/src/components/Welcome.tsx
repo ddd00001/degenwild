@@ -119,7 +119,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
                   ['🔒', 'On-chain escrow', 'Stakes are locked by the program, not by us'],
                   ['🎲', 'Provably fair', 'Nobody can pick the result'],
                   ['⚡', 'Auto payouts', 'Winnings sent in seconds'],
-                  ['🔥', 'Double Down', 'Win and go again in one tap'],
+                  ['🎯', 'Two ways to play', 'Coinflip battles and the Jackpot wheel'],
                 ].map(([icon, title, text], i) => (
                   <li style={{ animationDelay: `${0.15 + i * 0.18}s` }} key={title}>
                     <span aria-hidden="true">{icon}</span>
@@ -135,7 +135,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
             <h2>
               Fair by design. <em>Paid in seconds.</em>
             </h2>
-            <p>Connect your wallet or try it free with a demo wallet, pick a name and start your first battle.</p>
+            <p>Connect your wallet or try it free with a demo wallet, pick a name and jump into a coinflip or the jackpot.</p>
           </>
         )}
       </div>
@@ -244,9 +244,13 @@ function DemoReel() {
             </div>
             <div className="reel-stage">
               {count !== null ? (
-                <span className="reel-count" key={count}>
-                  {count}
-                </span>
+                <div className="match-count-wrap reel-count-ring" key={count}>
+                  <svg className="match-count-ring" viewBox="0 0 120 120" aria-hidden="true">
+                    <circle cx="60" cy="60" r="52" className="track" />
+                    <circle cx="60" cy="60" r="52" className="bar" />
+                  </svg>
+                  <div className="match-count">{count}</div>
+                </div>
               ) : (
                 <div className="coin3d-wrap reel-flip">
                   <div
@@ -280,7 +284,7 @@ function DemoReel() {
               <b>You</b>
             </div>
           </div>
-          <div className="reel-result">{stage === 'win' ? 'YOU WON 0.193 SOL' : stage === 'flip' ? 'Flipping…' : '\u00a0'}</div>
+          <div className="reel-result">{stage === 'win' ? 'YOU WON 0.20 SOL' : stage === 'flip' ? 'Flipping…' : '\u00a0'}</div>
         </div>
       )}
     </div>
@@ -291,7 +295,7 @@ function DemoReel() {
 
 const TEASER = [
   { player: 'teaser-solking', sol: 1.0 },
-  { player: 'teaser-flipqueen', sol: 2.0 },
+  { player: 'teaser-you', sol: 2.0 },
   { player: 'teaser-moonboi', sol: 0.5 },
   { player: 'teaser-wagmi', sol: 0.8 },
 ];
@@ -333,7 +337,8 @@ function JackpotTeaser() {
   const done = t >= SPIN_END;
 
   return (
-    <div className="teaser" aria-hidden="true">
+    <div className="teaser-wrap" aria-hidden="true">
+    <div className="teaser">
       <svg viewBox="0 0 400 400" className="jp-wheel">
         <circle cx={C} cy={C} r={R_OUT + 12} className="jp-rim" />
         {Array.from({ length: 60 }, (_, i) => {
@@ -366,6 +371,15 @@ function JackpotTeaser() {
         </text>
         <path d={`M${C - 15} 2 L${C + 15} 2 L${C} 34 Z`} className="jp-pointer" />
       </svg>
+      {done && (
+        <div className="burst">
+          {Array.from({ length: 12 }, (_, n) => (
+            <i key={n} style={{ ['--a' as string]: `${n * 30}deg` }} />
+          ))}
+        </div>
+      )}
+    </div>
+    <div className={`reel-result ${done ? 'teaser-won' : ''}`}>{done ? `YOU WON ${TEASER_TOTAL.toFixed(2)} SOL` : t < JOIN_END ? 'Players joining…' : 'Spinning…'}</div>
     </div>
   );
 }
