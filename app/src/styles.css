@@ -1097,3 +1097,9 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-bubble{animation:jp-bubble2 4s ease-in-out infinite}
 @keyframes jp-bubble2{0%{transform:translate(0,0) scale(.6);opacity:0}20%{opacity:1}50%{transform:translate(calc(var(--dx) * .5),calc(var(--dy) * .5)) scale(1)}80%{opacity:.9}100%{transform:translate(var(--dx),var(--dy)) scale(.85);opacity:0}}
 .jp-flow{opacity:.8}
+/* calmer liquid */
+.jp-wave{animation-duration:15s}
+.jp-wave.front{animation-duration:11s}
+.jp-flow{animation-duration:22s}
+.jp-liquid-shine{animation-duration:13s}
+.jp-liquid{transition-duration:2.2s}
