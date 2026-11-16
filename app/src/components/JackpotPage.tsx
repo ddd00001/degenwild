@@ -9,7 +9,7 @@ import { fetchJackpotEntries } from '../jackpotReplay';
 import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
-import { WheelBezel, WheelDefs, WheelHub, WheelPointer } from './WheelFrame';
+import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading } from './WheelFrame';
 import { fmtUsd, useSolPrice } from '../price';
 import { crossedMilestone, jackpotTier } from '../visualTiers';
 import { play } from '../sound';
@@ -456,7 +456,7 @@ export function JackpotPage(props: {
                   );
                 })}
               </g>
-              <circle cx={C} cy={C} r={(R_OUT + R_IN) / 2} className="jp-depth" strokeWidth={R_OUT - R_IN} />
+              <WheelShading />
 
               {/* hub with the pot and countdown */}
               <WheelHub />

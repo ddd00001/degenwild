@@ -27,6 +27,23 @@ export function WheelDefs() {
       >
         <rect width="2" height="9" fill="#000" fillOpacity=".16" />
       </pattern>
+      {/* fixed light from the top-left over the colored ring, plus a brushed-metal grain */}
+      <linearGradient id="jp-light" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#fff" stopOpacity=".4" />
+        <stop offset=".38" stopColor="#fff" stopOpacity=".04" />
+        <stop offset=".55" stopColor="#000" stopOpacity="0" />
+        <stop offset="1" stopColor="#000" stopOpacity=".58" />
+      </linearGradient>
+      <pattern
+        id="jp-brush"
+        width="6"
+        height="6"
+        patternUnits="userSpaceOnUse"
+        patternTransform="rotate(-28)"
+      >
+        <rect width="6" height="1" fill="#fff" fillOpacity=".1" />
+        <rect y="3" width="6" height=".6" fill="#000" fillOpacity=".12" />
+      </pattern>
       <linearGradient id="jp-bezel-g" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stopColor="#5a5a64" />
         <stop offset=".18" stopColor="#24242a" />
@@ -127,6 +144,34 @@ export function WheelPointer() {
         className="jp-pointer-shine"
       />
       <circle cx={C} cy={9} r={6.5} className="jp-pivot" />
+    </g>
+  );
+}
+
+/** Lighting over the colored ring: depth toward the hub, a top-left light, brushed grain and a rim highlight. */
+export function WheelShading() {
+  const mid = (R_OUT + R_IN) / 2;
+  const w = R_OUT - R_IN;
+  return (
+    <g className="jp-shading">
+      <circle cx={C} cy={C} r={mid} className="jp-depth" strokeWidth={w} />
+      <circle
+        cx={C}
+        cy={C}
+        r={mid}
+        stroke="url(#jp-light)"
+        strokeWidth={w}
+        fill="none"
+      />
+      <circle
+        cx={C}
+        cy={C}
+        r={mid}
+        stroke="url(#jp-brush)"
+        strokeWidth={w}
+        fill="none"
+      />
+      <circle cx={C} cy={C} r={R_OUT - 2} className="jp-ring-hi" />
     </g>
   );
 }

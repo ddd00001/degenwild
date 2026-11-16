@@ -998,3 +998,7 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-pivot{fill:url(#jp-pivot-g);stroke:#000;stroke-width:1.5}
 .jp-seg{stroke:#060303;stroke-width:4}
 @media(prefers-reduced-motion:reduce){.cd-final .jp-slot.lit{animation:none}}
+.jp-shading{pointer-events:none}
+.jp-ring-hi{fill:none;stroke:#ffffff26;stroke-width:1.5}
+/* richer, more saturated slices with a hard edge */
+.jp-seg{filter:saturate(1.15) contrast(1.05)}

@@ -182,13 +182,7 @@ export function JackpotReplay(props: {
               );
             })}
           </g>
-          <circle
-            cx={C}
-            cy={C}
-            r={(R_OUT + R_IN) / 2}
-            className="jp-depth"
-            strokeWidth={R_OUT - R_IN}
-          />
+          <WheelShading />
           <WheelHub />
           {phase !== "countdown" && (
             <>
