@@ -269,7 +269,8 @@ export function JackpotPage(props: {
   const roundId = view?.state?.currentRound ?? 1n;
   const players = round?.entries.length ?? 0;
   const canLeave = !!round && players === 1 && round.entries[0].player === me && round.countdownEnd === 0n && !drawing;
-  const ringFrac = secondsLeft === null ? 1 : secondsLeft / COUNTDOWN_SECS;
+  // continuous (not per whole second) so the ring drains smoothly; now ticks every 250ms + a 250ms linear transition
+  const ringFrac = countdownEnd ? Math.max(0, Math.min(1, (countdownEnd - now) / (COUNTDOWN_SECS * 1000))) : 1;
   const winnerSeg = result ? segments.find((s) => s.player === result.winner) : undefined;
 
   // ---------------------------------------------------------------- segments ease to new sizes
@@ -370,6 +371,11 @@ export function JackpotPage(props: {
     secondsLeft === null || entriesClosed ? '' : secondsLeft <= 10 ? 'cd-final' : secondsLeft <= 30 ? 'cd-hot' : 'cd-on';
   const winnerChance = result && winnerSeg ? winnerSeg.chance : 0;
   const payoutTx = result ? props.allRecent.find((x) => x.roundId === result.roundId)?.signature : undefined;
+  // Bring the winner's row into view in the (scrolling) player list when the result shows.
+  useEffect(() => {
+    if (phase !== 'result') return;
+    document.querySelector('.jp-players li.won')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [phase]);
 
   // ---------------------------------------------------------------- sounds (from observed round state)
   const sndPrev = useRef<{ round: bigint; players: number; countdown: boolean } | null>(null);
@@ -514,7 +520,7 @@ export function JackpotPage(props: {
                   </text>
                   {(() => {
                     // Center "◎ 0.50" as one unit: estimate the amount's width (condensed digits ~21px, dot ~9px).
-                    const txt = fmtSol(potLamports);
+                    const txt = fmtSol(potLamports, 2);
                     const w = [...txt].reduce((a, ch) => a + (ch === '.' ? 9 : 21), 0);
                     const left = C - (w + 26) / 2;
                     return (

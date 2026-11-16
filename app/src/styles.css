@@ -1105,3 +1105,9 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-liquid{transition-duration:2.2s}
 .jp-bubble{animation-timing-function:cubic-bezier(.45,0,.55,1)}
 .jp-glass{mix-blend-mode:normal}
+/* rows start at the top of the fixed-height player panel */
+.jp-players ul{align-content:start}
+/* status line clears the wheel's frame */
+.jp-status{margin-top:26px}
+/* replay: player list scrolls inside a fixed box too */
+.jp-replay-players{max-height:176px;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;scrollbar-width:thin;scrollbar-color:#3a2729 transparent}
