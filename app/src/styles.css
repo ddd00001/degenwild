@@ -1002,3 +1002,67 @@ a.jp-winner-tx:hover{color:#fff}
 .jp-ring-hi{fill:none;stroke:#ffffff26;stroke-width:1.5}
 /* richer, more saturated slices with a hard edge */
 .jp-seg{filter:saturate(1.15) contrast(1.05)}
+
+/* ===== Treasure wheel: hammered gold, rivets, rubies, velvet ===== */
+.jp-bezel-edge{fill:none;stroke:#000;stroke-width:3}
+.jp-bezel-inner,.jp-bezel-outer{fill:none;stroke:#3d2a06;stroke-width:1.3}
+.jp-rivet{stroke:#3d2a06;stroke-width:.6}
+.jp-ruby{stroke:#2a0204;stroke-width:.8;filter:drop-shadow(0 0 4px #ff3038aa)}
+.jp-stage .jp-rim{fill:none;stroke:#ffe9a8;stroke-opacity:.55;stroke-width:1.2;filter:none}
+.jp-hub-line{fill:none;stroke:#3d2a06;stroke-width:1.2}
+.jp-pointer.gold{stroke:#3d2a06;stroke-width:1.5;stroke-linejoin:round;filter:drop-shadow(0 3px 5px #000c) drop-shadow(0 0 6px #f5c54266)}
+.jp-pivot{stroke:#2a0204;stroke-width:1}
+.jp-grain{opacity:.55;mix-blend-mode:multiply}
+.jp-empty{stroke:url(#jp-velvet);stroke-dasharray:none}
+/* glow grows with the pot: warm gold, a touch of red underneath */
+.jp-stage .jp-bezel-g{filter:drop-shadow(0 0 calc(6px + 20px * var(--jp-i,0)) rgba(245,197,66,calc(.22 + .5 * var(--jp-i,0)))) drop-shadow(0 0 30px rgba(255,48,56,.12))}
+.cd-final .jp-ruby{animation:jp-ruby .5s ease-in-out infinite alternate}
+@keyframes jp-ruby{to{filter:drop-shadow(0 0 10px #ff3038)}}
+.jp-hub-label{fill:#c9a85a}
+@media(prefers-reduced-motion:reduce){.cd-final .jp-ruby{animation:none}}
+.jp-sheen{pointer-events:none;mix-blend-mode:screen}
+.jp-sheen-bar{transform:skewX(-18deg) translateX(0);animation:jp-sheen 5.5s cubic-bezier(.45,.05,.35,1) infinite}
+@keyframes jp-sheen{0%,55%{transform:skewX(-18deg) translateX(0)}100%{transform:skewX(-18deg) translateX(720px)}}
+.jp-tier-4 .jp-sheen-bar,.jp-tier-5 .jp-sheen-bar{animation-duration:3.8s}
+@media(prefers-reduced-motion:reduce){.jp-sheen{display:none}}
+/* hub countdown ring in gold, red only for the final seconds */
+.jp-ring{stroke:#ffd166;filter:drop-shadow(0 0 6px #f5c54299)}
+.jp-ring-bg{stroke:#3a2a0e}
+.cd-final .jp-ring{stroke:#ff3038;filter:drop-shadow(0 0 10px #ff3038)}
+.cd-hot .jp-ring{stroke:#ff8a1f;filter:drop-shadow(0 0 8px #ff8a1f)}
+/* Coin pile in the hub */
+.jp-coins{pointer-events:none}
+.jp-coin{filter:drop-shadow(0 2px 1.5px #000c)}
+.jp-coins>g{animation:jp-coin-drop .5s cubic-bezier(.3,1.4,.5,1) backwards}
+@keyframes jp-coin-drop{from{opacity:0;translate:0 -30px}}
+/* amount stays readable over the coins */
+.jp-hub-pot,.jp-hub-sol,.jp-hub-label,.jp-hub-sol-glyph,.jp-hub-timer{paint-order:stroke;stroke:#0a0605;stroke-width:4px;stroke-linejoin:round}
+@media(prefers-reduced-motion:reduce){.jp-coins>g{animation:none}}
+.jp-hub-win-label,.jp-hub-win-name,.jp-hub-win-amt,.jp-hub-win-chance{paint-order:stroke;stroke:#0a0605;stroke-width:4px;stroke-linejoin:round}
+
+/* ===== Wheel frame v4: the DegenWild sticker look (overrides the gold bezel) ===== */
+.jp-frame-outer{fill:#070707;stroke:#fff;stroke-width:6;stroke-linejoin:miter;stroke-miterlimit:3}
+.jp-frame-band{fill:#ff3d0d;stroke:#000;stroke-width:2;stroke-linejoin:miter}
+.jp-frame-band.hub{fill:#ff3d0d}
+.jp-frame-cut{fill:#070707}
+.jp-hub-plate{fill:#070707;stroke:#fff;stroke-width:3.5;stroke-linejoin:miter}
+.jp-stage .jp-rim{fill:none;stroke:#000;stroke-width:3;stroke-opacity:1;filter:none}
+.jp-claw-edge{fill:#fff;stroke:#fff;stroke-width:7;stroke-linejoin:miter}
+.jp-claw{fill:#ff3d0d;stroke:#000;stroke-width:2.5;stroke-linejoin:miter}
+.jp-claw-cut{fill:#070707}
+.jp-pointer-g{filter:drop-shadow(0 4px 6px #000c)}
+/* glow grows with the pot: hot orange, gold once it's big */
+.jp-stage .jp-frame{filter:drop-shadow(0 0 calc(6px + 18px * var(--jp-i,0)) rgba(255,61,13,calc(.3 + .45 * var(--jp-i,0))))}
+.jp-tier-4 .jp-frame-band,.jp-tier-5 .jp-frame-band{fill:#ffb020}
+.jp-tier-4 .jp-claw,.jp-tier-5 .jp-claw{fill:#ffb020}
+.jp-tier-4 .jp-frame,.jp-tier-5 .jp-frame{filter:drop-shadow(0 0 calc(10px + 18px * var(--jp-i,0)) rgba(255,176,32,.55))}
+.cd-final .jp-frame-band{animation:jp-band .45s ease-in-out infinite alternate}
+@keyframes jp-band{to{fill:#ffd166}}
+.jp-ring-bg{stroke:#2a0c06}
+@media(prefers-reduced-motion:reduce){.cd-final .jp-frame-band{animation:none}}
+.jp-usd-corner{cursor:help;outline:none}
+.jp-usd-tip{position:absolute;top:calc(100% + 8px);right:0;width:220px;display:grid;gap:4px;padding:10px 12px;border-radius:9px;background:#211315;border:1px solid #743038;box-shadow:0 12px 30px #000c;text-align:left;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .12s,transform .12s;z-index:30}
+.jp-usd-tip b{color:#fff;font:800 12px Inter,sans-serif}
+.jp-usd-tip span{color:#ffd166;font:700 12px Inter,sans-serif;font-variant-numeric:tabular-nums}
+.jp-usd-tip em{color:#8e8181;font:500 10px/1.4 Inter,sans-serif;font-style:normal}
+.jp-usd-corner:hover .jp-usd-tip,.jp-usd-corner:focus-visible .jp-usd-tip{opacity:1;transform:none}

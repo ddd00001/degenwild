@@ -9,7 +9,7 @@ import { fetchJackpotEntries } from '../jackpotReplay';
 import { JackpotReplay } from './JackpotReplay';
 import type { JackpotResult } from '../history';
 import { Avatar, avatarName } from './Avatar';
-import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading } from './WheelFrame';
+import { WheelBezel, WheelDefs, WheelHub, WheelPointer, WheelShading, WheelSheen, HubCoins } from './WheelFrame';
 import { fmtUsd, useSolPrice } from '../price';
 import { crossedMilestone, jackpotTier } from '../visualTiers';
 import { play } from '../sound';
@@ -259,7 +259,9 @@ export function JackpotPage(props: {
   const stakeError =
     stake === null ? 'Enter an amount' : stake < MIN_ENTRY ? 'Minimum is 0.05 SOL' : stake > MAX_ENTRY ? 'Maximum is 10 SOL' : null;
   const total = round?.total ?? 0n;
-  const solUsd = useSolPrice()?.usd;
+  const price = useSolPrice();
+  const solUsd = price?.usd;
+  const priceSource = price?.source;
   const stakeUsd = stake && !stakeError ? usd(stake, solUsd) : '';
   const myAmount = round?.entries.find((e) => e.player === me)?.amount ?? 0n;
   const previewChance = stake && !stakeError ? pct(myAmount + stake, total + stake) : null;
@@ -411,9 +413,16 @@ export function JackpotPage(props: {
           style={{ ['--jp-i' as string]: tier.intensity.toFixed(3) } as React.CSSProperties}
         >
           {solUsd ? (
-            <div className="jp-usd-corner" title="Pot value in US dollars (live SOL/USD estimate)">
+            <div className="jp-usd-corner" tabIndex={0}>
               <small>POT VALUE</small>
               <b>≈ {usd(phase === 'result' && result ? result.total : potLamports, solUsd)}</b>
+              <span className="jp-usd-tip" role="tooltip">
+                <b>US dollar estimate</b>
+                <span>
+                  {fmtSol(phase === 'result' && result ? result.total : potLamports)} SOL × {fmtUsd(solUsd)} per SOL
+                </span>
+                <em>Live SOL/USD price from {priceSource ?? 'CoinGecko'}. Devnet SOL is test money; the estimate uses the real price.</em>
+              </span>
             </div>
           ) : null}
           <div className="jp-wheel-wrap" ref={wrapRef} onMouseLeave={() => setHover(null)}>
@@ -456,10 +465,11 @@ export function JackpotPage(props: {
                   );
                 })}
               </g>
-              <WheelShading />
+              <WheelShading empty={wheelSegs.length === 0} />
 
               {/* hub with the pot and countdown */}
               <WheelHub />
+              <HubCoins total={phase === 'result' && result ? result.total : potLamports} />
               <circle
                 cx={C}
                 cy={C}
@@ -527,6 +537,7 @@ export function JackpotPage(props: {
                 </>
               )}
 
+              <WheelSheen />
               <WheelPointer />
             </svg>
             {hover &&
